@@ -49,7 +49,11 @@ android {
         }
         debug {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            // Sign debug builds with the official key when available (release parity),
+            // otherwise fall back to the default debug keystore — CI verify needs no secrets.
+            if (file("Nightjar.keystore").exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
