@@ -45,8 +45,10 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview)
 
             implementation(libs.lifecycle.viewmodel)
+            implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.lifecycle.viewmodel.navigation3)
+            implementation(libs.navigation3.runtime)
             implementation(libs.navigation3.ui.multiplatform)
 
             implementation(libs.kotlinx.coroutines.core)
@@ -59,7 +61,6 @@ kotlin {
             // image picker + camera capture launchers live behind expect composables
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
-            implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.compose.ui.tooling)
         }
         jvmMain.dependencies {
