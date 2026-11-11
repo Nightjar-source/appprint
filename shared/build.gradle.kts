@@ -15,6 +15,10 @@ kotlin {
         compileSdk = 37
         minSdk = 26
         withHostTest { }
+        // Enables Compose Multiplatform resources (Res class + accessors) for the androidLibrary target
+        androidResources {
+            enable = true
+        }
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
