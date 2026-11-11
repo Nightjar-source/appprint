@@ -22,12 +22,12 @@ actual fun rememberImagePickerLauncher(
     onPicked: (List<String>) -> Unit,
 ): () -> Unit {
     val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia(maxItems)
+        ActivityResultContracts.PickMultipleVisualMedia(maxItems)
     ) { uris -> onPicked(uris.map(Uri::toString)) }
 
     return remember(launcher) {
         {
-            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickMultipleVisualMedia.ImageOnly))
         }
     }
 }

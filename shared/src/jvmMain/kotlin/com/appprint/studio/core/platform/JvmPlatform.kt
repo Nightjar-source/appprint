@@ -1,4 +1,4 @@
-package com.appprint.studio.core.platform
+﻿package com.appprint.studio.core.platform
 
 import com.appprint.studio.core.export.JvmSheetRenderer
 import com.appprint.studio.core.model.AppTheme
@@ -21,7 +21,6 @@ import javax.print.DocFlavor
 import javax.print.PrintServiceLookup
 import javax.print.SimpleDoc
 import javax.print.attribute.HashPrintRequestAttributeSet
-import javax.print.attribute.standard.MediaPrintQuality
 import javax.print.attribute.standard.MediaSize
 import javax.print.attribute.standard.OrientationRequested
 
@@ -158,7 +157,6 @@ actual object PlatformActions {
 
         val attrs = HashPrintRequestAttributeSet().apply {
             add(OrientationRequested.PORTRAIT)
-            add(MediaPrintQuality.ATTRIBUTE_VALUE_HIGH)
             add(MediaSize(sheetWidthMm / 25.4f, sheetHeightMm / 25.4f, MediaSize.MM))
         }
         val services = runCatching {

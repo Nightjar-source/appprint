@@ -1,7 +1,6 @@
-package com.appprint.studio.core.export
+﻿package com.appprint.studio.core.export
 
 import com.appprint.studio.core.image.PixelOps
-import com.appprint.studio.core.image.Enhance
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.model.FrameStyle
 import com.appprint.studio.core.model.SheetBackground
@@ -98,9 +97,9 @@ object JvmSheetRenderer {
         val localH = card.heightMm * pxPerMm
 
         val saved = g.transform
-        g.translate(card.xMm * pxPerMm + wPx / 2f, card.yMm * pxPerMm + hPx / 2f)
+        g.translate((card.xMm * pxPerMm + wPx / 2f).toDouble(), (card.yMm * pxPerMm + hPx / 2f).toDouble())
         g.rotate(Math.toRadians(card.rotation.toDouble()))
-        g.translate(-localW / 2f, -localH / 2f)
+        g.translate((-localW / 2f).toDouble(), (-localH / 2f).toDouble())
 
         val destination = java.awt.geom.RoundRectangle2D.Double(0.0, 0.0, localW.toDouble(), localH.toDouble(), hPx * 0.15, hPx * 0.15)
 
