@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand palette (from ستوديو الطباعة.html.html) -->
+    <color name="brand_ink">#151816</color>
+    <color name="brand_surface">#1E1E1E</color>
+    <color name="brand_green">#007A3D</color>
+    <color name="brand_green_bright">#00914A</color>
+    <color name="brand_red">#C8102E</color>
+    <color name="brand_red_bright">#E01A38</color>
+    <color name="brand_gold">#D9A51F</color>
+    <color name="brand_paper">#FDFAF1</color>
+    <color name="brand_paper_soft">#F4F1EA</color>
+</resources>

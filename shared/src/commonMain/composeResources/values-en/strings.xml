@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Print Studio</string>
+    <string name="app_title">Iraqi ID Print Studio</string>
+    <string name="app_eyebrow">IRAQI ID PRINT STUDIO</string>
+    <string name="app_tagline">Cut, arrange, print at true 1:1 scale — card size never changes.</string>
+
+    <!-- Navigation -->
+    <string name="nav_studio">Studio</string>
+    <string name="nav_guide">Guide &amp; Tips</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Studio actions -->
+    <string name="btn_add_images">Upload images</string>
+    <string name="btn_take_photo">Capture card</string>
+    <string name="btn_samples">Sample cards</string>
+    <string name="btn_arrange">Smart re-arrange</string>
+    <string name="btn_sort_size">Sort by size</string>
+    <string name="btn_clear_all">Clear all</string>
+    <string name="btn_export_pdf">Export PDF</string>
+    <string name="btn_print">Print</string>
+    <string name="btn_share">Share</string>
+    <string name="btn_save_png">Save PNG</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_duplicate">Duplicate</string>
+    <string name="btn_rotate">Rotate 90°</string>
+    <string name="btn_enhance_all">Auto-enhance all</string>
+    <string name="btn_reset_all">Reset all</string>
+
+    <!-- Empty state -->
+    <string name="empty_title">Upload your card images to start</string>
+    <string name="empty_subtitle">Or try sample cards — they are arranged and printed at true 1:1 scale on real sheets.</string>
+    <string name="empty_cta">Try sample cards</string>
+    <string name="empty_upload">Upload card images</string>
+
+    <!-- Paper & arrangement -->
+    <string name="paper_title">Paper settings</string>
+    <string name="paper_size">Paper size</string>
+    <string name="paper_custom">Custom</string>
+    <string name="orientation">Orientation</string>
+    <string name="orientation_portrait">Portrait</string>
+    <string name="orientation_landscape">Landscape</string>
+    <string name="margins">Margins (mm)</string>
+    <string name="gap">Card gap (mm)</string>
+    <string name="gap_comfy_min">Comfortable mode enforces at least 8 mm</string>
+    <string name="mode">Arrangement mode</string>
+    <string name="mode_grid">Grid</string>
+    <string name="mode_comfy">Comfortable</string>
+    <string name="group_smart">Smart grouping by type</string>
+    <string name="background">Sheet background</string>
+    <string name="bg_white">White</string>
+    <string name="bg_offwhite">Off-white</string>
+    <string name="bg_transparent">Transparent</string>
+    <string name="guides">Cut lines</string>
+    <string name="frames">Card frames</string>
+    <string name="frame_color">Frame color</string>
+    <string name="frame_width">Frame width</string>
+    <string name="frame_style">Frame style</string>
+    <string name="frame_solid">Solid</string>
+    <string name="frame_dashed">Dashed</string>
+    <string name="frame_dotted">Dotted</string>
+
+    <!-- Enhance -->
+    <string name="enhance_title">Image enhancement</string>
+    <string name="brightness">Brightness</string>
+    <string name="contrast">Contrast</string>
+    <string name="saturation">Saturation</string>
+    <string name="sharpness">Sharpness</string>
+    <string name="grayscale">Black &amp; white</string>
+    <string name="auto_enhance">Auto enhance</string>
+    <string name="reset_enhance">Reset</string>
+    <string name="apply_all">Apply to all images</string>
+    <string name="apply_selected">Selected card only</string>
+    <string name="enhance_note">Enhancements apply instantly to the sheet and the PDF.</string>
+
+    <!-- Selection & sheets -->
+    <string name="card_selected">Selected card</string>
+    <string name="no_selection">Select a card on the sheet to edit it here.</string>
+    <string name="sheets_title">Print sheets</string>
+    <string name="sheet_tab">Sheet %1$d</string>
+    <string name="sheet_empty">Sheet is empty</string>
+    <string name="cards_count">%1$d card(s)</string>
+    <string name="pages_count">~%1$d page(s)</string>
+    <string name="mm">mm</string>
+
+    <!-- Actions feedback -->
+    <string name="msg_imported">Added %1$d image(s)</string>
+    <string name="msg_samples">Sample cards added</string>
+    <string name="msg_arranged">Smart arrangement applied</string>
+    <string name="msg_sorted">Sorted by size</string>
+    <string name="msg_cleared">All cards cleared</string>
+    <string name="msg_pdf_saved">PDF created — %1$d page(s), 300 DPI</string>
+    <string name="msg_pdf_error">Couldn’t create the PDF — try again</string>
+    <string name="msg_png_saved">Sheet image saved</string>
+    <string name="msg_png_error">Couldn’t create the image</string>
+    <string name="msg_print_sent">Print job sent</string>
+    <string name="msg_no_cards">No cards yet — add a card image first</string>
+    <string name="msg_camera_denied">Permission denied — enable Camera access in app settings</string>
+    <string name="msg_camera_unavailable">Couldn’t open the camera</string>
+    <string name="msg_cropped">White borders removed automatically</string>
+
+    <!-- Guide -->
+    <string name="guide_cards_title">Iraqi cards guide</string>
+    <string name="guide_cards_subtitle">Official size, issuing authority and handling tips for every card — tap a card to inspect it.</string>
+    <string name="issuer">Issuing authority</string>
+    <string name="usage">Usage</string>
+    <string name="official_size">Official size</string>
+    <string name="print_tips_title">Print tips</string>
+    <string name="legal_note">This tool is for personal arrangement and printing only. Never use card copies for unlawful purposes, and keep your images private.</string>
+
+    <!-- Settings -->
+    <string name="appearance">Appearance</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_auto">System default</string>
+    <string name="about_title">About</string>
+    <string name="app_version">Version %1$s (%2$d)</string>
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_body">Everything stays on your device. No image is uploaded to any server — the app works fully offline and collects no data.</string>
+    <string name="permissions_title">Permissions</string>
+    <string name="permission_camera">Camera — to capture cards inside the app. Asked only when first used; you can decline and upload images instead.</string>
+    <string name="licenses_title">Dependencies &amp; licenses</string>
+    <string name="offline_note">Offline · No accounts · No ads · No tracking</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_name">Exports</string>
+    <string name="notif_export_title">AppPrint</string>
+    <string name="notif_export_body">File ready: %1$s — tap to open</string>
+    <string name="notif_print_title">Print sent</string>
+    <string name="notif_print_body">The print job was sent to the printer: %1$s</string>
+    <string name="notif_open_label">Open</string>
+
+    <!-- Common -->
+    <string name="msg_applied_all">Applied to all images</string>
+    <string name="msg_import_failed">Couldn’t add the images — check supported formats and try again</string>
+    <string name="msg_export_failed">Couldn’t create the file — try again</string>
+    <string name="msg_share_unavailable">Can’t share right now — the file is kept inside the app: %1$s</string>
+    <string name="msg_print_unavailable">Couldn’t send the print job</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="delete">Delete</string>
+    <string name="done">Done</string>
+    <string name="clear">Clear</string>
+    <string name="share_title">Share sheet</string>
+    <string name="pdf_dialog_title">Export PDF</string>
+    <string name="pdf_dialog_body">A native PDF will be generated on-device at 300 DPI, true 1:1 scale.</string>
+    <string name="clear_confirm_title">Clear all cards?</string>
+    <string name="clear_confirm_body">Every card on every sheet will be removed. This can’t be undone.</string>
+    <string name="close">Close</string>
+</resources>

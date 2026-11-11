@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- A3. Launch theme: core-splashscreen draws the brand glyph on ink before first frame. -->
+    <style name="Theme.AppPrint.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_ink</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimationDuration">450</item>
+        <item name="postSplashScreenTheme">@style/Theme.AppPrint</item>
+    </style>
+
+    <!-- Main theme: NoActionBar Compose host; bars are handled by enableEdgeToEdge(). -->
+    <style name="Theme.AppPrint" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/brand_ink</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

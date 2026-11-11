@@ -1,0 +1,38 @@
+# Build outputs
+.gradle/
+build/
+**/build/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Local configuration (may contain SDK paths / secrets — never commit)
+local.properties
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystores & secrets
+*.jks
+*.keystore
+*.p12
+secrets.properties
+
+# Python/Node (skills tooling)
+node_modules/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local AI skills tooling (installed via npx skills, machine-specific)
+.agents/
+skills-lock.json
+
+# Local scratch artifacts
+/arabic-strings.txt

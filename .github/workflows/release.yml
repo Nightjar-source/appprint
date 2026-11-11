@@ -1,0 +1,109 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Verify (compile + unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Compile & run unit tests
+        run: ./gradlew :shared:jvmTest :shared:compileDebugKotlinAndroid :androidApp:compileDebugKotlin --stacktrace
+
+  build-release:
+    name: Build Official Signed APK
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Restore signing credentials
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::KEYSTORE_BASE64 secret is missing — add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > androidApp/Nightjar.keystore
+          {
+            echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-19941994}"
+            echo "KEY_PASSWORD=${KEY_PASSWORD:-19941994}"
+          } >> local.properties
+
+      - name: Build official release APK
+        run: ./gradlew :androidApp:assembleRelease --no-daemon --stacktrace
+
+      - name: Locate APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find androidApp/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          echo "Found APK at: $APK_PATH"
+          NAMED_APK="androidApp/build/outputs/apk/release/appprint-release.apk"
+          if [ -n "$APK_PATH" ]; then
+            cp "$APK_PATH" "$NAMED_APK"
+            echo "named_apk=$NAMED_APK" >> "$GITHUB_OUTPUT"
+          fi
+          echo "apk_path=$APK_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: appprint-signed-apk
+          path: |
+            ${{ steps.find_apk.outputs.apk_path }}
+            ${{ steps.find_apk.outputs.named_apk }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{ steps.find_apk.outputs.apk_path }}
+            ${{ steps.find_apk.outputs.named_apk }}
+          name: مطبعة البطاقات العراقية ${{ github.ref_name }}
+          body: |
+            # مطبعة البطاقات العراقية — الإصدار الرسمي ${{ github.ref_name }}
+
+            - مبنية بأحدث معايير كوتلن متعدد المنصات (Kotlin Multiplatform + Compose Multiplatform 1.11.1 + Kotlin 2.4.21).
+            - Navigation 3 بحالة ملاحة مملوكة للمستخدم (State-driven, user-owned back stack).
+            - قياس حقيقي 1:1 حقيقي على الورق، بجودة 300 DPI وملف PDF أصلي يُنشأ على الجهاز.
+            - موقّعة رسمياً بشهادة المطوّر — تثبيت مباشر على أجهزة أندرويد (Android 17 / API 37).
+            - كاملة دون اتصال بالإنترنت: لا حسابات، لا إعلانات، لا تتبع.

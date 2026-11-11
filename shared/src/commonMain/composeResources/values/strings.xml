@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">مطبعة البطاقات</string>
+    <string name="app_title">مطبعة البطاقات العراقية</string>
+    <string name="app_eyebrow">IRAQI ID PRINT STUDIO</string>
+    <string name="app_tagline">قصّ، رتّب، اطبع بقياس حقيقي 1:1 — بدون ما يتغيّر حجم البطاقة.</string>
+
+    <!-- Navigation -->
+    <string name="nav_studio">الاستوديو</string>
+    <string name="nav_guide">الشرح والنصائح</string>
+    <string name="nav_settings">الإعدادات</string>
+
+    <!-- Studio actions -->
+    <string name="btn_add_images">ارفع صوراً</string>
+    <string name="btn_take_photo">صوّر بطاقة</string>
+    <string name="btn_samples">أمثلة تعليمية</string>
+    <string name="btn_arrange">إعادة تجميع ذكي</string>
+    <string name="btn_sort_size">ترتيب حسب الحجم</string>
+    <string name="btn_clear_all">مسح الكل</string>
+    <string name="btn_export_pdf">تصدير PDF</string>
+    <string name="btn_print">طباعة</string>
+    <string name="btn_share">مشاركة</string>
+    <string name="btn_save_png">حفظ PNG</string>
+    <string name="btn_delete">حذف</string>
+    <string name="btn_duplicate">نسخ</string>
+    <string name="btn_rotate">تدوير 90°</string>
+    <string name="btn_enhance_all">تحسين تلقائي للكل</string>
+    <string name="btn_reset_all">إعادة تعيين الكل</string>
+
+    <!-- Empty state -->
+    <string name="empty_title">ارفع صور بطاقاتك للبدء</string>
+    <string name="empty_subtitle">أو جرّب بأمثلة تعليمية — تُرتَّب وتُطبع بقياس حقيقي 1:1 داخل الورقة.</string>
+    <string name="empty_cta">جرّب بأمثلة تعليمية</string>
+    <string name="empty_upload">ارفع صور بطاقاتك</string>
+
+    <!-- Paper & arrangement -->
+    <string name="paper_title">إعدادات الورقة</string>
+    <string name="paper_size">قياس الورقة</string>
+    <string name="paper_custom">مخصص</string>
+    <string name="orientation">الاتجاه</string>
+    <string name="orientation_portrait">عمودي</string>
+    <string name="orientation_landscape">أفقي</string>
+    <string name="margins">الهوامش (مم)</string>
+    <string name="gap">الفراغ بين البطاقات (مم)</string>
+    <string name="gap_comfy_min">الوضع المريح يفرض 8 مم على الأقل</string>
+    <string name="mode">نمط الترتيب</string>
+    <string name="mode_grid">شبكة</string>
+    <string name="mode_comfy">مريح</string>
+    <string name="group_smart">تجميع ذكي حسب النوع</string>
+    <string name="background">خلفية الورقة</string>
+    <string name="bg_white">أبيض</string>
+    <string name="bg_offwhite">أوف وايت</string>
+    <string name="bg_transparent">شفافة</string>
+    <string name="guides">خطوط القص</string>
+    <string name="frames">إطارات البطاقات</string>
+    <string name="frame_color">لون الإطار</string>
+    <string name="frame_width">سماكة الإطار</string>
+    <string name="frame_style">شكل الإطار</string>
+    <string name="frame_solid">متصل</string>
+    <string name="frame_dashed">متقطع</string>
+    <string name="frame_dotted">منقّط</string>
+
+    <!-- Enhance -->
+    <string name="enhance_title">تحسين الصورة</string>
+    <string name="brightness">السطوع</string>
+    <string name="contrast">التباين</string>
+    <string name="saturation">التشبع</string>
+    <string name="sharpness">الحدة</string>
+    <string name="grayscale">أبيض وأسود</string>
+    <string name="auto_enhance">تحسين تلقائي</string>
+    <string name="reset_enhance">إعادة التعيين</string>
+    <string name="apply_all">تطبيقه على كل الصور</string>
+    <string name="apply_selected">على البطاقة المحددة فقط</string>
+    <string name="enhance_note">التحسين يظهر فوراً على الورقة وفي ملف PDF.</string>
+
+    <!-- Selection & sheets -->
+    <string name="card_selected">البطاقة المحددة</string>
+    <string name="no_selection">اختر بطاقة من الورقة لتظهر أدواتها هنا.</string>
+    <string name="sheets_title">ورقات الطباعة</string>
+    <string name="sheet_tab">ورقة %1$d</string>
+    <string name="sheet_empty">الورقة فارغة</string>
+    <string name="cards_count">%1$d بطاقة</string>
+    <string name="pages_count">%1$d صفحة تقريباً</string>
+    <string name="mm">مم</string>
+
+    <!-- Actions feedback -->
+    <string name="msg_imported">تمت إضافة %1$d صورة</string>
+    <string name="msg_samples">تمت إضافة أمثلة تعليمية</string>
+    <string name="msg_arranged">تم الترتيب الذكي</string>
+    <string name="msg_sorted">تم الترتيب حسب الحجم</string>
+    <string name="msg_cleared">تم مسح كل البطاقات</string>
+    <string name="msg_pdf_saved">تم إنشاء ملف PDF — %1$d ورقة، 300 DPI</string>
+    <string name="msg_pdf_error">تعذر إنشاء PDF — حاول مرة أخرى</string>
+    <string name="msg_png_saved">تم حفظ صورة الورقة</string>
+    <string name="msg_png_error">تعذر إنشاء الصورة</string>
+    <string name="msg_print_sent">تم إرسال مهمة الطباعة</string>
+    <string name="msg_no_cards">لا توجد بطاقات — ارفع صورة بطاقة أولاً</string>
+    <string name="msg_camera_denied">الصلاحية مرفوضة — فعّل صلاحية الكاميرا من إعدادات التطبيق</string>
+    <string name="msg_camera_unavailable">تعذر فتح الكاميرا</string>
+    <string name="msg_cropped">أُزيلت الحواف البيضاء تلقائياً</string>
+
+    <!-- Guide -->
+    <string name="guide_cards_title">دليل البطاقات العراقية</string>
+    <string name="guide_cards_subtitle">القياس الرسمي، الجهة المصدرة، وطريقة التعامل مع كل بطاقة — اضغط أي بطاقة لعرض شرحها.</string>
+    <string name="issuer">الجهة المصدرة</string>
+    <string name="usage">الاستخدام</string>
+    <string name="official_size">القياس الرسمي</string>
+    <string name="print_tips_title">نصائح للطباعة</string>
+    <string name="legal_note">هذه الأداة للترتيب والطباعة الشخصية فقط. لا تستخدم نسخ البطاقات لأي غرض غير قانوني، واحفظ صورك بعيد عن الآخرين.</string>
+
+    <!-- Settings -->
+    <string name="appearance">مظهر الأداة</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+    <string name="theme_auto">تلقائي (حسب النظام)</string>
+    <string name="about_title">عن التطبيق</string>
+    <string name="app_version">الإصدار %1$s (%2$d)</string>
+    <string name="privacy_title">الخصوصية</string>
+    <string name="privacy_body">كل شغلك يبقى داخل جهازك، وما تُرفع أي صورة لأي سيرفر — التطبيق يعمل دون اتصال بالإنترنت إطلاقاً ولا يجمع أي بيانات.</string>
+    <string name="permissions_title">الصلاحيات المطلوبة</string>
+    <string name="permission_camera">الكاميرا — لتصوير البطاقات مباشرة داخل التطبيق. تُطلب فقط عند أول استخدام، ويمكن رفضها والاكتفاء برفع الصور.</string>
+    <string name="licenses_title">الاعتماديات والتراخيص</string>
+    <string name="offline_note">بدون اتصال · بدون حسابات · بدون إعلانات · بدون تتبع</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_name">تنبيهات التصدير</string>
+    <string name="notif_export_title">مطبعة البطاقات</string>
+    <string name="notif_export_body">تم إنشاء الملف: %1$s — اضغط للفتح</string>
+    <string name="notif_print_title">تم إرسال الطباعة</string>
+    <string name="notif_print_body">مهمة الطباعة أُرسلت إلى الطابعة: %1$s</string>
+    <string name="notif_open_label">فتح</string>
+
+    <!-- Common -->
+    <string name="msg_applied_all">تم التطبيق على كل الصور</string>
+    <string name="msg_import_failed">تعذر إضافة الصور — تأكد من الصيغ المدعومة وحاول مجدداً</string>
+    <string name="msg_export_failed">تعذر إنشاء الملف — حاول مرة أخرى</string>
+    <string name="msg_share_unavailable">تعذرت المشاركة — الملف محفوظ في التطبيق: %1$s</string>
+    <string name="msg_print_unavailable">تعذر إرسال مهمة الطباعة</string>
+    <string name="cancel">إلغاء</string>
+    <string name="confirm">تأكيد</string>
+    <string name="delete">حذف</string>
+    <string name="done">تم</string>
+    <string name="clear">مسح</string>
+    <string name="share_title">مشاركة الورقة</string>
+    <string name="pdf_dialog_title">تصدير PDF</string>
+    <string name="pdf_dialog_body">سيتم إنشاء ملف PDF أصلياً داخل التطبيق بجودة 300 DPI وقياس حقيقي 1:1.</string>
+    <string name="clear_confirm_title">مسح كل البطاقات؟</string>
+    <string name="clear_confirm_body">ستُحذف كل البطاقات من كل الأوراق. لا يمكن التراجع.</string>
+    <string name="close">إغلاق</string>
+</resources>

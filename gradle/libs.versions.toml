@@ -1,0 +1,42 @@
+﻿# Version catalog — AppPrint (مطبعة البطاقات العراقية) · Kotlin Multiplatform
+# All versions audited on 2026-11-11 via klibs.io MCP (getLatestVersion / searchProjects)
+# and Google Maven / Maven Central for Android-only artifacts. See DEPENDENCY_AUDIT.md.
+
+[versions]
+agp = "9.2.1"          # newest AGP line compatible with the untouched Gradle 9.4.1 wrapper (AGP 9.2.x ↔ Gradle 9.4.1)
+kotlin = "2.4.21"      # latest stable on Maven Central (2.5.0-Beta2 ignored)
+composeMultiplatform = "1.11.1"  # JetBrains Compose Multiplatform (klibs.io: compose-multiplatform project)
+navigation3 = "1.2.0"  # org.jetbrains.androidx.navigation3 — latestStableVersion via klibs.io
+lifecycle = "2.11.0"   # org.jetbrains.androidx.lifecycle — latestStableVersion via klibs.io
+coroutines = "1.11.0"  # latestStableVersion via klibs.io
+serialization = "1.12.0"  # latestStableVersion via klibs.io
+coreKtx = "1.19.1"     # Google Maven release
+activity = "1.13.0"    # Google Maven release
+coreSplashscreen = "1.2.0"  # Google Maven release
+
+[libraries]
+# Android app only
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activity" }
+
+# Compose Multiplatform (org.jetbrains.* republished KMP artifacts — klibs.io verified)
+lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle" }
+lifecycle-viewmodel-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+lifecycle-viewmodel-navigation3 = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+navigation3-runtime = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
+navigation3-ui = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
+
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "serialization" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+# AGP 9.x built-in Kotlin — no org.jetbrains.kotlin.android / kotlin-android plugin
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
