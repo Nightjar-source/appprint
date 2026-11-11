@@ -15,6 +15,37 @@ private val CUT = SolidColor(Color(0x66000000)) // translucent cut-out (icon tin
  */
 object AppIcons {
 
+    val Sort: ImageVector = ImageVector.Builder(
+        name = "AppSort",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        // descending bars — longest at the top
+        path(fill = WHITE) {
+            moveTo(3f, 6f)
+            horizontalLineTo(21f)
+            verticalLineTo(10f)
+            horizontalLineTo(3f)
+            close()
+        }
+        path(fill = WHITE) {
+            moveTo(3f, 11.5f)
+            horizontalLineTo(15f)
+            verticalLineTo(15.5f)
+            horizontalLineTo(3f)
+            close()
+        }
+        path(fill = WHITE) {
+            moveTo(3f, 17f)
+            horizontalLineTo(9f)
+            verticalLineTo(21f)
+            horizontalLineTo(3f)
+            close()
+        }
+    }.build()
+
     val Print: ImageVector = ImageVector.Builder(
         name = "AppPrint",
         defaultWidth = 24.dp,

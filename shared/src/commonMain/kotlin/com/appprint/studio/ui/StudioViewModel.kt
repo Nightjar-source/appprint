@@ -126,6 +126,24 @@ class StudioViewModel : ViewModel() {
         }
     }
 
+    /** Add a single sample card of an exact official Iraqi type (from the samples strip). */
+    fun addSampleOfType(type: CardType) {
+        val item = CardItem(
+            id = nextId(),
+            typeKey = type.key,
+            name = type.labelAr,
+            widthMm = type.widthMm,
+            heightMm = type.heightMm,
+            isSample = true,
+        )
+        _state.update { s ->
+            s.copy(
+                cards = arrangeNow(s.cards + item, s.settings),
+                toast = UiToast("تمت إضافة: ${type.labelAr}"),
+            )
+        }
+    }
+
     // ------------------------------------------------------------- arrangement
 
     private fun arrangeNow(cards: List<CardItem>, settings: SheetSettings): List<CardItem> =
@@ -322,6 +340,10 @@ class StudioViewModel : ViewModel() {
                 _state.update { it.copy(toast = UiToast(Str.msg_pdf_error)) }
                 return@launch
             }
+            // always persist a genuine PDF on-device — openable independent of the print spooler
+            val path = withContext(Dispatchers.IO) {
+                PlatformActions.writeExport("iraqi-cards-print.pdf", bytes)
+            }
             val accepted = PlatformActions.printPdf(
                 pdfBytes = bytes,
                 pageCount = s.pageCount,
@@ -330,11 +352,16 @@ class StudioViewModel : ViewModel() {
                 jobName = "iraqi-id-cards",
             )
             _state.update {
-                it.copy(toast = UiToast(if (accepted) Str.msg_print_sent else Str.msg_print_unavailable))
+                it.copy(
+                    toast = UiToast(if (accepted) Str.msg_print_sent else Str.msg_print_pdf_saved),
+                )
             }
-            if (accepted) {
-                PlatformActions.showExportNotification(Str.notif_print_title, "مهمة الطباعة أُرسلت إلى الطابعة: iraqi-id-cards.pdf", null)
-            }
+            // notification taps straight into the PDF with any installed reader (no forced app)
+            PlatformActions.showExportNotification(
+                Str.notif_export_title,
+                "تم إنشاء iraqi-cards-print.pdf — اضغط للفتح",
+                path,
+            )
         }
     }
 

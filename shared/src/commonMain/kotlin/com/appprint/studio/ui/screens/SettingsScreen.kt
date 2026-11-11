@@ -3,15 +3,13 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -29,35 +27,24 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.StudioViewModel
+import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.FlagCardGlyph
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
-private const val VERSION_NAME = "1.0.2"
-private const val VERSION_CODE = 3
-
-private val DEPENDENCIES = listOf(
-    Triple("AndroidX Core KTX", "1.19.1", "Apache-2.0 · Google"),
-    Triple("AndroidX Core SplashScreen", "1.2.0", "Apache-2.0 · Google"),
-    Triple("AndroidX Activity & Compose", "1.13.0", "Apache-2.0 · Google"),
-    Triple("Compose Multiplatform (Material 3 Expressive)", "1.12.2", "Apache-2.0 · JetBrains"),
-    Triple("Navigation 3", "1.2.1", "Apache-2.0 · Google/JetBrains"),
-    Triple("Lifecycle (Compose)", "2.11.0", "Apache-2.0 · JetBrains"),
-    Triple("Kotlin Coroutines", "1.11.0", "Apache-2.0 · JetBrains"),
-    Triple("Kotlinx Serialization", "1.12.0", "Apache-2.0 · JetBrains"),
-    Triple("Kotlin", "2.4.21", "Apache-2.0 · JetBrains"),
-    Triple("Android Gradle Plugin", "9.2.1", "Apache-2.0 · Google"),
-)
+private const val VERSION_NAME = "1.0.3"
+private const val VERSION_CODE = 4
 
 @Composable
 fun SettingsScreen(viewModel: StudioViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LazyColumn(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
-            .padding(end = 2.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            top = Chrome.topReserve(),
+            bottom = Chrome.bottomReserve(),
+        ),
     ) {
         // Appearance
         item(contentType = "appearance") {
@@ -160,34 +147,6 @@ fun SettingsScreen(viewModel: StudioViewModel) {
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
             )
             HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        }
-
-        // Dependencies & licenses
-        item(contentType = "licenses-header") {
-            SectionHeader(Str.licenses_title)
-        }
-        items(DEPENDENCIES.size, contentType = { "license" }) { index ->
-            val (name, version, license) = DEPENDENCIES[index]
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 5.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                    Text(
-                        license,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    version,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
 
         item(contentType = "footer") {

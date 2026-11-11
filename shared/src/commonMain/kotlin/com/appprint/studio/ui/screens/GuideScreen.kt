@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.appprint.studio.core.model.CardType
+import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
@@ -58,10 +59,11 @@ fun GuideScreen() {
     var expanded by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
-            .padding(end = 2.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            top = Chrome.topReserve(),
+            bottom = Chrome.bottomReserve(),
+        ),
     ) {
         item(contentType = "header") {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {

@@ -24,7 +24,6 @@ import com.appprint.studio.core.export.SheetRenderer
 import com.appprint.studio.core.image.Enhance
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.model.CardItem
-import com.appprint.studio.core.model.SheetBackground
 import com.appprint.studio.core.model.SheetSettings
 import com.appprint.studio.core.pdf.PdfBuilder
 import java.io.File
@@ -236,9 +235,17 @@ actual object PlatformActions {
                     FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 }.getOrNull()
             }
+            val mime = when (path?.substringAfterLast('.', "")?.lowercase()) {
+                "png" -> "image/png"
+                "jpg", "jpeg" -> "image/jpeg"
+                "pdf" -> "application/pdf"
+                else -> "*/*"
+            }
+            // ACTION_VIEW with an explicit MIME — the system resolves any capable app
+            // (readers, browsers for PDFs, photo viewers for images) or asks the user to pick.
             val viewIntent = contentUri?.let {
                 Intent(Intent.ACTION_VIEW)
-                    .setDataAndType(it, "application/pdf")
+                    .setDataAndType(it, mime)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val pendingIntent = viewIntent?.let {

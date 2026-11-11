@@ -210,11 +210,11 @@ fun TagChip(text: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(6.dp),
-        color = Color(0xE6151816),
+        color = MaterialTheme.colorScheme.inverseSurface,
     ) {
         Text(
             text = text,
-            color = Color(0xFFF2F0E9),
+            color = MaterialTheme.colorScheme.inverseOnSurface,
             fontWeight = FontWeight.Bold,
             fontSize = 9.sp,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),

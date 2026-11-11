@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,20 +18,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.padding
+import com.appprint.studio.core.model.CardType
+import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.components.EdgeFadeRow
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.math.roundToInt
 import com.appprint.studio.core.image.PixelOps
@@ -116,52 +117,74 @@ fun StudioScreen(viewModel: StudioViewModel) {
                     state = state,
                     viewModel = viewModel,
                     modifier = Modifier
-                        .width(300.dp)
+                        .width(290.dp)
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.surface),
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(top = Chrome.topReserve()),
                 )
-                HorizontalDivider()
+                Box(Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
             }
 
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                StudioToolbar(
-                    state = state,
-                    onAddImages = pickImages,
-                    onCamera = onCamera,
-                    onSamples = viewModel::addSamples,
-                    onArrange = viewModel::arrangeSmart,
-                    onClear = { showClearConfirm = true },
-                    onSharePng = { viewModel.sharePng(state.currentPage) },
-                    onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
-                )
                 if (state.cards.isEmpty()) {
+                    StudioToolbar(
+                        state = state,
+                        onAddImages = pickImages,
+                        onCamera = onCamera,
+                        onSamples = viewModel::addSamples,
+                        onArrange = viewModel::arrangeSmart,
+                        onSortSize = viewModel::sortBySize,
+                        onClear = { showClearConfirm = true },
+                        onSharePng = { viewModel.sharePng(state.currentPage) },
+                        onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
+                        modifier = Modifier.padding(top = Chrome.topReserve()),
+                    )
                     EmptyState(
                         onUpload = pickImages,
                         onSamples = viewModel::addSamples,
+                        onAddSample = viewModel::addSampleOfType,
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                     )
                 } else {
-                    SheetCanvas(
-                        state = state,
-                        viewModel = viewModel,
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                    )
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        SheetCanvas(
+                            state = state,
+                            viewModel = viewModel,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        StudioToolbar(
+                            state = state,
+                            onAddImages = pickImages,
+                            onCamera = onCamera,
+                            onSamples = viewModel::addSamples,
+                            onArrange = viewModel::arrangeSmart,
+                            onSortSize = viewModel::sortBySize,
+                            onClear = { showClearConfirm = true },
+                            onSharePng = { viewModel.sharePng(state.currentPage) },
+                            onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = Chrome.topReserve()),
+                        )
+                    }
                     SheetPageBar(
                         state = state,
                         onSelectPage = viewModel::currentPage,
+                        modifier = Modifier.padding(bottom = Chrome.bottomReserve()),
                     )
                 }
             }
 
             if (wide || medium) {
-                HorizontalDivider()
+                Box(Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                 InspectorPanel(
                     state = state,
                     viewModel = viewModel,
                     modifier = Modifier
-                        .width(if (wide) 330.dp else 300.dp)
+                        .width(if (wide) 320.dp else 300.dp)
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.surface),
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(top = Chrome.topReserve()),
                 )
             }
         }
@@ -213,121 +236,134 @@ private fun StudioToolbar(
     onCamera: () -> Unit,
     onSamples: () -> Unit,
     onArrange: () -> Unit,
+    onSortSize: () -> Unit,
     onClear: () -> Unit,
     onSharePng: () -> Unit,
     onOpenPaperSettings: (() -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        item {
-            FilledTonalButton(onClick = onAddImages, shape = RoundedCornerShape(percent = 50)) {
-                Icon(AppIcons.Upload, contentDescription = null)
-                Spacer(Modifier.size(6.dp))
-                Text(Str.btn_add_images, maxLines = 1)
-            }
-        }
-        item {
-            FilledTonalButton(onClick = onCamera, shape = RoundedCornerShape(percent = 50)) {
-                Icon(AppIcons.Camera, contentDescription = null)
-                Spacer(Modifier.size(6.dp))
-                Text(Str.btn_take_photo, maxLines = 1)
-            }
-        }
-        item {
-            FilledTonalButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
-                Icon(AppIcons.Sparkle, contentDescription = null)
-                Spacer(Modifier.size(6.dp))
-                Text(Str.btn_samples, maxLines = 1)
-            }
-        }
-        item {
-            FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                Icon(AppIcons.Refresh, contentDescription = null)
-                Spacer(Modifier.size(6.dp))
-                Text(Str.btn_arrange, maxLines = 1)
-            }
-        }
-        item {
-            FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                Icon(AppIcons.Image, contentDescription = null)
-                Spacer(Modifier.size(6.dp))
-                Text(Str.btn_save_png, maxLines = 1)
-            }
-        }
-        item {
-            TextButton(onClick = onClear, enabled = state.cards.isNotEmpty()) {
-                Text(Str.btn_clear_all, color = MaterialTheme.colorScheme.error, maxLines = 1)
-            }
-        }
-        if (onOpenPaperSettings != null) {
+    // Edge-to-edge scroll strip — the scaffold melts into the strip on both screen edges
+    EdgeFadeRow(edgeColor = MaterialTheme.colorScheme.background, modifier = modifier) {
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             item {
-                IconButton(onClick = onOpenPaperSettings) {
-                    Icon(AppIcons.Menu, contentDescription = Str.paper_title)
+                FilledTonalButton(onClick = onAddImages, shape = RoundedCornerShape(percent = 50)) {
+                    Icon(AppIcons.Upload, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(Str.btn_add_images, maxLines = 1)
+                }
+            }
+            item {
+                FilledTonalButton(onClick = onCamera, shape = RoundedCornerShape(percent = 50)) {
+                    Icon(AppIcons.Camera, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(Str.btn_take_photo, maxLines = 1)
+                }
+            }
+            item {
+                FilledTonalButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
+                    Icon(AppIcons.Sparkle, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(Str.btn_samples, maxLines = 1)
+                }
+            }
+            item {
+                FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
+                    Icon(AppIcons.Sparkle, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(Str.btn_arrange, maxLines = 1)
+                }
+            }
+            item {
+                FilledTonalButton(onClick = onSortSize, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
+                    Icon(AppIcons.Sort, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(Str.btn_sort_size, maxLines = 1)
+                }
+            }
+            item {
+                FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
+                    Icon(AppIcons.Image, contentDescription = null)
+                    Spacer(Modifier.size(6.dp))
+                    Text(Str.btn_save_png, maxLines = 1)
+                }
+            }
+            item {
+                TextButton(onClick = onClear, enabled = state.cards.isNotEmpty()) {
+                    Text(Str.btn_clear_all, color = MaterialTheme.colorScheme.error, maxLines = 1)
+                }
+            }
+            if (onOpenPaperSettings != null) {
+                item {
+                    IconButton(onClick = onOpenPaperSettings) {
+                        Icon(AppIcons.Menu, contentDescription = Str.paper_title)
+                    }
                 }
             }
         }
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
 }
 
 // ------------------------------------------------------------ page bar
 
 @Composable
-private fun SheetPageBar(state: StudioUiState, onSelectPage: (Int) -> Unit) {
+private fun SheetPageBar(state: StudioUiState, onSelectPage: (Int) -> Unit, modifier: Modifier = Modifier) {
     if (state.pageCount <= 1) return
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        items((0 until state.pageCount).toList(), key = { it }) { page ->
-            AssistChip(
-                onClick = { onSelectPage(page) },
-                label = { Text("ورقة ${page + 1}") },
-                leadingIcon = if (state.currentPage == page) {
-                    { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                } else {
-                    null
-                },
-            )
+    EdgeFadeRow(edgeColor = MaterialTheme.colorScheme.background, modifier = modifier) {
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items((0 until state.pageCount).toList(), key = { it }) { page ->
+                AssistChip(
+                    onClick = { onSelectPage(page) },
+                    label = { Text("ورقة ${page + 1}") },
+                    leadingIcon = if (state.currentPage == page) {
+                        { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else {
+                        null
+                    },
+                )
+            }
         }
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
 }
 
 // ------------------------------------------------------------ empty state
 
 @Composable
-private fun EmptyState(onUpload: () -> Unit, onSamples: () -> Unit, modifier: Modifier = Modifier) {
+private fun EmptyState(
+    onUpload: () -> Unit,
+    onSamples: () -> Unit,
+    onAddSample: (CardType) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        FlagCardGlyph(sizeDp = 92.dp)
+        FlagCardGlyph(sizeDp = 84.dp)
         Text(
             text = Str.empty_title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.padding(top = 18.dp, start = 24.dp, end = 24.dp),
+            modifier = Modifier.padding(top = 14.dp, start = 24.dp, end = 24.dp),
         )
         Text(
             text = Str.empty_subtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp, start = 32.dp, end = 32.dp),
+            modifier = Modifier.padding(top = 6.dp, start = 32.dp, end = 32.dp),
         )
-        Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(onClick = onUpload, shape = RoundedCornerShape(percent = 50)) {
                 Icon(AppIcons.Upload, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
@@ -339,6 +375,85 @@ private fun EmptyState(onUpload: () -> Unit, onSamples: () -> Unit, modifier: Mo
                 Text(Str.empty_cta)
             }
         }
+
+        // edge-to-edge samples strip — official Iraqi card types with true measurements
+        Text(
+            text = Str.sample_strip_title,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 22.dp, start = 24.dp, end = 24.dp),
+        )
+        Spacer(Modifier.size(8.dp))
+        EdgeFadeRow(edgeColor = MaterialTheme.colorScheme.background) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                items(CardType.PRINTABLE.filter { it != CardType.CUSTOM }, key = { it.key }) { type ->
+                    SampleCardTile(type = type, onClick = { onAddSample(type) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SampleCardTile(type: CardType, onClick: () -> Unit) {
+    val isPassport = type == CardType.PASSPORT
+    Column(
+        modifier = Modifier
+            .width(112.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onClick)
+            .padding(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // mini official-card preview — same artwork language as the canvas samples
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .shadow(6.dp, RoundedCornerShape(8.dp))
+                .size(92.dp, 58.dp)
+                .background(if (isPassport) Color(0xFF17365A) else Color(0xFFFDFAF1)),
+        ) {
+            if (isPassport) {
+                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Text(type.shortAr, color = Color(0xFFD9A51F), fontWeight = FontWeight.Black, fontSize = 13.sp)
+                    Text("PASSPORT", color = Color(0xFFD9A51F), fontSize = 6.sp, letterSpacing = 2.sp)
+                }
+            } else {
+                Column(Modifier.fillMaxSize()) {
+                    Row(Modifier.fillMaxWidth().weight(0.42f)) {
+                        Box(Modifier.weight(0.34f).fillMaxSize().background(Color(0xFFC8102E)))
+                        Box(Modifier.weight(0.32f).fillMaxSize().background(Color(0xFFFDFAF1)), contentAlignment = Alignment.Center) {
+                            Text("الله أكبر", color = Color(0xFF007A3D), fontWeight = FontWeight.Black, fontSize = 6.sp, maxLines = 1)
+                        }
+                        Box(Modifier.weight(0.34f).fillMaxSize().background(Color(0xFF007A3D)))
+                    }
+                    Box(Modifier.weight(0.58f).fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(type.shortAr, color = Color(0xFF1C1C1C), fontWeight = FontWeight.Black, fontSize = 12.sp, maxLines = 1)
+                    }
+                }
+            }
+        }
+        Text(
+            text = type.labelAr,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Text(
+            text = type.sizeNoteAr.substringBefore('—').trim(),
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 9.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }
 
@@ -350,6 +465,7 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
     var zoom by rememberSaveable { mutableFloatStateOf(1f) }
     var panX by rememberSaveable { mutableFloatStateOf(0f) }
     var panY by rememberSaveable { mutableFloatStateOf(0f) }
+    // gestures live on the WHOLE canvas area → coordinates map 1:1 to the finger
     val transformable = rememberTransformableState { zoomChange, panChange, _ ->
         zoom = (zoom * zoomChange).coerceIn(1f, 4.5f)
         panX += panChange.x
@@ -368,6 +484,20 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
             (maxHeight.value - 20f) / sheetHdp,
         ).coerceIn(0.25f, 2.2f)
         val effective = fit * zoom
+
+        // full-bleed pan/zoom surface — any finger anywhere moves the paper
+        Box(
+            Modifier
+                .fillMaxSize()
+                .transformable(transformable)
+                .pointerInput(Unit) {
+                    detectTapGestures(onDoubleTap = {
+                        zoom = 1f
+                        panX = 0f
+                        panY = 0f
+                    })
+                },
+        )
 
         // blueprint dot grid backdrop
         Canvas(Modifier.fillMaxSize()) {
@@ -389,7 +519,6 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
             Box(
                 Modifier
                     .size(sheetWdp.dp, sheetHdp.dp)
-                    .transformable(transformable)
                     .graphicsLayer {
                         scaleX = effective
                         scaleY = effective
@@ -408,6 +537,13 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                         .shadow(18.dp, RoundedCornerShape(3.dp))
                         .clip(RoundedCornerShape(3.dp))
                         .background(paperColor)
+                        .pointerInput(Unit) {
+                            detectTapGestures(onDoubleTap = {
+                                zoom = 1f
+                                panX = 0f
+                                panY = 0f
+                            })
+                        }
                         .clickable { viewModel.selectCard(null) },
                 ) {
                     if (settings.showGuides) {

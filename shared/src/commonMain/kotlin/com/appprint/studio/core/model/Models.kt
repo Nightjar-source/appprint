@@ -150,7 +150,7 @@ data class SheetSettings(
     val landscape: Boolean = false,
     val marginMm: Float = 10f,
     val gapMm: Float = 6f,
-    val mode: ArrangeMode = ArrangeMode.GRID,
+    val mode: ArrangeMode = ArrangeMode.COMFORTABLE,
     val smartGroup: Boolean = true,
     val background: SheetBackground = SheetBackground.WHITE,
     val showGuides: Boolean = true,
