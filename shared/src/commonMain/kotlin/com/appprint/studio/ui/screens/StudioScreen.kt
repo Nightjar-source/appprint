@@ -87,6 +87,7 @@ import com.appprint.studio.ui.components.TagChip
 /** Compose density-independent dp per millimetre (96 dp/inch). */
 private const val DP_PER_MM = 3.7795276f
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun StudioScreen(viewModel: StudioViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()

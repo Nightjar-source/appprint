@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.SavedStateConfiguration
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
@@ -68,6 +69,9 @@ import com.appprint.studio.ui.screens.SettingsScreen
 import com.appprint.studio.ui.screens.StudioScreen
 import com.appprint.studio.ui.theme.AppPrintTheme
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.serializersModule
+import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.stringResource
 
 @Serializable
@@ -108,7 +112,18 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
             }
         }
 
-        val backStack = rememberNavBackStack(AppRoute.Studio)
+        val savedStateConfig = remember {
+            SavedStateConfiguration {
+                serializersModule = serializersModule {
+                    polymorphic(NavKey::class) {
+                        subclass(AppRoute.Studio::class, AppRoute.Studio.serializer())
+                        subclass(AppRoute.Guide::class, AppRoute.Guide.serializer())
+                        subclass(AppRoute.Settings::class, AppRoute.Settings.serializer())
+                    }
+                }
+            }
+        }
+        val backStack = rememberNavBackStack(savedStateConfig, AppRoute.Studio)
         val current = backStack.lastOrNull() as? AppRoute ?: AppRoute.Studio
         val requestNotifications = rememberNotificationPermissionRequester()
 
