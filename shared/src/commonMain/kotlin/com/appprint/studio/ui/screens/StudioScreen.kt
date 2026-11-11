@@ -226,35 +226,35 @@ private fun StudioToolbar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         item {
-            FilledTonalButton(onClick = onAddImages) {
+            FilledTonalButton(onClick = onAddImages, shape = RoundedCornerShape(percent = 50)) {
                 Icon(AppIcons.Upload, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
                 Text(Str.btn_add_images, maxLines = 1)
             }
         }
         item {
-            FilledTonalButton(onClick = onCamera) {
+            FilledTonalButton(onClick = onCamera, shape = RoundedCornerShape(percent = 50)) {
                 Icon(AppIcons.Camera, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
                 Text(Str.btn_take_photo, maxLines = 1)
             }
         }
         item {
-            FilledTonalButton(onClick = onSamples) {
+            FilledTonalButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
                 Icon(AppIcons.Sparkle, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
                 Text(Str.btn_samples, maxLines = 1)
             }
         }
         item {
-            FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty()) {
+            FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
                 Icon(AppIcons.Refresh, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
                 Text(Str.btn_arrange, maxLines = 1)
             }
         }
         item {
-            FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty()) {
+            FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
                 Icon(AppIcons.Image, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
                 Text(Str.btn_save_png, maxLines = 1)
@@ -328,12 +328,12 @@ private fun EmptyState(onUpload: () -> Unit, onSamples: () -> Unit, modifier: Mo
             modifier = Modifier.padding(top = 8.dp, start = 32.dp, end = 32.dp),
         )
         Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Button(onClick = onUpload) {
+            Button(onClick = onUpload, shape = RoundedCornerShape(percent = 50)) {
                 Icon(AppIcons.Upload, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
                 Text(Str.empty_upload)
             }
-            OutlinedButton(onClick = onSamples) {
+            OutlinedButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
                 Icon(AppIcons.Sparkle, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
                 Text(Str.empty_cta)

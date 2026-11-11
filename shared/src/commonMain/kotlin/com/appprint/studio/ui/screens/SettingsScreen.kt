@@ -1,6 +1,7 @@
 ﻿package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,6 +75,7 @@ fun SettingsScreen(viewModel: StudioViewModel) {
                         .padding(horizontal = 12.dp, vertical = 0.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(if (state.theme == option) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent)
+                        .clickable { viewModel.setTheme(option) }
                         .padding(horizontal = 4.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -88,6 +90,14 @@ fun SettingsScreen(viewModel: StudioViewModel) {
                     )
                 }
             }
+            Text(
+                Str.appearance_hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 6.dp),
+            )
             HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         }
 

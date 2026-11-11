@@ -1,13 +1,13 @@
 package com.appprint.studio.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -16,8 +16,12 @@ import com.appprint.studio.core.model.AppTheme
 /**
  * Brand identity taken from the approved HTML design («مطبعة البطاقات العراقية»):
  * deep print-shop ink, Iraqi green & red, antique gold, warm paper.
- * Dynamic color is intentionally OFF — the identity is the product.
- * M3 Expressive: emphasized headline weights, 10-step corner scale, tone-based surfaces.
+ *
+ * Color selection (M3-compliant):
+ *  - SYSTEM → dynamic Material You scheme on Android 12+ (wallpaper-derived, every
+ *    on* pair tonally guaranteed to contrast), brand scheme as fallback elsewhere.
+ *  - LIGHT / DARK → brand identity, fixed, always with correct M3 role pairing
+ *    (every surface pairs with its explicit onSurface / onContainer color).
  */
 
 private val Ink = androidx.compose.ui.graphics.Color(0xFF151816)
@@ -34,7 +38,6 @@ private val PaperOnSurface = androidx.compose.ui.graphics.Color(0xFF1C1B18)
 private val PaperOnSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF57534A)
 
 private val Green = androidx.compose.ui.graphics.Color(0xFF007A3D)
-private val GreenBright = androidx.compose.ui.graphics.Color(0xFF00914A)
 private val GreenDarkTheme = androidx.compose.ui.graphics.Color(0xFF35C877)
 private val Red = androidx.compose.ui.graphics.Color(0xFFC8102E)
 private val RedDarkTheme = androidx.compose.ui.graphics.Color(0xFFFF6B7E)
@@ -137,8 +140,15 @@ fun AppPrintTheme(
         AppTheme.LIGHT -> false
         AppTheme.SYSTEM -> isSystemInDarkTheme()
     }
+    val platform = rememberPlatformColorSchemes()
+    val scheme = when {
+        // Material You dynamic color when the device supports it (SYSTEM mode)
+        theme == AppTheme.SYSTEM && platform != null -> if (dark) platform.second else platform.first
+        dark -> DarkColors
+        else -> LightColors
+    }
     MaterialTheme(
-        colorScheme = if (dark) DarkColors else LightColors,
+        colorScheme = scheme,
         typography = AppTypography,
         shapes = AppShapes,
         content = content,
