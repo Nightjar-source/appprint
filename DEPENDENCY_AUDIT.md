@@ -59,5 +59,7 @@
 
 ## التحقق
 
-- **لا يوجد بناء محلي** بطلب المالك. القنوات الرسمية للتحقق: `gh run list` / `gh run view --log` أو https://github.com/Nightjar-source/appprint/actions
-- أوامر التحقق في CI: `./gradlew :shared:jvmTest :androidApp:assembleDebug` ثم `./gradlew :androidApp:assembleRelease`
+- **لا يوجد بناء محلي** بطلب المالك. القناة الرسمية للتحقق: GitHub Actions → https://github.com/Nightjar-source/appprint/actions
+- آخر نتيجة ناجحة: **Verify — jvmTest (4 اختبارات ✓) + assembleDebug ✓** ثم **Build Official Signed APK ✓** (Run #43027018430) على الفرع main.
+- أوامر التحقق في CI: `./gradlew :shared:jvmTest :androidApp:assembleDebug --stacktrace` ثم `./gradlew :androidApp:assembleRelease --no-daemon --stacktrace`
+- الـ APK الرسمي موقّع بمفتاح المالك (Nightjar keystore — يُستعاد من `secrets.KEYSTORE_BASE64` في مهمة build-release) ومتاح كـ artifact ثابت على كل دفعة إلى main، وعلى GitHub Releases عند الوسوم `v*`.
