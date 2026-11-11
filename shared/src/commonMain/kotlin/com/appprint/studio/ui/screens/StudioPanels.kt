@@ -227,7 +227,7 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
                 value = s.frameWidthDp,
                 valueRange = 0.5f..4f,
                 onValueChange = viewModel::setFrameWidth,
-                valueText = String.format("%.1f", s.frameWidthDp),
+                valueText = formatOneDecimal(s.frameWidthDp),
             )
         }
 
@@ -390,4 +390,9 @@ private fun FactBlock(label: String, value: String) {
 }
 
 private fun formatMm(v: Float): String =
-    if (v == v.toInt().toFloat()) v.toInt().toString() else String.format("%.1f", v)
+    if (v == v.toInt().toFloat()) v.toInt().toString() else formatOneDecimal(v)
+
+private fun formatOneDecimal(v: Float): String {
+    val scaled = kotlin.math.round(v * 10f) / 10f
+    return scaled.toString()
+}
