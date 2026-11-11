@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,7 +19,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -37,7 +35,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -46,11 +43,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.SavedStateConfiguration
+import androidx.savedstate.serialization.SavedStateConfiguration
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
@@ -59,8 +55,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateTopPadding
-import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.rememberNotificationPermissionRequester
@@ -75,7 +69,7 @@ import com.appprint.studio.ui.theme.AppPrintTheme
 import com.appprint.studio.ui.strings.Str
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.serializersModule
+import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.subclass
 
 @Serializable
@@ -109,7 +103,6 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     AppPrintTheme(theme = state.theme) {
-        val context = LocalContext.current
         val snackbarHostState = remember { SnackbarHostState() }
 
         // state flows down, events go up — toast text arrives pre-built from the ViewModel
@@ -123,7 +116,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
 
         val savedStateConfig = remember {
             SavedStateConfiguration {
-                serializersModule = serializersModule {
+                serializersModule = SerializersModule {
                     polymorphic(NavKey::class) {
                         subclass(AppRoute.Studio::class, AppRoute.Studio.serializer())
                         subclass(AppRoute.Guide::class, AppRoute.Guide.serializer())
@@ -203,12 +196,6 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                                 content()
                             }
                         }
-                        SnackbarHost(
-                            hostState = snackbarHostState,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(horizontal = 24.dp, vertical = 20.dp),
-                        )
                     } else {
                         Box(Modifier.weight(1f).fillMaxWidth()) { content() }
                         FloatingNavPill(
@@ -221,14 +208,19 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                                 .padding(start = cutoutStart)
                                 .padding(bottom = navBarsInset + 12.dp, top = 4.dp),
                         )
-                        SnackbarHost(
-                            hostState = snackbarHostState,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(horizontal = 24.dp, bottom = navBarsInset + 112.dp),
-                        )
                     }
                 }
+
+                // ---- floating snackbar, overlaid at the true bottom center
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            horizontal = 24.dp,
+                            vertical = if (railMode) 20.dp else navBarsInset + 104.dp,
+                        ),
+                )
             }
         }
     }
