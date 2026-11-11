@@ -60,6 +60,6 @@
 ## التحقق
 
 - **لا يوجد بناء محلي** بطلب المالك. القناة الرسمية للتحقق: GitHub Actions → https://github.com/Nightjar-source/appprint/actions
-- آخر نتيجة ناجحة: **Verify — jvmTest (4 اختبارات ✓) + assembleDebug ✓** ثم **Build Official Signed APK ✓** (Run #43034334672 على الوسم v1.0.1) على الفرع main. الإصدار v1.0.0 تعطل عند الإقلاع (NoSuchMethodError) — حُوّل إلى prerelease مع تحذير؛ الإصلاح في v1.0.1 بتطبيق Compose Multiplatform plugins في androidApp.
+- آخر نتيجة ناجحة: **Verify — jvmTest (4 اختبارات ✓) + assembleDebug ✓** ثم **Build Official Signed APK ✓** (مرتين: على main بعد إصلاح crash الإقلاع، ثم على الوسم v1.0.1) — APK موقّع بمفتاح المالك (~1.2 MB). الإصدار v1.0.0 تعطل عند الإقلاع (NoSuchMethodError) — حُوّل إلى prerelease مع تحذير؛ الإصلاح في v1.0.1 بتطبيق Compose Multiplatform plugins في androidApp.
 - أوامر التحقق في CI: `./gradlew :shared:jvmTest :androidApp:assembleDebug --stacktrace` ثم `./gradlew :androidApp:assembleRelease --no-daemon --stacktrace`
 - الـ APK الرسمي موقّع بمفتاح المالك (Nightjar keystore — يُستعاد من `secrets.KEYSTORE_BASE64` في مهمة build-release) ومتاح كـ artifact ثابت على كل دفعة إلى main، وعلى GitHub Releases عند الوسوم `v*`.
