@@ -1,4 +1,4 @@
-package com.appprint.studio.core.platform
+﻿package com.appprint.studio.core.platform
 
 import android.Manifest
 import android.app.NotificationChannel
@@ -15,6 +15,7 @@ import android.os.ParcelFileDescriptor
 import android.print.PrintAttributes
 import android.print.PrintDocumentAdapter
 import android.print.PrintDocumentInfo
+import android.print.PageRange
 import android.print.PrintManager
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
@@ -293,7 +294,7 @@ actual object PlatformActions {
         }
 
         override fun onWrite(
-            pages: Array<out PrintDocumentInfo.PageRange>,
+            pages: Array<out PageRange>,
             destination: ParcelFileDescriptor,
             cancelSignal: CancellationSignal?,
             callback: WriteResultCallback,
@@ -302,7 +303,7 @@ actual object PlatformActions {
                 pdfFile.inputStream().use { input ->
                     FileOutputStream(destination.fileDescriptor).use { output -> input.copyTo(output) }
                 }
-                callback.onWriteFinished(arrayOf(PrintDocumentInfo.PageRange.ALL_PAGES))
+                callback.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
             }.onFailure { callback.onWriteFailed(it.message) }
         }
     }

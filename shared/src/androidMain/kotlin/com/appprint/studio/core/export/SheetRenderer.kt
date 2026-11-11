@@ -6,7 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PathEffect
+import android.graphics.DashPathEffect
 import android.graphics.RectF
 import com.appprint.studio.core.image.Enhance
 import com.appprint.studio.core.model.CardItem
@@ -59,7 +59,7 @@ object SheetRenderer {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 0.4f * pxPerMm
             paint.color = Color.argb(128, 200, 16, 46)
-            paint.pathEffect = PathEffect.createDashPathEffect(floatArrayOf(3f * pxPerMm, 2f * pxPerMm), 0f)
+            paint.pathEffect = DashPathEffect(floatArrayOf(3f * pxPerMm, 2f * pxPerMm), 0f)
             val m = settings.marginMm * pxPerMm
             canvas.drawRect(m, m, bitmap.width - m, bitmap.height - m, paint)
             paint.pathEffect = null
@@ -127,8 +127,8 @@ object SheetRenderer {
             paint.color = settings.frameColorHex.toInt()
             paint.pathEffect = when (settings.frameStyle) {
                 FrameStyle.SOLID -> null
-                FrameStyle.DASHED -> PathEffect.createDashPathEffect(floatArrayOf(2.2f * pxPerMm, 1.6f * pxPerMm), 0f)
-                FrameStyle.DOTTED -> PathEffect.createDashPathEffect(floatArrayOf(0.5f * pxPerMm, 1.3f * pxPerMm), 0f)
+                FrameStyle.DASHED -> DashPathEffect(floatArrayOf(2.2f * pxPerMm, 1.6f * pxPerMm), 0f)
+                FrameStyle.DOTTED -> DashPathEffect(floatArrayOf(0.5f * pxPerMm, 1.3f * pxPerMm), 0f)
             }
             val inset = paint.strokeWidth / 2f
             canvas.drawRoundRect(
@@ -142,7 +142,7 @@ object SheetRenderer {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 0.4f * pxPerMm
             paint.color = Color.argb(178, 200, 16, 46)
-            paint.pathEffect = PathEffect.createDashPathEffect(floatArrayOf(2.6f * pxPerMm, 1.8f * pxPerMm), 0f)
+            paint.pathEffect = DashPathEffect(floatArrayOf(2.6f * pxPerMm, 1.8f * pxPerMm), 0f)
             val outside = 1.2f * pxPerMm
             canvas.drawRect(-outside, -outside, localW + outside, localH + outside, paint)
             paint.pathEffect = null
