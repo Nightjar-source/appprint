@@ -60,7 +60,7 @@ appprint/
 ./gradlew :androidApp:assembleDebug          # APK للتجربة
 ./gradlew :androidApp:assembleRelease        # APK موقّع (يتطلب Nightjar.keystore في androidApp/ + local.properties)
 ./gradlew :shared:jvmTest                    # اختبارات محرك الترتيب
-./gradlew :shared:compileDebugKotlinAndroid  # فحص الكومبيلشن
+./gradlew :androidApp:assembleDebug          # فحص الكومبيلشن + APK للتجربة
 ```
 
 APK الرسمي الموقّع يُبنى عبر CI: **Actions → Build & Release → Artifacts** (أو تلقائياً على وسوم `v*` مع GitHub Release باسم الإصدار).

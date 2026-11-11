@@ -212,4 +212,37 @@ object AppIcons {
             close()
         }
     }.build()
+
+    /** Camera — capture a card photo (body + lens, EvenOdd cut-out). */
+    val Camera: ImageVector = ImageVector.Builder(
+        name = "AppCamera",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        path(fill = SolidColor(Color.White), pathFillType = androidx.compose.ui.graphics.vector.PathFillType.EvenOdd) {
+            // body with top bump
+            moveTo(4f, 7f)
+            horizontalLineTo(8.2f)
+            lineTo(10.2f, 4.2f)
+            curveTo(10.5f, 3.8f, 10.9f, 3.5f, 11.4f, 3.5f)
+            horizontalLineTo(12.6f)
+            curveTo(13.1f, 3.5f, 13.5f, 3.8f, 13.8f, 4.2f)
+            lineTo(15.8f, 7f)
+            horizontalLineTo(20f)
+            curveTo(21.1f, 7f, 22f, 7.9f, 22f, 9f)
+            verticalLineTo(19f)
+            curveTo(22f, 20.1f, 21.1f, 21f, 20f, 21f)
+            horizontalLineTo(4f)
+            curveTo(2.9f, 21f, 2f, 20.1f, 2f, 19f)
+            verticalLineTo(9f)
+            curveTo(2f, 7.9f, 2.9f, 7f, 4f, 7f)
+            close()
+            // lens hole
+            moveTo(12f, 9.5f)
+            arcToRelative(3.9f, 3.9f, 0f, true, true, -0.001f, 0f)
+            close()
+        }
+    }.build()
 }

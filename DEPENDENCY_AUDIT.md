@@ -59,4 +59,4 @@
 ## التحقق
 
 - **لا يوجد بناء محلي** بطلب المالك. القنوات الرسمية للتحقق: `gh run list` / `gh run view --log` أو https://github.com/Nightjar-source/appprint/actions
-- أوامر التحقق في CI: `./gradlew :shared:jvmTest :shared:compileDebugKotlinAndroid :androidApp:compileDebugKotlin` ثم `./gradlew :androidApp:assembleRelease`
+- أوامر التحقق في CI: `./gradlew :shared:jvmTest :androidApp:assembleDebug` ثم `./gradlew :androidApp:assembleRelease`

@@ -30,7 +30,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Compile & run unit tests
-        run: ./gradlew :shared:jvmTest :shared:compileDebugKotlinAndroid :androidApp:compileDebugKotlin --stacktrace
+        run: ./gradlew :shared:jvmTest :androidApp:assembleDebug --stacktrace
 
   build-release:
     name: Build Official Signed APK

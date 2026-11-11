@@ -233,7 +233,7 @@ private fun StudioToolbar(
         }
         item {
             FilledTonalButton(onClick = onCamera) {
-                Icon(androidx.compose.material.icons.Icons.Filled.Build, contentDescription = null)
+                Icon(AppIcons.Camera, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
                 Text(stringResource(Res.string.btn_take_photo), maxLines = 1)
             }
