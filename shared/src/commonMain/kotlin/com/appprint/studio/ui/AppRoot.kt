@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -75,7 +74,7 @@ import com.appprint.studio.ui.theme.AppPrintTheme
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.serializersModule
+import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.stringResource
 
@@ -125,7 +124,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
 
         val savedStateConfig = remember {
             SavedStateConfiguration {
-                serializersModule = serializersModule {
+                serializersModule = SerializersModule {
                     polymorphic(NavKey::class) {
                         subclass(AppRoute.Studio::class, AppRoute.Studio.serializer())
                         subclass(AppRoute.Guide::class, AppRoute.Guide.serializer())

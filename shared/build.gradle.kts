@@ -59,6 +59,7 @@ kotlin {
         }
         androidMain.dependencies {
             // image picker + camera capture launchers live behind expect composables
+            implementation(libs.androidx.activity)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
             implementation("org.jetbrains.compose.ui:ui-tooling:1.12.2")
