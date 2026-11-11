@@ -27,7 +27,7 @@ actual fun rememberImagePickerLauncher(
 
     return remember(launcher) {
         {
-            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickMultipleVisualMedia.ImageOnly))
+            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
     }
 }
