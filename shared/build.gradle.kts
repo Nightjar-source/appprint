@@ -35,14 +35,13 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.ui.graphics)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.material.icons.core)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.ui.tooling.preview)
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.ui)
+            implementation(compose.material3)
+            implementation("org.jetbrains.compose.material:material-icons-core:1.7.8")
+            implementation(compose.components.resources)
+            implementation(compose.components.uiToolingPreview)
 
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.viewmodel.compose)
@@ -61,7 +60,7 @@ kotlin {
             // image picker + camera capture launchers live behind expect composables
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
-            implementation(libs.compose.ui.tooling)
+            implementation("org.jetbrains.compose.ui:ui-tooling:1.12.2")
         }
         jvmMain.dependencies {
             // Skia-backed Compose for Desktop comes transitively via the Compose plugin
