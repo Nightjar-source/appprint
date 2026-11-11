@@ -55,6 +55,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation("junit:junit:4.13.2")
         }
         androidMain.dependencies {
             // image picker + camera capture launchers live behind expect composables
