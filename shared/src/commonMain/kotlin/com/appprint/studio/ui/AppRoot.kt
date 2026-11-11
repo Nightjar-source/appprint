@@ -12,9 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
@@ -185,7 +185,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                     exporting = state.processing,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(start = Chrome.EdgeInset + cutoutStart, end = Chrome.EdgeInset, top = statusTop + Chrome.TopBarGap),
+                        .padding(start = Chrome.EdgeInset + cutoutStart, top = statusTop + Chrome.TopBarGap, end = Chrome.EdgeInset, bottom = 0.dp),
                 )
 
                 if (railMode) {
@@ -195,7 +195,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                         onSelect = { route -> navigateTopLevel(backStack, route) },
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .padding(start = cutoutStart + Chrome.EdgeInset),
+                            .padding(start = cutoutStart + Chrome.EdgeInset, top = 0.dp, end = 0.dp, bottom = 0.dp),
                     )
                     SnackbarHost(
                         hostState = snackbarHostState,
@@ -210,13 +210,13 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                         onSelect = { route -> navigateTopLevel(backStack, route) },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(start = Chrome.EdgeInset + cutoutStart, end = Chrome.EdgeInset, bottom = navBottom + Chrome.BottomBarGap),
+                            .padding(start = Chrome.EdgeInset + cutoutStart, top = 0.dp, end = Chrome.EdgeInset, bottom = navBottom + Chrome.BottomBarGap),
                     )
                     SnackbarHost(
                         hostState = snackbarHostState,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(horizontal = 20.dp, bottom = navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 12.dp),
+                            .padding(start = 20.dp, top = 0.dp, end = 20.dp, bottom = navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 12.dp),
                     )
                 }
             }
@@ -344,8 +344,8 @@ private fun NavPillItem(
     val pillColor = MaterialTheme.colorScheme.secondaryContainer
     val contentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
     else MaterialTheme.colorScheme.onSurfaceVariant
-    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val pressed by androidx.compose.foundation.interaction.collectIsPressedAsState(interaction)
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
         targetValue = if (pressed) 0.9f else 1f,
         animationSpec = spring(dampingRatio = 0.72f, stiffness = 500f),
