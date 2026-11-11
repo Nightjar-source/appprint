@@ -72,10 +72,8 @@ kotlin {
     }
 }
 
-compose {
-    resources {
-        packageOfResClass = "com.appprint.studio.shared.resources"
-        publicResClass = true
-        generateResClass = always
-    }
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.appprint.studio.shared.resources"
+    generateResClass = always
 }

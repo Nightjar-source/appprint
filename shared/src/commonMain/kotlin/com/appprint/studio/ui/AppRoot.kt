@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.SavedStateConfiguration
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
@@ -73,6 +72,7 @@ import com.appprint.studio.ui.screens.GuideScreen
 import com.appprint.studio.ui.screens.SettingsScreen
 import com.appprint.studio.ui.screens.StudioScreen
 import com.appprint.studio.ui.theme.AppPrintTheme
+import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.serializersModule
