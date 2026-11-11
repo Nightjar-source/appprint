@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.screens
+﻿package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -57,7 +57,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.dashPathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -69,6 +69,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlin.math.roundToInt
 import com.appprint.studio.core.image.PixelOps
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.model.FrameStyle
@@ -412,7 +413,7 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                     if (settings.showGuides) {
                         Canvas(Modifier.fillMaxSize()) {
                             val m = settings.marginMm * DP_PER_MM * density
-                            val dash = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
+                            val dash = dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
                             drawRect(
                                 color = Color(0xFFC8102E).copy(alpha = 0.5f),
                                 topLeft = Offset(m, m),
@@ -502,8 +503,8 @@ private fun CardOnSheet(
             Canvas(Modifier.fillMaxSize()) {
                 val dash = when (frameStyle) {
                     FrameStyle.SOLID -> null
-                    FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
-                    FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5.dp.toPx(), 5.dp.toPx()))
+                    FrameStyle.DASHED -> dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
+                    FrameStyle.DOTTED -> dashPathEffect(floatArrayOf(1.5.dp.toPx(), 5.dp.toPx()))
                 }
                 drawRoundRect(
                     color = Color(frameColorHex),
@@ -514,7 +515,7 @@ private fun CardOnSheet(
         }
         if (showGuides && card.guides) {
             Canvas(Modifier.fillMaxSize()) {
-                val dash = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
+                val dash = dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
                 val outside = 1.2f * density
                 drawRect(
                     color = Color(0xFFC8102E).copy(alpha = 0.7f),

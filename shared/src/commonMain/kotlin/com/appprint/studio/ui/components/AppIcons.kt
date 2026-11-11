@@ -6,9 +6,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
+private val WHITE = SolidColor(Color.White)
+private val CUT = SolidColor(Color(0x66000000)) // translucent cut-out (icon tint keeps alpha)
+
 /**
- * Custom brand glyphs (24dp grid, evenOdd/nonzero fills).
- * Kept tiny on purpose — the app avoids material-icons-extended to stay light.
+ * Custom brand glyphs (24dp grid, nonzero fills with translucent "holes").
+ * Kept tiny on purpose — the app avoids material-icons-extended minus our few extras.
  */
 object AppIcons {
 
@@ -19,16 +22,16 @@ object AppIcons {
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).apply {
-        // top paper tray
-        path(fill = SolidColor(Color.White), pathFillType = androidx.compose.ui.graphics.vector.PathFillType.NonZero) {
+        // tray
+        path(fill = WHITE) {
             moveTo(6f, 3f)
             horizontalLineTo(18f)
             verticalLineTo(7f)
             horizontalLineTo(6f)
             close()
         }
-        // body with punched output slot (evenOdd)
-        path(fill = SolidColor(Color.White), pathFillType = androidx.compose.ui.graphics.vector.PathFillType.EvenOdd) {
+        // body
+        path(fill = WHITE) {
             moveTo(19f, 8f)
             horizontalLineTo(5f)
             curveTo(3.34f, 8f, 2f, 9.34f, 2f, 11f)
@@ -41,6 +44,9 @@ object AppIcons {
             verticalLineTo(11f)
             curveTo(22f, 9.34f, 20.66f, 8f, 19f, 8f)
             close()
+        }
+        // output slot (cut-out look)
+        path(fill = CUT) {
             moveTo(16f, 15f)
             horizontalLineTo(8f)
             verticalLineTo(20f)
@@ -57,8 +63,8 @@ object AppIcons {
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).apply {
-        path(fill = SolidColor(Color.White), pathFillType = androidx.compose.ui.graphics.vector.PathFillType.EvenOdd) {
-            // document with folded corner
+        // document with folded corner
+        path(fill = WHITE) {
             moveTo(6f, 2f)
             horizontalLineTo(14f)
             lineTo(19f, 7f)
@@ -69,11 +75,16 @@ object AppIcons {
             verticalLineTo(3.5f)
             curveTo(4.5f, 2.67f, 5.17f, 2f, 6f, 2f)
             close()
+        }
+        // folded corner
+        path(fill = CUT) {
             moveTo(13.5f, 3.5f)
             verticalLineTo(8.5f)
             horizontalLineTo(18.5f)
             close()
-            // "PDF" bars
+        }
+        // "PDF" bars
+        path(fill = CUT) {
             moveTo(7.5f, 13f)
             horizontalLineTo(16.5f)
             verticalLineTo(14.6f)
@@ -94,7 +105,7 @@ object AppIcons {
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).apply {
-        path(fill = SolidColor(Color.White)) {
+        path(fill = WHITE) {
             moveTo(11f, 3f)
             horizontalLineTo(13f)
             verticalLineTo(10.17f)
@@ -120,7 +131,8 @@ object AppIcons {
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).apply {
-        path(fill = SolidColor(Color.White), pathFillType = androidx.compose.ui.graphics.vector.PathFillType.EvenOdd) {
+        // frame
+        path(fill = WHITE) {
             moveTo(5f, 3f)
             curveTo(3.34f, 3f, 2f, 4.34f, 2f, 6f)
             verticalLineTo(18f)
@@ -130,12 +142,15 @@ object AppIcons {
             verticalLineTo(6f)
             curveTo(22f, 4.34f, 20.66f, 3f, 19f, 3f)
             close()
-            // sun
-            moveTo(8.5f, 8f)
+        }
+        // sun
+        path(fill = CUT) {
             moveTo(8.5f, 6.5f)
             arcToRelative(1.5f, 1.5f, 0f, true, true, 0.001f, 0f)
             close()
-            // mountain
+        }
+        // mountain
+        path(fill = CUT) {
             moveTo(4.5f, 17f)
             lineTo(10f, 11.5f)
             lineTo(14f, 15.5f)
@@ -152,7 +167,7 @@ object AppIcons {
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).apply {
-        path(fill = SolidColor(Color.White)) {
+        path(fill = WHITE) {
             moveTo(12f, 2f)
             lineTo(14.5f, 8.6f)
             lineTo(21f, 11f)
@@ -172,7 +187,7 @@ object AppIcons {
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).apply {
-        path(fill = SolidColor(Color.White)) {
+        path(fill = WHITE) {
             moveTo(16f, 1f)
             horizontalLineTo(4f)
             curveTo(2.34f, 1f, 1f, 2.34f, 1f, 4f)
@@ -202,10 +217,14 @@ object AppIcons {
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).apply {
-        path(fill = SolidColor(Color.White), pathFillType = androidx.compose.ui.graphics.vector.PathFillType.EvenOdd) {
+        path(fill = WHITE) {
             moveTo(12f, 3f)
-            arcToRelative(9f, 9f, 0f, true, false, 0.001f, 0f)
+            arcToRelative(9f, 9f, 0f, true, true, 0f, 18f)
+            arcToRelative(9f, 9f, 0f, true, true, 0f, -18f)
             close()
+        }
+        // right half shaded (crescent look)
+        path(fill = CUT) {
             moveTo(12f, 5.5f)
             verticalLineTo(18.5f)
             arcToRelative(6.5f, 6.5f, 0f, false, false, 0f, -13f)
@@ -213,7 +232,7 @@ object AppIcons {
         }
     }.build()
 
-    /** Camera — capture a card photo (body + lens, EvenOdd cut-out). */
+    /** Camera — capture a card photo (EvenOdd not needed: lens is a cut-out). */
     val Camera: ImageVector = ImageVector.Builder(
         name = "AppCamera",
         defaultWidth = 24.dp,
@@ -221,8 +240,8 @@ object AppIcons {
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).apply {
-        path(fill = SolidColor(Color.White), pathFillType = androidx.compose.ui.graphics.vector.PathFillType.EvenOdd) {
-            // body with top bump
+        // body with top bump
+        path(fill = WHITE) {
             moveTo(4f, 7f)
             horizontalLineTo(8.2f)
             lineTo(10.2f, 4.2f)
@@ -239,7 +258,9 @@ object AppIcons {
             verticalLineTo(9f)
             curveTo(2f, 7.9f, 2.9f, 7f, 4f, 7f)
             close()
-            // lens hole
+        }
+        // lens cut-out
+        path(fill = CUT) {
             moveTo(12f, 9.5f)
             arcToRelative(3.9f, 3.9f, 0f, true, true, -0.001f, 0f)
             close()

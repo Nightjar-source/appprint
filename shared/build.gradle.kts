@@ -39,7 +39,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.ui)
             implementation(compose.material3)
-            implementation("org.jetbrains.compose.material:material-icons-core:1.5.12")
+            implementation("org.jetbrains.compose.material:material-icons-extended:1.5.12")
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
 
@@ -76,5 +76,6 @@ compose {
     resources {
         packageOfResClass = "com.appprint.studio.shared.resources"
         publicResClass = true
+        generateResClass = always
     }
 }
