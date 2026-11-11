@@ -33,16 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.appprint.studio.core.model.CardType
-import com.appprint.studio.shared.resources.Res
-import com.appprint.studio.shared.resources.guide_cards_subtitle
-import com.appprint.studio.shared.resources.guide_cards_title
-import com.appprint.studio.shared.resources.issuer
-import com.appprint.studio.shared.resources.legal_note
-import com.appprint.studio.shared.resources.official_size
-import com.appprint.studio.shared.resources.print_tips_title
-import com.appprint.studio.shared.resources.usage
 import com.appprint.studio.ui.components.SectionHeader
-import org.jetbrains.compose.resources.stringResource
+import com.appprint.studio.ui.strings.Str
 
 private val PRINT_TIPS = listOf(
     "اطبع على ورق مقوّى 250 غرام حتى تتحمل البطاقة القص بعد الطباعة.",
@@ -74,12 +66,12 @@ fun GuideScreen() {
         item(contentType = "header") {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
                 Text(
-                    text = stringResource(Res.string.guide_cards_title),
+                    text = Str.guide_cards_title,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
                 )
                 Text(
-                    text = stringResource(Res.string.guide_cards_subtitle),
+                    text = Str.guide_cards_subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp),
@@ -96,7 +88,7 @@ fun GuideScreen() {
         }
 
         item(contentType = "tips-header") {
-            SectionHeader(stringResource(Res.string.print_tips_title), modifier = Modifier.padding(top = 8.dp))
+            SectionHeader(Str.print_tips_title, modifier = Modifier.padding(top = 8.dp))
         }
         items(PRINT_TIPS.indices.toList(), key = { it }, contentType = { "tip" }) { index ->
             Row(
@@ -146,7 +138,7 @@ fun GuideScreen() {
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                     )
                     Text(
-                        text = stringResource(Res.string.legal_note),
+                        text = Str.legal_note,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.padding(top = 6.dp),
@@ -208,9 +200,9 @@ private fun CardFactCard(
         ) {
             Column(Modifier.padding(top = 12.dp, start = 2.dp)) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                FactLine(stringResource(Res.string.usage), card.useAr)
-                FactLine(stringResource(Res.string.issuer), card.issuerAr)
-                FactLine(stringResource(Res.string.official_size), card.sizeNoteAr)
+                FactLine(Str.usage, card.useAr)
+                FactLine(Str.issuer, card.issuerAr)
+                FactLine(Str.official_size, card.sizeNoteAr)
                 Text(
                     text = "نصائح خاصة",
                     style = MaterialTheme.typography.labelMedium,

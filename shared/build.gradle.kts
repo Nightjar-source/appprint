@@ -44,8 +44,7 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.material3)
             implementation("org.jetbrains.compose.material:material-icons-extended:1.5.12")
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.12.2")
 
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.viewmodel.compose)
@@ -77,8 +76,4 @@ kotlin {
     }
 }
 
-compose.resources {
-    publicResClass = true
-    packageOfResClass = "com.appprint.studio.shared.resources"
-    generateResClass = always
-}
+

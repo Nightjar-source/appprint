@@ -62,8 +62,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import org.jetbrains.compose.resources.stringResource
-import com.appprint.studio.shared.resources.Res
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -83,6 +81,7 @@ import com.appprint.studio.ui.components.AppIcons
 import com.appprint.studio.ui.components.FlagCardGlyph
 import com.appprint.studio.ui.components.SampleCardArt
 import com.appprint.studio.ui.components.TagChip
+import com.appprint.studio.ui.strings.Str
 
 /** Compose density-independent dp per millimetre (96 dp/inch). */
 private const val DP_PER_MM = 3.7795276f
@@ -190,16 +189,16 @@ fun StudioScreen(viewModel: StudioViewModel) {
     if (showClearConfirm) {
         AlertDialog(
             onDismissRequest = { showClearConfirm = false },
-            title = { Text(stringResource(Res.string.clear_confirm_title)) },
-            text = { Text(stringResource(Res.string.clear_confirm_body)) },
+            title = { Text(Str.clear_confirm_title) },
+            text = { Text(Str.clear_confirm_body) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearAll()
                     showClearConfirm = false
-                }) { Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error) }
+                }) { Text(Str.delete, color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showClearConfirm = false }) { Text(stringResource(Res.string.cancel)) }
+                TextButton(onClick = { showClearConfirm = false }) { Text(Str.cancel) }
             },
         )
     }
@@ -230,46 +229,46 @@ private fun StudioToolbar(
             FilledTonalButton(onClick = onAddImages) {
                 Icon(AppIcons.Upload, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
-                Text(stringResource(Res.string.btn_add_images), maxLines = 1)
+                Text(Str.btn_add_images, maxLines = 1)
             }
         }
         item {
             FilledTonalButton(onClick = onCamera) {
                 Icon(AppIcons.Camera, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
-                Text(stringResource(Res.string.btn_take_photo), maxLines = 1)
+                Text(Str.btn_take_photo, maxLines = 1)
             }
         }
         item {
             FilledTonalButton(onClick = onSamples) {
                 Icon(AppIcons.Sparkle, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
-                Text(stringResource(Res.string.btn_samples), maxLines = 1)
+                Text(Str.btn_samples, maxLines = 1)
             }
         }
         item {
             FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty()) {
                 Icon(AppIcons.Refresh, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
-                Text(stringResource(Res.string.btn_arrange), maxLines = 1)
+                Text(Str.btn_arrange, maxLines = 1)
             }
         }
         item {
             FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty()) {
                 Icon(AppIcons.Image, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
-                Text(stringResource(Res.string.btn_save_png), maxLines = 1)
+                Text(Str.btn_save_png, maxLines = 1)
             }
         }
         item {
             TextButton(onClick = onClear, enabled = state.cards.isNotEmpty()) {
-                Text(stringResource(Res.string.btn_clear_all), color = MaterialTheme.colorScheme.error, maxLines = 1)
+                Text(Str.btn_clear_all, color = MaterialTheme.colorScheme.error, maxLines = 1)
             }
         }
         if (onOpenPaperSettings != null) {
             item {
                 IconButton(onClick = onOpenPaperSettings) {
-                    Icon(AppIcons.Menu, contentDescription = stringResource(Res.string.paper_title))
+                    Icon(AppIcons.Menu, contentDescription = Str.paper_title)
                 }
             }
         }
@@ -293,7 +292,7 @@ private fun SheetPageBar(state: StudioUiState, onSelectPage: (Int) -> Unit) {
         items((0 until state.pageCount).toList(), key = { it }) { page ->
             AssistChip(
                 onClick = { onSelectPage(page) },
-                label = { Text(stringResource(Res.string.sheet_tab, page + 1)) },
+                label = { Text("ورقة ${page + 1}") },
                 leadingIcon = if (state.currentPage == page) {
                     { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 } else {
@@ -316,13 +315,13 @@ private fun EmptyState(onUpload: () -> Unit, onSamples: () -> Unit, modifier: Mo
     ) {
         FlagCardGlyph(sizeDp = 92.dp)
         Text(
-            text = stringResource(Res.string.empty_title),
+            text = Str.empty_title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
             modifier = Modifier.padding(top = 18.dp, start = 24.dp, end = 24.dp),
         )
         Text(
-            text = stringResource(Res.string.empty_subtitle),
+            text = Str.empty_subtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -332,12 +331,12 @@ private fun EmptyState(onUpload: () -> Unit, onSamples: () -> Unit, modifier: Mo
             Button(onClick = onUpload) {
                 Icon(AppIcons.Upload, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
-                Text(stringResource(Res.string.empty_upload))
+                Text(Str.empty_upload)
             }
             OutlinedButton(onClick = onSamples) {
                 Icon(AppIcons.Sparkle, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
-                Text(stringResource(Res.string.empty_cta))
+                Text(Str.empty_cta)
             }
         }
     }
@@ -440,7 +439,7 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                     }
                     if (state.pageCount > 1) {
                         TagChip(
-                            text = stringResource(Res.string.sheet_tab, state.currentPage + 1),
+                            text = "ورقة ${state.currentPage + 1}",
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .padding(6.dp),

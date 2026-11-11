@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.screens
+﻿package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,8 +47,7 @@ import com.appprint.studio.ui.components.LabeledSlider
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.components.StudioChip
 import com.appprint.studio.ui.components.ToggleRow
-import org.jetbrains.compose.resources.stringResource
-import com.appprint.studio.shared.resources.Res
+import com.appprint.studio.ui.strings.Str
 
 // ---------------------------------------------------------------- paper panel
 
@@ -60,12 +59,12 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp),
     ) {
-        SectionHeader(stringResource(Res.string.paper_title))
+        SectionHeader(Str.paper_title)
 
         // Paper size chips
         Column(Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
             Text(
-                stringResource(Res.string.paper_size),
+                Str.paper_size,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -81,7 +80,7 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
                     )
                 }
                 StudioChip(
-                    label = stringResource(Res.string.paper_custom),
+                    label = Str.paper_custom,
                     selected = s.isCustom,
                     onClick = { viewModel.setPaperPreset(null) },
                 )
@@ -107,25 +106,25 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
         // Orientation
         Column(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             Text(
-                stringResource(Res.string.orientation),
+                Str.orientation,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                StudioChip(stringResource(Res.string.orientation_portrait), !s.landscape, { viewModel.setLandscape(false) })
-                StudioChip(stringResource(Res.string.orientation_landscape), s.landscape, { viewModel.setLandscape(true) })
+                StudioChip(Str.orientation_portrait, !s.landscape, { viewModel.setLandscape(false) })
+                StudioChip(Str.orientation_landscape, s.landscape, { viewModel.setLandscape(true) })
             }
         }
 
         LabeledSlider(
-            label = stringResource(Res.string.margins),
+            label = Str.margins,
             value = s.marginMm,
             valueRange = 0f..25f,
             onValueChange = viewModel::setMargin,
             valueText = "${s.marginMm.toInt()}",
         )
         LabeledSlider(
-            label = stringResource(Res.string.gap),
+            label = Str.gap,
             value = s.gapMm,
             valueRange = 2f..20f,
             onValueChange = viewModel::setGap,
@@ -135,17 +134,17 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
         // Arrangement mode
         Column(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             Text(
-                stringResource(Res.string.mode),
+                Str.mode,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                StudioChip(stringResource(Res.string.mode_grid), s.mode == ArrangeMode.GRID, { viewModel.setMode(ArrangeMode.GRID) })
-                StudioChip(stringResource(Res.string.mode_comfy), s.mode == ArrangeMode.COMFORTABLE, { viewModel.setMode(ArrangeMode.COMFORTABLE) })
+                StudioChip(Str.mode_grid, s.mode == ArrangeMode.GRID, { viewModel.setMode(ArrangeMode.GRID) })
+                StudioChip(Str.mode_comfy, s.mode == ArrangeMode.COMFORTABLE, { viewModel.setMode(ArrangeMode.COMFORTABLE) })
             }
             if (s.mode == ArrangeMode.COMFORTABLE) {
                 Text(
-                    stringResource(Res.string.gap_comfy_min),
+                    Str.gap_comfy_min,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -154,7 +153,7 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
         }
 
         ToggleRow(
-            title = stringResource(Res.string.group_smart),
+            title = Str.group_smart,
             subtitle = "الأكبر أولاً، صفوف مدمجة داخل الهوامش",
             checked = s.smartGroup,
             onCheckedChange = viewModel::setSmartGroup,
@@ -165,30 +164,30 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
         // Background
         Column(Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
             Text(
-                stringResource(Res.string.background),
+                Str.background,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
-                    SheetBackground.WHITE to Res.string.bg_white,
-                    SheetBackground.OFFWHITE to Res.string.bg_offwhite,
-                    SheetBackground.TRANSPARENT to Res.string.bg_transparent,
+                    SheetBackground.WHITE to Str.bg_white,
+                    SheetBackground.OFFWHITE to Str.bg_offwhite,
+                    SheetBackground.TRANSPARENT to Str.bg_transparent,
                 ).forEach { (bg, labelRes) ->
-                    StudioChip(stringResource(labelRes), s.background == bg, { viewModel.setBackground(bg) })
+                    StudioChip(labelRes, s.background == bg, { viewModel.setBackground(bg) })
                 }
             }
         }
 
         // Guides & frames
         ToggleRow(
-            title = stringResource(Res.string.guides),
+            title = Str.guides,
             subtitle = "تظهر بخط متقطع أحمر — تُحذف عند الطباعة الفعلية من PDF",
             checked = s.showGuides,
             onCheckedChange = viewModel::setShowGuides,
         )
         ToggleRow(
-            title = stringResource(Res.string.frames),
+            title = Str.frames,
             subtitle = null,
             checked = s.showFrames,
             onCheckedChange = viewModel::setShowFrames,
@@ -197,21 +196,21 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
         if (s.showFrames) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
                 Text(
-                    stringResource(Res.string.frame_style),
+                    Str.frame_style,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(
-                        FrameStyle.SOLID to Res.string.frame_solid,
-                        FrameStyle.DASHED to Res.string.frame_dashed,
-                        FrameStyle.DOTTED to Res.string.frame_dotted,
+                        FrameStyle.SOLID to Str.frame_solid,
+                        FrameStyle.DASHED to Str.frame_dashed,
+                        FrameStyle.DOTTED to Str.frame_dotted,
                     ).forEach { (style, labelRes) ->
-                        StudioChip(stringResource(labelRes), s.frameStyle == style, { viewModel.setFrameStyle(style) })
+                        StudioChip(labelRes, s.frameStyle == style, { viewModel.setFrameStyle(style) })
                     }
                 }
                 Text(
-                    stringResource(Res.string.frame_color),
+                    Str.frame_color,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 10.dp),
@@ -223,7 +222,7 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
                 }
             }
             LabeledSlider(
-                label = stringResource(Res.string.frame_width),
+                label = Str.frame_width,
                 value = s.frameWidthDp,
                 valueRange = 0.5f..4f,
                 onValueChange = viewModel::setFrameWidth,
@@ -239,10 +238,10 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Button(onClick = viewModel::arrangeSmart, enabled = state.cards.isNotEmpty(), modifier = Modifier.weight(1f)) {
-                Text(stringResource(Res.string.btn_arrange), maxLines = 1)
+                Text(Str.btn_arrange, maxLines = 1)
             }
             FilledTonalButton(onClick = viewModel::sortBySize, enabled = state.cards.isNotEmpty(), modifier = Modifier.weight(1f)) {
-                Text(stringResource(Res.string.btn_sort_size), maxLines = 1)
+                Text(Str.btn_sort_size, maxLines = 1)
             }
         }
     }
@@ -258,11 +257,11 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp),
     ) {
-        SectionHeader(stringResource(Res.string.card_selected))
+        SectionHeader(Str.card_selected)
 
         if (card == null) {
             Text(
-                text = stringResource(Res.string.no_selection),
+                text = Str.no_selection,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -272,7 +271,7 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
             Column(Modifier.padding(horizontal = 16.dp)) {
                 Text(card.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
                 Text(
-                    text = "${card.type.labelAr} · ${formatMm(card.widthMm)} × ${formatMm(card.heightMm)} ${stringResource(Res.string.mm)}",
+                    text = "${card.type.labelAr} · ${formatMm(card.widthMm)} × ${formatMm(card.heightMm)} ${Str.mm}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
@@ -285,56 +284,56 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 FilledTonalButton(onClick = viewModel::duplicateSelected, modifier = Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
-                    Text(stringResource(Res.string.btn_duplicate), maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
+                    Text(Str.btn_duplicate, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
                 }
                 FilledTonalButton(onClick = viewModel::rotateSelected, modifier = Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
-                    Text(stringResource(Res.string.btn_rotate), maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
+                    Text(Str.btn_rotate, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
                 }
                 FilledTonalButton(onClick = viewModel::deleteSelected, modifier = Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
-                    Text(stringResource(Res.string.btn_delete), maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp), color = MaterialTheme.colorScheme.error)
+                    Text(Str.btn_delete, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp), color = MaterialTheme.colorScheme.error)
                 }
             }
 
             HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
             // Enhance sliders
-            SectionHeader(stringResource(Res.string.enhance_title))
+            SectionHeader(Str.enhance_title)
             LabeledSlider(
-                label = stringResource(Res.string.brightness),
+                label = Str.brightness,
                 value = card.enhance.brightness.toFloat(),
                 valueRange = -100f..100f,
                 onValueChange = { v -> viewModel.updateEnhance { it.copy(brightness = v.toInt()) } },
                 onReset = { viewModel.updateEnhance { it.copy(brightness = 0) } },
             )
             LabeledSlider(
-                label = stringResource(Res.string.contrast),
+                label = Str.contrast,
                 value = card.enhance.contrast.toFloat(),
                 valueRange = -100f..100f,
                 onValueChange = { v -> viewModel.updateEnhance { it.copy(contrast = v.toInt()) } },
                 onReset = { viewModel.updateEnhance { it.copy(contrast = 0) } },
             )
             LabeledSlider(
-                label = stringResource(Res.string.saturation),
+                label = Str.saturation,
                 value = card.enhance.saturation.toFloat(),
                 valueRange = -100f..100f,
                 onValueChange = { v -> viewModel.updateEnhance { it.copy(saturation = v.toInt()) } },
                 onReset = { viewModel.updateEnhance { it.copy(saturation = 0) } },
             )
             LabeledSlider(
-                label = stringResource(Res.string.sharpness),
+                label = Str.sharpness,
                 value = card.enhance.sharpness.toFloat(),
                 valueRange = 0f..100f,
                 onValueChange = { v -> viewModel.updateEnhance { it.copy(sharpness = v.toInt()) } },
                 onReset = { viewModel.updateEnhance { it.copy(sharpness = 0) } },
             )
             ToggleRow(
-                title = stringResource(Res.string.grayscale),
+                title = Str.grayscale,
                 subtitle = null,
                 checked = card.enhance.grayscale,
                 onCheckedChange = { v -> viewModel.updateEnhance { it.copy(grayscale = v) } },
             )
             Text(
-                stringResource(Res.string.enhance_note),
+                Str.enhance_note,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -344,29 +343,29 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 FilledTonalButton(onClick = viewModel::autoEnhanceSelected, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(Res.string.auto_enhance), maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
+                    Text(Str.auto_enhance, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
                 }
                 OutlinedButton(onClick = viewModel::resetEnhanceSelected, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(Res.string.reset_enhance), maxLines = 1)
+                    Text(Str.reset_enhance, maxLines = 1)
                 }
             }
             TextButton(onClick = viewModel::applyEnhanceToAll, modifier = Modifier.padding(horizontal = 12.dp)) {
-                Text(stringResource(Res.string.apply_all))
+                Text(Str.apply_all)
             }
             TextButton(onClick = viewModel::autoEnhanceAll, modifier = Modifier.padding(horizontal = 12.dp)) {
-                Text(stringResource(Res.string.btn_enhance_all))
+                Text(Str.btn_enhance_all)
             }
 
             HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
             // Card facts (الشرح)
             SectionHeader("الشرح الرسمي")
-            FactBlock(label = stringResource(Res.string.usage), value = card.type.useAr)
-            FactBlock(label = stringResource(Res.string.issuer), value = card.type.issuerAr)
-            FactBlock(label = stringResource(Res.string.official_size), value = card.type.sizeNoteAr)
+            FactBlock(label = Str.usage, value = card.type.useAr)
+            FactBlock(label = Str.issuer, value = card.type.issuerAr)
+            FactBlock(label = Str.official_size, value = card.type.sizeNoteAr)
             Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                 Text(
-                    stringResource(Res.string.print_tips_title),
+                    Str.print_tips_title,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

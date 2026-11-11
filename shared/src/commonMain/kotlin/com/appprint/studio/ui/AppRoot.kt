@@ -53,18 +53,6 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.rememberNotificationPermissionRequester
-import com.appprint.studio.shared.resources.Res
-import com.appprint.studio.shared.resources.app_eyebrow
-import com.appprint.studio.shared.resources.app_title
-import com.appprint.studio.shared.resources.appearance
-import com.appprint.studio.shared.resources.btn_export_pdf
-import com.appprint.studio.shared.resources.btn_print
-import com.appprint.studio.shared.resources.nav_guide
-import com.appprint.studio.shared.resources.nav_settings
-import com.appprint.studio.shared.resources.nav_studio
-import com.appprint.studio.shared.resources.theme_auto
-import com.appprint.studio.shared.resources.theme_dark
-import com.appprint.studio.shared.resources.theme_light
 import com.appprint.studio.ui.components.AppIcons
 import com.appprint.studio.ui.components.FlagCardGlyph
 import com.appprint.studio.ui.screens.GuideScreen
@@ -76,7 +64,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.subclass
-import org.jetbrains.compose.resources.stringResource
+import com.appprint.studio.ui.strings.Str
 
 @Serializable
 sealed interface AppRoute : NavKey {
@@ -108,16 +96,11 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
     AppPrintTheme(theme = state.theme) {
         val snackbarHostState = remember { SnackbarHostState() }
 
-        // resolve toast text in composition (stringResource is composable)
+        // state flows down, events go up — toast text arrives pre-built from the ViewModel
         val toast = state.toast
-        val toastMessage: String? = when {
-            toast == null -> null
-            toast.args.isEmpty() -> stringResource(toast.resource)
-            else -> stringResource(toast.resource, *toast.args.toTypedArray())
-        }
-        LaunchedEffect(toast, toastMessage) {
-            if (toastMessage != null) {
-                snackbarHostState.showSnackbar(toastMessage)
+        LaunchedEffect(toast) {
+            if (toast != null) {
+                snackbarHostState.showSnackbar(toast.message)
                 viewModel.consumeToast()
             }
         }
@@ -151,9 +134,9 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         }
 
         val items = listOf(
-            TopLevelItem(AppRoute.Studio, stringResource(Res.string.nav_studio), AppIcons.Print),
-            TopLevelItem(AppRoute.Guide, stringResource(Res.string.nav_guide), AppIcons.Guide),
-            TopLevelItem(AppRoute.Settings, stringResource(Res.string.nav_settings), AppIcons.Settings),
+            TopLevelItem(AppRoute.Studio, Str.nav_studio, AppIcons.Print),
+            TopLevelItem(AppRoute.Guide, Str.nav_guide, AppIcons.Guide),
+            TopLevelItem(AppRoute.Settings, Str.nav_settings, AppIcons.Settings),
         )
 
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -336,14 +319,14 @@ private fun AppHeader(
                 FlagCardGlyph(sizeDp = 44.dp)
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(Res.string.app_eyebrow),
+                        text = Str.app_eyebrow,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = TextUnit(1.6f, TextUnitType.Sp),
                         maxLines = 1,
                     )
                     Text(
-                        text = stringResource(Res.string.app_title),
+                        text = Str.app_title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -354,13 +337,13 @@ private fun AppHeader(
                 ThemeMenu(theme = theme, onTheme = onTheme)
 
                 IconButton(onClick = onPrint, enabled = !exporting) {
-                    Icon(AppIcons.Print, contentDescription = stringResource(Res.string.btn_print))
+                    Icon(AppIcons.Print, contentDescription = Str.btn_print)
                 }
                 FilledIconButton(onClick = onExportPdf, enabled = !exporting) {
                     if (exporting) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                     } else {
-                        Icon(AppIcons.Pdf, contentDescription = stringResource(Res.string.btn_export_pdf))
+                        Icon(AppIcons.Pdf, contentDescription = Str.btn_export_pdf)
                     }
                 }
             }
@@ -374,17 +357,17 @@ private fun ThemeMenu(theme: AppTheme, onTheme: (AppTheme) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) {
-            Icon(AppIcons.Theme, contentDescription = stringResource(Res.string.appearance))
+            Icon(AppIcons.Theme, contentDescription = Str.appearance)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             val options = listOf(
-                AppTheme.SYSTEM to Res.string.theme_auto,
-                AppTheme.LIGHT to Res.string.theme_light,
-                AppTheme.DARK to Res.string.theme_dark,
+                AppTheme.SYSTEM to Str.theme_auto,
+                AppTheme.LIGHT to Str.theme_light,
+                AppTheme.DARK to Str.theme_dark,
             )
             options.forEach { (option, labelRes) ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(labelRes)) },
+                    text = { Text(labelRes) },
                     onClick = {
                         onTheme(option)
                         expanded = false

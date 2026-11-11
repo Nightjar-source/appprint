@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.screens
+﻿package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,23 +27,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.core.model.AppTheme
-import com.appprint.studio.shared.resources.Res
-import com.appprint.studio.shared.resources.about_title
-import com.appprint.studio.shared.resources.app_version
-import com.appprint.studio.shared.resources.appearance
-import com.appprint.studio.shared.resources.licenses_title
-import com.appprint.studio.shared.resources.offline_note
-import com.appprint.studio.shared.resources.permission_camera
-import com.appprint.studio.shared.resources.permissions_title
-import com.appprint.studio.shared.resources.privacy_body
-import com.appprint.studio.shared.resources.privacy_title
-import com.appprint.studio.shared.resources.theme_auto
-import com.appprint.studio.shared.resources.theme_dark
-import com.appprint.studio.shared.resources.theme_light
 import com.appprint.studio.ui.StudioViewModel
 import com.appprint.studio.ui.components.FlagCardGlyph
 import com.appprint.studio.ui.components.SectionHeader
-import org.jetbrains.compose.resources.stringResource
+import com.appprint.studio.ui.strings.Str
 
 private const val VERSION_NAME = "1.0.0"
 private const val VERSION_CODE = 1
@@ -74,11 +61,11 @@ fun SettingsScreen(viewModel: StudioViewModel) {
     ) {
         // Appearance
         item(contentType = "appearance") {
-            SectionHeader(stringResource(Res.string.appearance))
+            SectionHeader(Str.appearance)
             val options = listOf(
-                AppTheme.SYSTEM to Res.string.theme_auto,
-                AppTheme.LIGHT to Res.string.theme_light,
-                AppTheme.DARK to Res.string.theme_dark,
+                AppTheme.SYSTEM to Str.theme_auto,
+                AppTheme.LIGHT to Str.theme_light,
+                AppTheme.DARK to Str.theme_dark,
             )
             options.forEach { (option, labelRes) ->
                 Row(
@@ -95,7 +82,7 @@ fun SettingsScreen(viewModel: StudioViewModel) {
                         onClick = { viewModel.setTheme(option) },
                     )
                     Text(
-                        stringResource(labelRes),
+                        labelRes,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(start = 12.dp),
                     )
@@ -106,15 +93,15 @@ fun SettingsScreen(viewModel: StudioViewModel) {
 
         // Privacy
         item(contentType = "privacy") {
-            SectionHeader(stringResource(Res.string.privacy_title))
+            SectionHeader(Str.privacy_title)
             Text(
-                stringResource(Res.string.privacy_body),
+                Str.privacy_body,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
             Text(
-                stringResource(Res.string.offline_note),
+                Str.offline_note,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -124,9 +111,9 @@ fun SettingsScreen(viewModel: StudioViewModel) {
 
         // Permissions
         item(contentType = "permissions") {
-            SectionHeader(stringResource(Res.string.permissions_title))
+            SectionHeader(Str.permissions_title)
             Text(
-                stringResource(Res.string.permission_camera),
+                Str.permission_camera,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp),
@@ -136,7 +123,7 @@ fun SettingsScreen(viewModel: StudioViewModel) {
 
         // About
         item(contentType = "about") {
-            SectionHeader(stringResource(Res.string.about_title))
+            SectionHeader(Str.about_title)
             Row(
                 Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -150,7 +137,7 @@ fun SettingsScreen(viewModel: StudioViewModel) {
                         fontWeight = FontWeight.ExtraBold,
                     )
                     Text(
-                        text = stringResource(Res.string.app_version, VERSION_NAME, VERSION_CODE),
+                        text = "الإصدار $VERSION_NAME ($VERSION_CODE)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp),
@@ -168,7 +155,7 @@ fun SettingsScreen(viewModel: StudioViewModel) {
 
         // Dependencies & licenses
         item(contentType = "licenses-header") {
-            SectionHeader(stringResource(Res.string.licenses_title))
+            SectionHeader(Str.licenses_title)
         }
         items(DEPENDENCIES.size, contentType = { "license" }) { index ->
             val (name, version, license) = DEPENDENCIES[index]

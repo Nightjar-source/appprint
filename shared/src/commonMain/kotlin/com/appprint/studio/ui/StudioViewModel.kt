@@ -12,29 +12,6 @@ import com.appprint.studio.core.model.FrameStyle
 import com.appprint.studio.core.model.SheetBackground
 import com.appprint.studio.core.model.SheetSettings
 import com.appprint.studio.core.platform.PlatformActions
-import com.appprint.studio.shared.resources.Res
-import com.appprint.studio.shared.resources.msg_applied_all
-import com.appprint.studio.shared.resources.msg_arranged
-import com.appprint.studio.shared.resources.msg_camera_denied
-import com.appprint.studio.shared.resources.msg_camera_unavailable
-import com.appprint.studio.shared.resources.msg_cleared
-import com.appprint.studio.shared.resources.msg_export_failed
-import com.appprint.studio.shared.resources.msg_import_failed
-import com.appprint.studio.shared.resources.msg_imported
-import com.appprint.studio.shared.resources.msg_no_cards
-import com.appprint.studio.shared.resources.msg_pdf_error
-import com.appprint.studio.shared.resources.msg_pdf_saved
-import com.appprint.studio.shared.resources.msg_png_saved
-import com.appprint.studio.shared.resources.msg_print_sent
-import com.appprint.studio.shared.resources.msg_print_unavailable
-import com.appprint.studio.shared.resources.msg_samples
-import com.appprint.studio.shared.resources.msg_share_unavailable
-import com.appprint.studio.shared.resources.msg_sorted
-import com.appprint.studio.shared.resources.notif_export_body
-import com.appprint.studio.shared.resources.notif_export_title
-import com.appprint.studio.shared.resources.notif_print_body
-import com.appprint.studio.shared.resources.notif_print_title
-import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,10 +20,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
-import org.jetbrains.compose.resources.StringResource
+import com.appprint.studio.ui.strings.Str
 
 /** One-shot user feedback routed to the global snackbar. */
-data class UiToast(val resource: StringResource, val args: List<Any> = emptyList())
+data class UiToast(val message: String)
 
 data class StudioUiState(
     val settings: SheetSettings = SheetSettings(),
@@ -91,14 +68,14 @@ class StudioViewModel : ViewModel() {
                 sources.mapNotNull { source -> importOne(source) }
             }
             if (imported.isEmpty()) {
-                _state.update { it.copy(processing = false, toast = UiToast(Res.string.msg_import_failed)) }
+                _state.update { it.copy(processing = false, toast = UiToast(Str.msg_import_failed)) }
                 return@launch
             }
             _state.update { s ->
                 s.copy(
                     cards = arrangeNow(s.cards + imported, s.settings),
                     processing = false,
-                    toast = UiToast(Res.string.msg_imported, listOf(imported.size)),
+                    toast = UiToast("تمت إضافة ${imported.size} صورة"),
                 )
             }
         }
@@ -144,7 +121,7 @@ class StudioViewModel : ViewModel() {
         _state.update { s ->
             s.copy(
                 cards = arrangeNow(s.cards + samples, s.settings),
-                toast = UiToast(Res.string.msg_samples),
+                toast = UiToast(Str.msg_samples),
             )
         }
     }
@@ -156,27 +133,27 @@ class StudioViewModel : ViewModel() {
 
     fun arrangeSmart() {
         _state.update { s ->
-            if (s.cards.isEmpty()) s.copy(toast = UiToast(Res.string.msg_no_cards))
+            if (s.cards.isEmpty()) s.copy(toast = UiToast(Str.msg_no_cards))
             else s.copy(
                 cards = arrangeNow(s.cards, s.settings),
-                toast = UiToast(Res.string.msg_arranged),
+                toast = UiToast(Str.msg_arranged),
             )
         }
     }
 
     fun sortBySize() {
         _state.update { s ->
-            if (s.cards.isEmpty()) s.copy(toast = UiToast(Res.string.msg_no_cards))
+            if (s.cards.isEmpty()) s.copy(toast = UiToast(Str.msg_no_cards))
             else s.copy(
                 cards = SheetArranger.arrange(s.cards, s.settings.copy(smartGroup = false)).cards,
-                toast = UiToast(Res.string.msg_sorted),
+                toast = UiToast(Str.msg_sorted),
             )
         }
     }
 
     fun clearAll() {
         _state.update {
-            it.copy(cards = emptyList(), selectedId = null, currentPage = 0, toast = UiToast(Res.string.msg_cleared))
+            it.copy(cards = emptyList(), selectedId = null, currentPage = 0, toast = UiToast(Str.msg_cleared))
         }
     }
 
@@ -275,7 +252,7 @@ class StudioViewModel : ViewModel() {
     fun applyEnhanceToAll() {
         _state.update { s ->
             val source = s.selectedCard?.enhance ?: return@update s
-            s.copy(cards = s.cards.map { it.copy(enhance = source) }, toast = UiToast(Res.string.msg_applied_all))
+            s.copy(cards = s.cards.map { it.copy(enhance = source) }, toast = UiToast(Str.msg_applied_all))
         }
     }
 
@@ -297,7 +274,7 @@ class StudioViewModel : ViewModel() {
         viewModelScope.launch {
             val s = _state.value
             if (s.cards.isEmpty()) {
-                _state.update { it.copy(toast = UiToast(Res.string.msg_no_cards)) }
+                _state.update { it.copy(toast = UiToast(Str.msg_no_cards)) }
                 return@launch
             }
             _state.update { it.copy(processing = true) }
@@ -311,23 +288,21 @@ class StudioViewModel : ViewModel() {
             }
             _state.update { it.copy(processing = false) }
             if (result == null) {
-                _state.update { it.copy(toast = UiToast(Res.string.msg_export_failed)) }
+                _state.update { it.copy(toast = UiToast(Str.msg_export_failed)) }
                 return@launch
             }
             val shared = withContext(Dispatchers.IO) {
                 PlatformActions.shareFile(result, mimeType, subject = fileName)
             }
             if (!shared) {
-                _state.update { it.copy(toast = UiToast(Res.string.msg_share_unavailable, listOf(fileName))) }
+                _state.update { it.copy(toast = UiToast("تعذرت المشاركة — الملف محفوظ في التطبيق: $fileName")) }
             } else if (page != null) {
-                _state.update { it.copy(toast = UiToast(Res.string.msg_png_saved)) }
+                _state.update { it.copy(toast = UiToast(Str.msg_png_saved)) }
             } else {
-                _state.update { it.copy(toast = UiToast(Res.string.msg_pdf_saved, listOf(_state.value.pageCount))) }
+                _state.update { it.copy(toast = UiToast("تم إنشاء ملف PDF — ${_state.value.pageCount} ورقة، 300 DPI")) }
             }
             // system notification (auto-requests handled by the UI right before export)
-            val title = getString(Res.string.notif_export_title)
-            val body = getString(Res.string.notif_export_body, fileName)
-            PlatformActions.showExportNotification(title, body, result)
+            PlatformActions.showExportNotification(Str.notif_export_title, "تم إنشاء الملف: $fileName — اضغط للفتح", result)
         }
     }
 
@@ -335,7 +310,7 @@ class StudioViewModel : ViewModel() {
         viewModelScope.launch {
             val s = _state.value
             if (s.cards.isEmpty()) {
-                _state.update { it.copy(toast = UiToast(Res.string.msg_no_cards)) }
+                _state.update { it.copy(toast = UiToast(Str.msg_no_cards)) }
                 return@launch
             }
             _state.update { it.copy(processing = true) }
@@ -344,7 +319,7 @@ class StudioViewModel : ViewModel() {
             }
             _state.update { it.copy(processing = false) }
             if (bytes == null) {
-                _state.update { it.copy(toast = UiToast(Res.string.msg_pdf_error)) }
+                _state.update { it.copy(toast = UiToast(Str.msg_pdf_error)) }
                 return@launch
             }
             val accepted = PlatformActions.printPdf(
@@ -355,22 +330,20 @@ class StudioViewModel : ViewModel() {
                 jobName = "iraqi-id-cards",
             )
             _state.update {
-                it.copy(toast = UiToast(if (accepted) Res.string.msg_print_sent else Res.string.msg_print_unavailable))
+                it.copy(toast = UiToast(if (accepted) Str.msg_print_sent else Str.msg_print_unavailable))
             }
             if (accepted) {
-                val title = getString(Res.string.notif_print_title)
-                val body = getString(Res.string.notif_print_body, "iraqi-id-cards.pdf")
-                PlatformActions.showExportNotification(title, body, null)
+                PlatformActions.showExportNotification(Str.notif_print_title, "مهمة الطباعة أُرسلت إلى الطابعة: iraqi-id-cards.pdf", null)
             }
         }
     }
 
     fun notifyCameraDenied() {
-        _state.update { it.copy(toast = UiToast(Res.string.msg_camera_denied)) }
+        _state.update { it.copy(toast = UiToast(Str.msg_camera_denied)) }
     }
 
     fun notifyCameraUnavailable() {
-        _state.update { it.copy(toast = UiToast(Res.string.msg_camera_unavailable)) }
+        _state.update { it.copy(toast = UiToast(Str.msg_camera_unavailable)) }
     }
 
     fun consumeToast() = _state.update { it.copy(toast = null) }
