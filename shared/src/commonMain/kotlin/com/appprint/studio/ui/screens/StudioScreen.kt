@@ -1,4 +1,4 @@
-﻿package com.appprint.studio.ui.screens
+package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
