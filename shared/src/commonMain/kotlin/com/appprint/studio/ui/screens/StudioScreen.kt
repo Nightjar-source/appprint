@@ -249,7 +249,7 @@ private fun StudioToolbar(
         }
         item {
             FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty()) {
-                Icon(androidx.compose.material.icons.Icons.Filled.Refresh, contentDescription = null)
+                Icon(AppIcons.Refresh, contentDescription = null)
                 Spacer(Modifier.size(6.dp))
                 Text(stringResource(Res.string.btn_arrange), maxLines = 1)
             }
@@ -269,7 +269,7 @@ private fun StudioToolbar(
         if (onOpenPaperSettings != null) {
             item {
                 IconButton(onClick = onOpenPaperSettings) {
-                    Icon(androidx.compose.material.icons.Icons.Filled.Menu, contentDescription = stringResource(Res.string.paper_title))
+                    Icon(AppIcons.Menu, contentDescription = stringResource(Res.string.paper_title))
                 }
             }
         }
@@ -295,7 +295,7 @@ private fun SheetPageBar(state: StudioUiState, onSelectPage: (Int) -> Unit) {
                 onClick = { onSelectPage(page) },
                 label = { Text(stringResource(Res.string.sheet_tab, page + 1)) },
                 leadingIcon = if (state.currentPage == page) {
-                    { Icon(androidx.compose.material.icons.Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 } else {
                     null
                 },

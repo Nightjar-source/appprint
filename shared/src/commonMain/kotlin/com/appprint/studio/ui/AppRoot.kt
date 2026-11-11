@@ -1,6 +1,7 @@
-package com.appprint.studio.ui
+﻿package com.appprint.studio.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,7 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -21,10 +23,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -37,10 +35,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
@@ -85,6 +90,12 @@ sealed interface AppRoute : NavKey {
     @Serializable
     data object Settings : AppRoute
 }
+
+private data class TopLevelItem(
+    val route: AppRoute,
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+)
 
 /**
  * App root: three top-level destinations with an adaptive navigation shell
@@ -140,6 +151,12 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
             )
         }
 
+        val items = listOf(
+            TopLevelItem(AppRoute.Studio, stringResource(Res.string.nav_studio), AppIcons.Print),
+            TopLevelItem(AppRoute.Guide, stringResource(Res.string.nav_guide), AppIcons.Guide),
+            TopLevelItem(AppRoute.Settings, stringResource(Res.string.nav_settings), AppIcons.Settings),
+        )
+
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Column(Modifier.fillMaxSize()) {
                 AppHeader(
@@ -159,17 +176,11 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                     val useRail = maxWidth >= 600.dp
                     if (useRail) {
                         Row(Modifier.fillMaxSize()) {
-                            NavigationRail(containerColor = MaterialTheme.colorScheme.surface) {
-                                railItem(AppRoute.Studio, current, backStack, stringResource(Res.string.nav_studio)) {
-                                    Icon(AppIcons.Print, contentDescription = null)
-                                }
-                                railItem(AppRoute.Guide, current, backStack, stringResource(Res.string.nav_guide)) {
-                                    Icon(androidx.compose.material.icons.Icons.Filled.List, contentDescription = null)
-                                }
-                                railItem(AppRoute.Settings, current, backStack, stringResource(Res.string.nav_settings)) {
-                                    Icon(androidx.compose.material.icons.Icons.Filled.Settings, contentDescription = null)
-                                }
-                            }
+                            AdaptiveNavigationRail(
+                                items = items,
+                                current = current,
+                                onSelect = { route -> navigateTopLevel(backStack, route) },
+                            )
                             Box(Modifier.weight(1f).fillMaxHeight()) {
                                 content()
                             }
@@ -179,17 +190,11 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                             Box(Modifier.weight(1f).fillMaxWidth()) {
                                 content()
                             }
-                            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                                barItem(AppRoute.Studio, current, backStack, stringResource(Res.string.nav_studio)) {
-                                    Icon(AppIcons.Print, contentDescription = null)
-                                }
-                                barItem(AppRoute.Guide, current, backStack, stringResource(Res.string.nav_guide)) {
-                                    Icon(androidx.compose.material.icons.Icons.Filled.List, contentDescription = null)
-                                }
-                                barItem(AppRoute.Settings, current, backStack, stringResource(Res.string.nav_settings)) {
-                                    Icon(androidx.compose.material.icons.Icons.Filled.Settings, contentDescription = null)
-                                }
-                            }
+                            AdaptiveNavigationBar(
+                                items = items,
+                                current = current,
+                                onSelect = { route -> navigateTopLevel(backStack, route) },
+                            )
                         }
                     }
                 }
@@ -212,37 +217,103 @@ private fun navigateTopLevel(backStack: MutableList<NavKey>, route: AppRoute) {
 }
 
 @Composable
-private fun railItem(
-    route: AppRoute,
+private fun AdaptiveNavigationBar(
+    items: List<TopLevelItem>,
     current: AppRoute,
-    backStack: MutableList<NavKey>,
-    label: String,
-    icon: @Composable () -> Unit,
+    onSelect: (AppRoute) -> Unit,
 ) {
-    NavigationRailItem(
-        selected = current == route,
-        onClick = { navigateTopLevel(backStack, route) },
-        icon = icon,
-        label = { Text(label, maxLines = 1) },
-        alwaysShowLabel = true,
-    )
+    Surface(color = MaterialTheme.colorScheme.surface) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items.forEach { item ->
+                AdaptiveNavItem(
+                    item = item,
+                    selected = current == item.route,
+                    onClick = { onSelect(item.route) },
+                    iconOnly = false,
+                )
+            }
+        }
+    }
 }
 
 @Composable
-private fun barItem(
-    route: AppRoute,
+private fun AdaptiveNavigationRail(
+    items: List<TopLevelItem>,
     current: AppRoute,
-    backStack: MutableList<NavKey>,
-    label: String,
-    icon: @Composable () -> Unit,
+    onSelect: (AppRoute) -> Unit,
 ) {
-    NavigationBarItem(
-        selected = current == route,
-        onClick = { navigateTopLevel(backStack, route) },
-        icon = icon,
-        label = { Text(label, maxLines = 1) },
-        alwaysShowLabel = true,
-    )
+    Surface(color = MaterialTheme.colorScheme.surface) {
+        Column(
+            modifier = Modifier
+                .width(84.dp)
+                .fillMaxHeight()
+                .padding(horizontal = 6.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            items.forEach { item ->
+                AdaptiveNavItem(
+                    item = item,
+                    selected = current == item.route,
+                    onClick = { onSelect(item.route) },
+                    iconOnly = false,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdaptiveNavItem(
+    item: TopLevelItem,
+    selected: Boolean,
+    onClick: () -> Unit,
+    iconOnly: Boolean,
+) {
+    val indicator = MaterialTheme.colorScheme.secondaryContainer
+    val contentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .semantics {
+                role = Role.Tab
+                this.selected = selected
+            }
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(if (selected) indicator else MaterialTheme.colorScheme.surface)
+                .size(width = 58.dp, height = 32.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                item.icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        Text(
+            text = item.label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
+            color = contentColor,
+            maxLines = 1,
+            fontSize = 11.sp,
+        )
+    }
 }
 
 @Composable
@@ -321,7 +392,7 @@ private fun ThemeMenu(theme: AppTheme, onTheme: (AppTheme) -> Unit) {
                     },
                     trailingIcon = {
                         if (theme == option) {
-                            Icon(androidx.compose.material.icons.Icons.Filled.Check, contentDescription = null)
+                            Icon(AppIcons.Check, contentDescription = null)
                         }
                     },
                 )

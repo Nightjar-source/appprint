@@ -209,6 +209,66 @@ object AppIcons {
         }
     }.build()
 
+    /** Check mark. */
+    val Check: ImageVector = ImageVector.Builder(
+        name = "AppCheck",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        path(fill = WHITE) {
+            moveTo(9f, 16.17f)
+            lineTo(4.83f, 12f)
+            lineTo(3.5f, 13.33f)
+            lineTo(9f, 18.83f)
+            lineTo(21f, 6.83f)
+            lineTo(19.67f, 5.5f)
+            close()
+        }
+    }.build()
+
+    /** Refresh — circular arrow (donut + head). */
+    val Refresh: ImageVector = ImageVector.Builder(
+        name = "AppRefresh",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        path(fill = WHITE) {
+            moveTo(12f, 4f)
+            arcToRelative(8f, 8f, 0f, true, true, 0.001f, 0f)
+            close()
+        }
+        path(fill = CUT) {
+            moveTo(12f, 6.6f)
+            arcToRelative(5.4f, 5.4f, 0f, true, true, 0.001f, 0f)
+            close()
+        }
+        path(fill = WHITE) {
+            moveTo(12.6f, 1.8f)
+            horizontalLineTo(21.5f)
+            verticalLineTo(10.7f)
+            close()
+        }
+    }.build()
+
+    /** Hamburger menu (paper settings). */
+    val Menu: ImageVector = ImageVector.Builder(
+        name = "AppMenu",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        path(fill = WHITE) {
+            moveTo(4f, 6.4f); horizontalLineTo(20f); verticalLineTo(8.7f); horizontalLineTo(4f); close()
+            moveTo(4f, 11.2f); horizontalLineTo(20f); verticalLineTo(13.5f); horizontalLineTo(4f); close()
+            moveTo(4f, 16f); horizontalLineTo(20f); verticalLineTo(18.3f); horizontalLineTo(4f); close()
+        }
+    }.build()
+
     /** Half-filled disc — light/dark theme toggle. */
     val Theme: ImageVector = ImageVector.Builder(
         name = "AppTheme",
@@ -228,6 +288,89 @@ object AppIcons {
             moveTo(12f, 5.5f)
             verticalLineTo(18.5f)
             arcToRelative(6.5f, 6.5f, 0f, false, false, 0f, -13f)
+            close()
+        }
+    }.build()
+
+    /** Guide — document with lines. */
+    val Guide: ImageVector = ImageVector.Builder(
+        name = "AppGuide",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        // outline
+        path(fill = WHITE) {
+            moveTo(6f, 2f)
+            curveTo(4.9f, 2f, 4f, 2.9f, 4f, 4f)
+            verticalLineTo(20f)
+            curveTo(4f, 21.1f, 4.9f, 22f, 6f, 22f)
+            horizontalLineTo(18f)
+            curveTo(19.1f, 22f, 20f, 21.1f, 20f, 20f)
+            verticalLineTo(8f)
+            close()
+        }
+        // folded corner
+        path(fill = CUT) {
+            moveTo(14f, 2f)
+            lineTo(20f, 8f)
+            horizontalLineTo(14f)
+            close()
+        }
+        // three text lines (holes)
+        path(fill = CUT) {
+            moveTo(7.5f, 12.2f)
+            horizontalLineTo(16.5f)
+            verticalLineTo(14f)
+            horizontalLineTo(7.5f)
+            close()
+            moveTo(7.5f, 16.4f)
+            horizontalLineTo(13f)
+            verticalLineTo(18.2f)
+            horizontalLineTo(7.5f)
+            close()
+        }
+    }.build()
+
+    /** Settings — three sliders with knobs. */
+    val Settings: ImageVector = ImageVector.Builder(
+        name = "AppSettings",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        path(fill = WHITE) {
+            // row 1 (center y = 7.7)
+            moveTo(3f, 6.5f)
+            horizontalLineTo(10.4f); verticalLineTo(8.9f); horizontalLineTo(3f)
+            close()
+            moveTo(16.6f, 6.5f)
+            horizontalLineTo(21f); verticalLineTo(8.9f); horizontalLineTo(16.6f)
+            close()
+            moveTo(13.5f, 5f)
+            arcToRelative(2.7f, 2.7f, 0f, true, true, 0.001f, 0f)
+            close()
+            // row 2 (center y = 12.5)
+            moveTo(3f, 11.3f)
+            horizontalLineTo(5f); verticalLineTo(13.7f); horizontalLineTo(3f)
+            close()
+            moveTo(10f, 11.3f)
+            horizontalLineTo(21f); verticalLineTo(13.7f); horizontalLineTo(10f)
+            close()
+            moveTo(7.5f, 9.8f)
+            arcToRelative(2.7f, 2.7f, 0f, true, true, 0.001f, 0f)
+            close()
+            // row 3 (center y = 17.2)
+            moveTo(3f, 16f)
+            horizontalLineTo(15.2f); verticalLineTo(18.4f); horizontalLineTo(3f)
+            close()
+            moveTo(20f, 16f)
+            horizontalLineTo(21f); verticalLineTo(18.4f); horizontalLineTo(20f)
+            close()
+            moveTo(17.6f, 14.5f)
+            arcToRelative(2.7f, 2.7f, 0f, true, true, 0.001f, 0f)
             close()
         }
     }.build()
