@@ -35,20 +35,19 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation("org.jetbrains.compose.runtime:runtime")
-            implementation("org.jetbrains.compose.foundation:foundation")
-            implementation("org.jetbrains.compose.ui:ui")
-            implementation("org.jetbrains.compose.ui:ui-graphics")
-            implementation("org.jetbrains.compose.material3:material3")
-            implementation("org.jetbrains.compose.material:material-icons-core")
-            implementation("org.jetbrains.compose.components:components-resources")
-            implementation("org.jetbrains.compose.ui:ui-tooling-preview")
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.ui.graphics)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.material.icons.core)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.ui.tooling.preview)
 
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.lifecycle.viewmodel.navigation3)
-            implementation(libs.navigation3.runtime)
-            implementation(libs.navigation3.ui)
+            implementation(libs.navigation3.ui.multiplatform)
 
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.core)
@@ -61,7 +60,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
             implementation(libs.lifecycle.viewmodel.compose)
-            implementation("org.jetbrains.compose.ui:ui-tooling")
+            implementation(libs.compose.ui.tooling)
         }
         jvmMain.dependencies {
             // Skia-backed Compose for Desktop comes transitively via the Compose plugin
