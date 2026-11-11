@@ -33,16 +33,15 @@ import com.appprint.studio.ui.components.FlagCardGlyph
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
-private const val VERSION_NAME = "1.0.0"
-private const val VERSION_CODE = 1
+private const val VERSION_NAME = "1.0.2"
+private const val VERSION_CODE = 3
 
 private val DEPENDENCIES = listOf(
     Triple("AndroidX Core KTX", "1.19.1", "Apache-2.0 · Google"),
     Triple("AndroidX Core SplashScreen", "1.2.0", "Apache-2.0 · Google"),
     Triple("AndroidX Activity & Compose", "1.13.0", "Apache-2.0 · Google"),
-    Triple("Compose Multiplatform", "1.11.1", "Apache-2.0 · JetBrains"),
-    Triple("Material 3 (Compose)", "1.4.0", "Apache-2.0 · Google"),
-    Triple("Navigation 3", "1.2.0", "Apache-2.0 · Google/JetBrains"),
+    Triple("Compose Multiplatform (Material 3 Expressive)", "1.12.2", "Apache-2.0 · JetBrains"),
+    Triple("Navigation 3", "1.2.1", "Apache-2.0 · Google/JetBrains"),
     Triple("Lifecycle (Compose)", "2.11.0", "Apache-2.0 · JetBrains"),
     Triple("Kotlin Coroutines", "1.11.0", "Apache-2.0 · JetBrains"),
     Triple("Kotlinx Serialization", "1.12.0", "Apache-2.0 · JetBrains"),
