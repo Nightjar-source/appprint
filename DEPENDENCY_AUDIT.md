@@ -12,13 +12,13 @@
 | `com.android.application` (AGP) | **9.2.1** | 9.5.1 | **إبقاء 9.2.1** | AGP 9.2.x ↔ Gradle 9.4.1 (Compatibility matrix). 9.5.x يتطلب Gradle 9.6.0 — يتطلب ترقية الـ Wrapper (توصية بانتظار موافقة المالك). compileSdk 37 مفعل عبر `android.suppressUnsupportedCompileSdk=37` (نفس نمط مشروع المرجع) |
 | `com.android.kotlin.multiplatform.library` (AGP-KMP) | **9.2.1** | — | **تبنّي** | AGP 9.x لا يسمح بـ `com.android.library` بجانب `org.jetbrains.kotlin.multiplatform` — المكوّن الرسمي للموديولات المكتبية KMP |
 | `org.jetbrains.kotlin.multiplatform` | **2.4.21** | 2.4.21 | **تبنّي** | أحدث مستقر على Maven Central (2.5.0-Beta2 مستبعد كـ pre-release). klibs: كل أدوات البناء غير مفهرسة هناك — تم التحقق من Central |
-| `org.jetbrains.compose` (Compose Multiplatform) | **1.11.1** | 1.11.1 | **تبنّي** | جدول kmp-agent-skills المتوافق (CMP 1.11.1 ↔ AGP 9.2.0 / Kotlin 2.4.x)؛ klibs أكد منصات common/jvm/androidJvm/js/wasm/native |
+| `org.jetbrains.compose` (Compose Multiplatform) | **1.12.2** | 1.13.0-beta02 | **تبنّي 1.12.2** | أحدث مستقر مثبت على المرجع التجاري (amsakkarrar) مع نفس المكدس؛ klibs يؤكد منصات common/jvm/androidJvm/js/wasm/native |
 | `org.jetbrains.kotlin.plugin.compose` | **2.4.21** | — | **تبنّي** | مطابق لنسخة Kotlin (AGP 9 بدون `kotlin-android` — Kotlin مدمج في AGP 9) |
 | `org.jetbrains.kotlin.plugin.serialization` | **2.4.21** | — | **تبنّي** | مفاتيح Navigation 3 مُعلَّمة بـ @Serializable |
-| `androidx.compose.material3:material3` | **1.4.0** | 1.4.0 (via CMP) | **تبنّي** | klibs `latestStableVersion=1.4.0`؛ BOM غير مستخدم — CMP plugin يدير الإصدارات |
-| `androidx.compose.ui:ui` | **1.12.1** | 1.12.1 (via CMP) | **تبنّي** | klibs stable؛ compose-bom 2026.09.00 (غير مستخدمة) يطابق تماماً |
+| `androidx.compose.material3:material3` | **1.5.12** | 1.5.12 (via CMP) | **تبنّي** | klibs `latestStableVersion=1.5.12` (JetBrains MP)؛ BOM غير مستخدم — CMP plugin يدير الإصدارات؛ material-icons-extended 1.5.12 للأيقونات فقط (يُرشّح R8 غير المستخدم) |
+| `androidx.compose.ui:ui*` | **1.12.2** | 1.12.2 (via CMP) | **تبنّي** | مستقرة على كامل سلسلة 1.12.x في JetBrains MP؛ compose-bom 2026.09.00 (غير مستخدمة) تطابق |
 | `org.jetbrains.androidx.lifecycle:*` (viewmodel/runtime/compose/viewmodel-navigation3) | **2.11.0** | 2.11.0 | **تبنّي** | klibs `latestStableVersion=2.11.0` — نسخة JetBrains المنشورة KMP من androidx.lifecycle |
-| `org.jetbrains.androidx.navigation3:navigation3-runtime/ui` | **1.2.0** | 1.2.0 | **تبنّي** | klibs: الحزمة المؤكدة AndroidJvm+Common+JS+Native+WASM+JVM؛ klibs `compose` project يؤكد Compose MP 1.11 يدعم Nav3 ✓ (التنقل **State-driven**: `rememberNavBackStack` user-owned back stack) |
+| `org.jetbrains.androidx.navigation3:navigation3-ui` + `androidx.navigation3:navigation3-runtime/ui` | **1.2.0 / 1.2.1** | 1.2.0 / 1.2.1 | **تبنّي** | klibs يؤكد platforms common/androidJvm/jvm/js/native/wasm; الـ runtime عبر jetbrains metadata + androidx 1.2.1 في androidMain (مقطع المرجع)؛ التنقل **State-driven**: `rememberNavBackStack(SavedStateConfiguration { … }, AppRoute.Studio)` user-owned back stack |
 | `org.jetbrains.kotlinx:kotlinx-coroutines-core` | **1.11.0** | 1.11.0 | **تبنّي** | klibs stable |
 | `org.jetbrains.kotlinx:kotlinx-serialization-core` | **1.12.0** | 1.12.0 | **تبنّي** | klibs stable |
 | `androidx.core:core-ktx` | **1.19.1** | 1.19.1 | **تبنّي** | Google Maven `release=1.19.1` |
@@ -52,9 +52,10 @@
 ## تحذيرات / أعمال معلّقة (Breaking)
 
 1. **AGP 9.5.1 ↔ Gradle 9.6.0**: عند موافقة المالك على ترقية Wrapper (لا يلمس حالياً)، الترقية المقترحة: Gradle 9.6.0 + AGP 9.5.1 + إزالة `android.suppressUnsupportedCompileSdk`
-2. **Compose Multiplatform 1.12 / Navigation3 1.3**: إصدارات pre-release مستبعدة؛ تُراجع بعد أول مستقر
+2. **Compose Multiplatform 1.13.0 / Navigation3 1.2.1+**: إصدارات pre-release مستبعدة؛ تُراجع بعد أول مستقر؛ تكاليف الترقية من 1.12.x معروفة على المرجع (التجميع alignment مع AGP built-in Kotlin)
 3. **iOS**: يحتاج macOS + iosApp (KMP wizard) + تفعيل actuals (PDF/Print/Pickers)؛ ملفات `iosMain` لا تكسر البناء حالياً
 4. **Windows (isLocal) لا يبني المشروع** (بطلب المالك — جهاز ضعيف)؛ التحقق الإلزامي عبر GitHub Actions (`verify` ثم `build-release`)
+5. **UiTooling/Compose internal**: تبعيات preview 1.12.2 مباشرة؛ تبعيات icons-extended تبقى لأن M3 icons core لا يقدّم List/Settings/Check في هذه السلسلة |
 
 ## التحقق
 

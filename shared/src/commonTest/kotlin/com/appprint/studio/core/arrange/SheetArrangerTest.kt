@@ -20,7 +20,7 @@ class SheetArrangerTest {
 
     @Test
     fun placesTwelveNationalIdsAcrossPages() {
-        val cards = (1..12L).map { card(it, 85.6f, 54f) }
+        val cards = (1..12L).map { card(it, 85.6f, 54f, "same") }
         val result = SheetArranger.arrange(cards, a4)
         assertEquals(12, result.cards.size)
         assertTrue(result.pages >= 1)
@@ -45,7 +45,7 @@ class SheetArrangerTest {
 
     @Test
     fun landscapeSheetFitsMoreColumns() {
-        val cards = (1..8L).map { card(it, 85.6f, 54f, "n$it") }
+        val cards = (1..8L).map { card(it, 85.6f, 54f, "same") }
         val portrait = SheetArranger.arrange(cards, a4)
         val landscape = SheetArranger.arrange(cards, a4.copy(landscape = true))
         val portraitPages = portrait.cards.maxOf { it.page }
