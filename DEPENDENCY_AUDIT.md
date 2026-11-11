@@ -52,14 +52,14 @@
 ## تحذيرات / أعمال معلّقة (Breaking)
 
 1. **AGP 9.5.1 ↔ Gradle 9.6.0**: عند موافقة المالك على ترقية Wrapper (لا يلمس حالياً)، الترقية المقترحة: Gradle 9.6.0 + AGP 9.5.1 + إزالة `android.suppressUnsupportedCompileSdk`
-2. **Compose Multiplatform 1.13.0 / Navigation3 1.2.1+**: إصدارات pre-release مستبعدة؛ تُراجع بعد أول مستقر؛ تكاليف الترقية من 1.12.x معروفة على المرجع (التجميع alignment مع AGP built-in Kotlin)
-3. **iOS**: يحتاج macOS + iosApp (KMP wizard) + تفعيل actuals (PDF/Print/Pickers)؛ ملفات `iosMain` لا تكسر البناء حالياً
+2. **Compose Multiplatform 1.13.0 / Navigation3 1.2.1+**: إصدارات pre-release مستبعدة؛ تُراجع بعد أول مستقر
+3. **androidApp يجب أن يطبّق `org.jetbrains.compose` + `org.jetbrains.kotlin.plugin.compose`**: بدونها يُبنى الـ `MainActivity` بـ plain Kotlin لا تُعالج الـ @Composable، ويُستدعى `setContent` بدون مُعامِل `Composer/Integer` → `NoSuchMethodError: setContent$default(...Function0...)` عند الإقلاع (خطأ v1.0.0، مُصلَح في v1.0.1)
 4. **Windows (isLocal) لا يبني المشروع** (بطلب المالك — جهاز ضعيف)؛ التحقق الإلزامي عبر GitHub Actions (`verify` ثم `build-release`)
 5. **UiTooling/Compose internal**: تبعيات preview 1.12.2 مباشرة؛ تبعيات icons-extended تبقى لأن M3 icons core لا يقدّم List/Settings/Check في هذه السلسلة |
 
 ## التحقق
 
 - **لا يوجد بناء محلي** بطلب المالك. القناة الرسمية للتحقق: GitHub Actions → https://github.com/Nightjar-source/appprint/actions
-- آخر نتيجة ناجحة: **Verify — jvmTest (4 اختبارات ✓) + assembleDebug ✓** ثم **Build Official Signed APK ✓** (Run #43027018430) على الفرع main.
+- آخر نتيجة ناجحة: **Verify — jvmTest (4 اختبارات ✓) + assembleDebug ✓** ثم **Build Official Signed APK ✓** (Run #43034334672 على الوسم v1.0.1) على الفرع main. الإصدار v1.0.0 تعطل عند الإقلاع (NoSuchMethodError) — حُوّل إلى prerelease مع تحذير؛ الإصلاح في v1.0.1 بتطبيق Compose Multiplatform plugins في androidApp.
 - أوامر التحقق في CI: `./gradlew :shared:jvmTest :androidApp:assembleDebug --stacktrace` ثم `./gradlew :androidApp:assembleRelease --no-daemon --stacktrace`
 - الـ APK الرسمي موقّع بمفتاح المالك (Nightjar keystore — يُستعاد من `secrets.KEYSTORE_BASE64` في مهمة build-release) ومتاح كـ artifact ثابت على كل دفعة إلى main، وعلى GitHub Releases عند الوسوم `v*`.
