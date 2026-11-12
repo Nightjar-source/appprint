@@ -119,7 +119,8 @@ fun StudioScreen(viewModel: StudioViewModel) {
         }
 
         // Back: close dialogs/sheets first, then deselect — never exits directly
-        PlatformBackHandler(enabled = true) {
+        val overlayOpen = showClearConfirm || showDeletePage != null || showInspectorSheet || showPaperSheet
+        PlatformBackHandler(enabled = overlayOpen || state.selectedId != null) {
             when {
                 showClearConfirm -> showClearConfirm = false
                 showDeletePage != null -> showDeletePage = null
@@ -145,29 +146,38 @@ fun StudioScreen(viewModel: StudioViewModel) {
 
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 if (state.cards.isEmpty()) {
-                    if (!toolbarHidden) {
-                        EditorToolbar(
-                            state = state,
-                            onAddImages = pickImages,
-                            onCamera = onCamera,
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        EmptyState(
+                            onUpload = pickImages,
                             onSamples = viewModel::addSamples,
-                            onArrange = viewModel::arrangeSmart,
-                            onSortSize = viewModel::sortBySize,
-                            onClear = { showClearConfirm = true },
-                            onSharePng = { viewModel.sharePng(state.currentPage) },
-                            onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
-                            onHide = { toolbarHidden = true },
-                            compact = phone,
+                            onAddSample = viewModel::addSampleOfType,
+                            modifier = Modifier.fillMaxSize(),
                         )
-                    } else {
-                        ToolbarHiddenBar { toolbarHidden = false }
+                        if (!toolbarHidden) {
+                            EditorToolbar(
+                                state = state,
+                                onAddImages = pickImages,
+                                onCamera = onCamera,
+                                onSamples = viewModel::addSamples,
+                                onArrange = viewModel::arrangeSmart,
+                                onSortSize = viewModel::sortBySize,
+                                onClear = { showClearConfirm = true },
+                                onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
+                                onHide = { toolbarHidden = true },
+                                compact = phone,
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(start = 10.dp, end = 10.dp, top = 8.dp),
+                            )
+                        } else {
+                            ToolbarHiddenBar(
+                                onShow = { toolbarHidden = false },
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(start = 10.dp, end = 10.dp, top = 8.dp),
+                            )
+                        }
                     }
-                    EmptyState(
-                        onUpload = pickImages,
-                        onSamples = viewModel::addSamples,
-                        onAddSample = viewModel::addSampleOfType,
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                    )
                 } else {
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         SheetCanvas(
@@ -184,7 +194,6 @@ fun StudioScreen(viewModel: StudioViewModel) {
                                 onArrange = viewModel::arrangeSmart,
                                 onSortSize = viewModel::sortBySize,
                                 onClear = { showClearConfirm = true },
-                                onSharePng = { viewModel.sharePng(state.currentPage) },
                                 onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
                                 onHide = { toolbarHidden = true },
                                 compact = phone,
@@ -303,7 +312,6 @@ private fun EditorToolbar(
     onArrange: () -> Unit,
     onSortSize: () -> Unit,
     onClear: () -> Unit,
-    onSharePng: () -> Unit,
     onOpenPaperSettings: (() -> Unit)?,
     onHide: () -> Unit,
     compact: Boolean = false,
@@ -367,15 +375,6 @@ private fun EditorToolbar(
                     if (!compact) {
                         Spacer(Modifier.size(6.dp))
                         Text(Str.btn_sort_size, maxLines = 1)
-                    }
-                }
-            }
-            item {
-                FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(Icons.Filled.Image, contentDescription = Str.btn_save_png, modifier = Modifier.size(18.dp))
-                    if (!compact) {
-                        Spacer(Modifier.size(6.dp))
-                        Text(Str.btn_save_png, maxLines = 1)
                     }
                 }
             }
@@ -599,7 +598,21 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
         BoxWithConstraints(
             modifier = modifier
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-                .clipToBounds(),
+                .clipToBounds()
+                .pointerInput(Unit) {
+                    detectTapGestures(onDoubleTap = {
+                        zoom = when {
+                            zoom < 1.6f -> 1.75f
+                            zoom < 2.4f -> 2.5f
+                            else -> 1f
+                        }
+                        if (zoom == 1f) {
+                            panX = 0f
+                            panY = 0f
+                        }
+                    })
+                }
+                .transformable(transformable),
         ) {
             val sheetWdp = settings.sheetWidthMm * DP_PER_MM
             val sheetHdp = settings.sheetHeightMm * DP_PER_MM
@@ -608,25 +621,6 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                 (maxHeight.value - 24f) / sheetHdp,
             ).coerceIn(0.25f, 2.4f)
             val effective = fit * zoom
-
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .transformable(transformable)
-                    .pointerInput(Unit) {
-                        detectTapGestures(onDoubleTap = {
-                            zoom = when {
-                                zoom < 1.6f -> 1.75f
-                                zoom < 2.4f -> 2.5f
-                                else -> 1f
-                            }
-                            if (zoom == 1f) {
-                                panX = 0f
-                                panY = 0f
-                            }
-                        })
-                    },
-            )
 
             // light blueprint backdrop (adapts to theme)
             Canvas(Modifier.fillMaxSize()) {

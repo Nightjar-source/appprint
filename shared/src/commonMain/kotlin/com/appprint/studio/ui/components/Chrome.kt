@@ -1,12 +1,13 @@
 package com.appprint.studio.ui.components
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.Composable
 
 /**
  * Floating-chrome geometry — single source of truth.
@@ -20,10 +21,12 @@ object Chrome {
     val BottomBarGap = 8.dp
     val EdgeInset = 12.dp
 
+    @OptIn(ExperimentalLayoutApi::class)
     @Composable
     fun topReserve(): Dp =
         WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + TopBarGap + TopBarHeight
 
+    @OptIn(ExperimentalLayoutApi::class)
     @Composable
     fun bottomReserve(): Dp =
         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BottomBarGap + BottomBarHeight + 12.dp

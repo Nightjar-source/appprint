@@ -3,6 +3,7 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -111,6 +113,7 @@ private fun routeName(route: AppRoute): String = when (route) {
  *  - One unified export menu button + direct print button in the top bar.
  *  - System Back wired step-by-step through panels/dialogs/selection.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppRoot(viewModel: StudioViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -167,8 +170,8 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val cutoutStart = WindowInsets.displayCutout.asPaddingValues().calculateStartPadding(LocalLayoutDirection.current)
 
-        PlatformBackHandler(enabled = true) {
-            if (current != AppRoute.Studio) navigateTopLevel(backStack, AppRoute.Studio)
+        PlatformBackHandler(enabled = current != AppRoute.Studio) {
+            navigateTopLevel(backStack, AppRoute.Studio)
         }
 
         Box(
@@ -391,15 +394,15 @@ private fun FloatingNavPill(
         color = container,
         shadowElevation = 12.dp,
         shape = RoundedCornerShape(percent = 50),
-        modifier = modifier.height(Chrome.BottomBarHeight).fillMaxWidth(),
+        modifier = modifier.height(Chrome.BottomBarHeight).widthIn(max = 336.dp),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 6.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 0.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             items.forEach { item ->
-                NavPillItem(item = item, selected = current == item.route, onClick = { onSelect(item.route) }, modifier = Modifier.weight(1f))
+                NavPillItem(item = item, selected = current == item.route, onClick = { onSelect(item.route) })
             }
         }
     }
