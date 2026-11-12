@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateBottomPadding
-import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,7 +27,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.activity.compose.BackHandler
+import com.appprint.studio.ui.platform.PlatformBackHandler
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -59,7 +57,6 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
-import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.rememberNotificationPermissionRequester
 import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.screens.GuideScreen
@@ -157,7 +154,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
         // Back: leave secondary screens to the studio; at the studio, history handled inside the screen.
-        BackHandler {
+        PlatformBackHandler(enabled = true) {
             if (current != AppRoute.Studio) navigateTopLevel(backStack, AppRoute.Studio)
         }
 
