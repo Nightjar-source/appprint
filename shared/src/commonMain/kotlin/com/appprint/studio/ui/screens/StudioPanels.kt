@@ -2,46 +2,37 @@
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.appprint.studio.core.model.ArrangeMode
 import com.appprint.studio.core.model.FrameStyle
 import com.appprint.studio.core.model.PaperPreset
 import com.appprint.studio.core.model.SheetBackground
-import com.appprint.studio.core.model.CardType
 import com.appprint.studio.ui.StudioUiState
 import com.appprint.studio.ui.StudioViewModel
-import com.appprint.studio.ui.components.AppIcons
 import com.appprint.studio.ui.components.ColorDot
 import com.appprint.studio.ui.components.LabeledSlider
 import com.appprint.studio.ui.components.SectionHeader
@@ -141,6 +132,7 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
             Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 StudioChip(Str.mode_grid, s.mode == ArrangeMode.GRID, { viewModel.setMode(ArrangeMode.GRID) })
                 StudioChip(Str.mode_comfy, s.mode == ArrangeMode.COMFORTABLE, { viewModel.setMode(ArrangeMode.COMFORTABLE) })
+                StudioChip(Str.mode_compact, s.mode == ArrangeMode.COMPACT, { viewModel.setMode(ArrangeMode.COMPACT) })
             }
             if (s.mode == ArrangeMode.COMFORTABLE) {
                 Text(
@@ -152,6 +144,18 @@ fun PaperSettingsPanel(state: StudioUiState, viewModel: StudioViewModel, modifie
             }
         }
 
+        ToggleRow(
+            title = Str.auto_arrange,
+            subtitle = Str.auto_arrange_hint,
+            checked = s.autoArrange,
+            onCheckedChange = viewModel::setAutoArrange,
+        )
+        ToggleRow(
+            title = Str.auto_distribute,
+            subtitle = Str.auto_distribute_hint,
+            checked = s.autoDistribute,
+            onCheckedChange = viewModel::setAutoDistribute,
+        )
         ToggleRow(
             title = Str.group_smart,
             subtitle = "الأكبر أولاً، صفوف مدمجة داخل الهوامش",
@@ -267,14 +271,74 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         } else {
-            // name + type + dims
-            Column(Modifier.padding(horizontal = 16.dp)) {
-                Text(card.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
-                Text(
-                    text = "${card.type.labelAr} · ${formatMm(card.widthMm)} × ${formatMm(card.heightMm)} ${Str.mm}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp),
+            // rename — editable, single line
+            OutlinedTextField(
+                value = card.name,
+                onValueChange = viewModel::renameSelected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                label = { Text(Str.rename_card) },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+            )
+            Text(
+                text = "${card.type.labelAr} · ${formatMm(card.widthMm)} × ${formatMm(card.heightMm)} ${Str.mm}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+            )
+
+            // size — sliders (mm)
+            LabeledSlider(
+                label = Str.size_w,
+                value = card.widthMm,
+                valueRange = 30f..500f,
+                onValueChange = { v -> viewModel.setSelectedSize(v, card.heightMm) },
+                valueText = "${formatMm(card.widthMm)} مم",
+            )
+            LabeledSlider(
+                label = Str.size_h,
+                value = card.heightMm,
+                valueRange = 20f..500f,
+                onValueChange = { v -> viewModel.setSelectedSize(card.widthMm, v) },
+                valueText = "${formatMm(card.heightMm)} مم",
+            )
+
+            // rotation — 0° / 90° / 180°
+            Text(
+                Str.rotate_title,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+            )
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                listOf(0, 90, 180).forEach { deg ->
+                    FilterChip(
+                        selected = card.rotation == deg,
+                        onClick = { viewModel.rotateSelectedTo(deg) },
+                        label = { Text("$deg°") },
+                    )
+                }
+            }
+
+            // per-card art toggles
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                FilterChip(
+                    selected = card.border,
+                    onClick = viewModel::toggleCardBorder,
+                    label = { Text(Str.border_chip) },
+                )
+                FilterChip(
+                    selected = card.guides,
+                    onClick = viewModel::toggleCardGuides,
+                    label = { Text(Str.guides_chip) },
                 )
             }
 
@@ -286,11 +350,21 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
                 FilledTonalButton(onClick = viewModel::duplicateSelected, modifier = Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
                     Text(Str.btn_duplicate, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
                 }
-                FilledTonalButton(onClick = viewModel::rotateSelected, modifier = Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
-                    Text(Str.btn_rotate, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
-                }
                 FilledTonalButton(onClick = viewModel::deleteSelected, modifier = Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
                     Text(Str.btn_delete, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp), color = MaterialTheme.colorScheme.error)
+                }
+            }
+
+            // compare before/after + auto-crop
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                OutlinedButton(onClick = viewModel::toggleCompareBefore, modifier = Modifier.weight(1f)) {
+                    Text(if (state.compareBefore) Str.compare_hide else Str.compare_before, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
+                }
+                OutlinedButton(onClick = viewModel::autoCropSelected, modifier = Modifier.weight(1f)) {
+                    Text(Str.auto_crop, maxLines = 1, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp))
                 }
             }
 

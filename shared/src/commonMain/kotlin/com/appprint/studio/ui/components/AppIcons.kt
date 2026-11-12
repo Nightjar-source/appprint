@@ -15,6 +15,29 @@ private val CUT = SolidColor(Color(0x66000000)) // translucent cut-out (icon tin
  */
 object AppIcons {
 
+    val Plus: ImageVector = ImageVector.Builder(
+        name = "AppPlus",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).apply {
+        path(fill = WHITE) {
+            moveTo(10f, 5f)
+            horizontalLineTo(14f)
+            verticalLineTo(19f)
+            horizontalLineTo(10f)
+            close()
+        }
+        path(fill = WHITE) {
+            moveTo(5f, 10f)
+            horizontalLineTo(19f)
+            verticalLineTo(14f)
+            horizontalLineTo(5f)
+            close()
+        }
+    }.build()
+
     val Html: ImageVector = ImageVector.Builder(
         name = "AppHtml",
         defaultWidth = 24.dp,

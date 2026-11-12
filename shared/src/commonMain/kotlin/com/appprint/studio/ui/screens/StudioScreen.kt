@@ -98,6 +98,7 @@ fun StudioScreen(viewModel: StudioViewModel) {
     var showPaperSheet by rememberSaveable { mutableStateOf(false) }
     var showInspectorSheet by rememberSaveable { mutableStateOf(false) }
     var toolbarHidden by rememberSaveable { mutableStateOf(false) }
+    var showDeletePage by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val pickImages = rememberImagePickerLauncher(maxItems = 100) { uris -> viewModel.importImages(uris) }
     val onCamera = rememberCameraCaptureLauncher { path ->
@@ -188,6 +189,8 @@ fun StudioScreen(viewModel: StudioViewModel) {
                     SheetPageBar(
                         state = state,
                         onSelectPage = viewModel::currentPage,
+                        onAddSheet = viewModel::addSheet,
+                        onRequestDelete = { showDeletePage = state.currentPage },
                         modifier = Modifier.padding(bottom = 6.dp, top = 2.dp),
                     )
                 }
@@ -240,6 +243,35 @@ fun StudioScreen(viewModel: StudioViewModel) {
             },
             dismissButton = {
                 TextButton(onClick = { showClearConfirm = false }) { Text(Str.cancel) }
+            },
+        )
+    }
+    if (showDeletePage != null) {
+        val page = showDeletePage!!
+        val count = state.cards.count { it.page == page }
+        AlertDialog(
+            onDismissRequest = { showDeletePage = null },
+            title = { Text(Str.delete_page_title) },
+            text = {
+                Text(
+                    "هذه الورقة رقم ${page + 1} فيها $count بطاقة.\n${Str.delete_page_body}",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    TextButton(onClick = {
+                        viewModel.deleteSheet(page, deleteCards = false)
+                        showDeletePage = null
+                    }) { Text(Str.delete_page_keep) }
+                    TextButton(onClick = {
+                        viewModel.deleteSheet(page, deleteCards = true)
+                        showDeletePage = null
+                    }) { Text(Str.delete_page_all, color = MaterialTheme.colorScheme.error) }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeletePage = null }) { Text(Str.cancel) }
             },
         )
     }
@@ -376,24 +408,41 @@ private fun ToolbarHiddenBar(onShow: () -> Unit) {
 // ------------------------------------------------------------ page bar
 
 @Composable
-private fun SheetPageBar(state: StudioUiState, onSelectPage: (Int) -> Unit, modifier: Modifier = Modifier) {
-    if (state.pageCount <= 1) return
+private fun SheetPageBar(
+    state: StudioUiState,
+    onSelectPage: (Int) -> Unit,
+    onAddSheet: () -> Unit,
+    onRequestDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        items((0 until state.pageCount).toList(), key = { it }) { page ->
-            AssistChip(
-                onClick = { onSelectPage(page) },
-                label = { Text("ورقة ${page + 1} (${state.cards.count { it.page == page }})") },
-                leadingIcon = if (state.currentPage == page) {
-                    { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                } else {
-                    null
-                },
-            )
+        if (state.pageCount > 1) {
+            items((0 until state.pageCount).toList(), key = { it }) { page ->
+                AssistChip(
+                    onClick = { onSelectPage(page) },
+                    label = { Text("ورقة ${page + 1} (${state.cards.count { it.page == page }})") },
+                    leadingIcon = if (state.currentPage == page) {
+                        { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else {
+                        null
+                    },
+                )
+            }
+            item {
+                IconButton(onClick = onRequestDelete) {
+                    Text("🗑", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        }
+        item {
+            IconButton(onClick = onAddSheet) {
+                Icon(AppIcons.Plus, contentDescription = Str.add_sheet, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }
@@ -680,11 +729,11 @@ private fun CardOnSheet(
             Modifier
                 .align(Alignment.Center)
                 .size(contentW.dp, contentH.dp)
-                .graphicsLayer { rotationZ = if (card.rotation == 90) 90f else 0f }
+                .graphicsLayer { rotationZ = card.rotation.toFloat() }
                 .clip(RoundedCornerShape(6.dp)),
         ) {
             if (card.imageUri != null) {
-                CardImage(card = card)
+                CardImage(card = card, compareBefore = state.compareBefore)
             } else {
                 SampleCardArt(card = card, modifier = Modifier.fillMaxSize())
             }
@@ -727,9 +776,12 @@ private fun CardOnSheet(
 }
 
 @Composable
-private fun CardImage(card: CardItem) {
+private fun CardImage(card: CardItem, compareBefore: Boolean) {
     val bitmap = rememberCardBitmap(card.imageUri)
-    val colorMatrix = remember(card.enhance) { androidx.compose.ui.graphics.ColorMatrix(PixelOps.buildEnhanceMatrix(card.enhance)) }
+    val colorMatrix = remember(card.enhance, compareBefore) {
+        if (compareBefore) null
+        else androidx.compose.ui.graphics.ColorMatrix(PixelOps.buildEnhanceMatrix(card.enhance))
+    }
     if (bitmap == null) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHigh))
     } else {
@@ -737,7 +789,7 @@ private fun CardImage(card: CardItem) {
             bitmap = bitmap,
             contentDescription = card.name,
             contentScale = ContentScale.Crop,
-            colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(colorMatrix),
+            colorFilter = colorMatrix?.let { androidx.compose.ui.graphics.ColorFilter.colorMatrix(it) },
             modifier = Modifier.fillMaxSize(),
         )
     }

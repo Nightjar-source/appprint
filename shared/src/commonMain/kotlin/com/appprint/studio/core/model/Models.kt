@@ -95,7 +95,8 @@ enum class PaperPreset(val key: String, val label: String, val widthMm: Float, v
     }
 }
 
-enum class ArrangeMode { GRID, COMFORTABLE }
+/** Arrangement modes. COMFORTABLE/COMPACT uses real bin packing; GRID is uniform rows. */
+enum class ArrangeMode { GRID, COMFORTABLE, COMPACT }
 enum class SheetBackground { WHITE, OFFWHITE, TRANSPARENT }
 enum class FrameStyle { SOLID, DASHED, DOTTED }
 enum class AppTheme { SYSTEM, LIGHT, DARK }
@@ -152,6 +153,8 @@ data class SheetSettings(
     val gapMm: Float = 6f,
     val mode: ArrangeMode = ArrangeMode.COMFORTABLE,
     val smartGroup: Boolean = true,
+    val autoArrange: Boolean = true,
+    val autoDistribute: Boolean = true,
     val background: SheetBackground = SheetBackground.WHITE,
     val showGuides: Boolean = true,
     val showFrames: Boolean = true,
@@ -169,8 +172,12 @@ data class SheetSettings(
     val sheetWidthMm: Float get() = if (landscape) maxOf(baseWidthMm, baseHeightMm) else minOf(baseWidthMm, baseHeightMm)
     val sheetHeightMm: Float get() = if (landscape) minOf(baseWidthMm, baseHeightMm) else maxOf(baseWidthMm, baseHeightMm)
 
-    /** Comfortable mode enforces a roomier gap. */
-    val effectiveGapMm: Float get() = if (mode == ArrangeMode.COMFORTABLE) maxOf(gapMm, 8f) else gapMm
+    /** Comfortable mode enforces a roomier gap; compact squeezes it. */
+    val effectiveGapMm: Float get() = when (mode) {
+        ArrangeMode.COMFORTABLE -> maxOf(gapMm, 8f)
+        ArrangeMode.COMPACT -> minOf(gapMm, 3f)
+        ArrangeMode.GRID -> gapMm
+    }
 
     val isCustom: Boolean get() = base == null
 }

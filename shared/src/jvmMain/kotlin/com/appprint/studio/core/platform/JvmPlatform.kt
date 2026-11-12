@@ -158,6 +158,11 @@ actual object PlatformActions {
         }.getOrNull()
     }
 
+    actual fun autoCropImage(path: String, id: Long): String? {
+        println("[AppPrint] auto-crop is not wired on the JVM target")
+        return null
+    }
+
     actual fun printPdf(
         pdfBytes: ByteArray,
         pageCount: Int,

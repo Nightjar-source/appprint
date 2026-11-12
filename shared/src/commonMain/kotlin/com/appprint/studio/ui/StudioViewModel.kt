@@ -33,8 +33,12 @@ data class StudioUiState(
     val theme: AppTheme = AppTheme.SYSTEM,
     val processing: Boolean = false,
     val toast: UiToast? = null,
+    /** Extra explicitly added sheets with no cards — kept until the user deletes them. */
+    val forcedPages: Int = 0,
+    /** Showing the original (un-enhanced) image while toggled. */
+    val compareBefore: Boolean = false,
 ) {
-    val pageCount: Int get() = (cards.maxOfOrNull { it.page } ?: 0) + 1
+    val pageCount: Int get() = maxOf((cards.maxOfOrNull { it.page } ?: 0) + 1, forcedPages)
     val selectedCard: CardItem? get() = cards.firstOrNull { it.id == selectedId }
     val cardsOnPage: List<CardItem> get() = cards.filter { it.page == currentPage }
 }
@@ -72,8 +76,13 @@ class StudioViewModel : ViewModel() {
                 return@launch
             }
             _state.update { s ->
+                val cards = if (s.settings.autoArrange) {
+                    arrangeNow(s.cards + imported, s.settings)
+                } else {
+                    maintainPositions(s.cards, imported)
+                }
                 s.copy(
-                    cards = arrangeNow(s.cards + imported, s.settings),
+                    cards = cards,
                     processing = false,
                     toast = UiToast("تمت إضافة ${imported.size} صورة"),
                 )
@@ -149,6 +158,30 @@ class StudioViewModel : ViewModel() {
     private fun arrangeNow(cards: List<CardItem>, settings: SheetSettings): List<CardItem> =
         SheetArranger.arrange(cards, settings).cards
 
+    /**
+     * When «ترتيب تلقائي عند الإضافة» is off: keep every card exactly where the user
+     * placed it, and drop the freshly imported ones into a free row at the bottom
+     * of the last used page.
+     */
+    private fun maintainPositions(existing: List<CardItem>, imported: List<CardItem>): List<CardItem> {
+        if (existing.isEmpty()) return arrangeNow(imported, SheetSettings())
+        var cursorY = existing.maxOfOrNull { it.yMm + it.effectiveHeight } ?: 10f
+        cursorY = (cursorY + 6f).coerceAtMost(220f)
+        var cursorX = 10f
+        val lastPage = existing.maxOf { it.page }
+        return buildList {
+            addAll(existing)
+            imported.forEach { card ->
+                add(card.copy(xMm = cursorX, yMm = cursorY, page = lastPage))
+                cursorX += card.effectiveWidth + 6f
+                if (cursorX + card.effectiveWidth > 260f) {
+                    cursorX = 10f
+                    cursorY += card.effectiveHeight + 6f
+                }
+            }
+        }
+    }
+
     fun arrangeSmart() {
         _state.update { s ->
             if (s.cards.isEmpty()) s.copy(toast = UiToast(Str.msg_no_cards))
@@ -199,6 +232,12 @@ class StudioViewModel : ViewModel() {
     fun setGap(mm: Float) = updateSettings { it.copy(gapMm = mm) }
     fun setMode(mode: ArrangeMode) = updateSettings { it.copy(mode = mode) }
     fun setSmartGroup(enabled: Boolean) = updateSettings { it.copy(smartGroup = enabled) }
+    fun setAutoArrange(enabled: Boolean) = _state.update { st ->
+        st.copy(settings = st.settings.copy(autoArrange = enabled))
+    }
+    fun setAutoDistribute(enabled: Boolean) = _state.update { st ->
+        st.copy(settings = st.settings.copy(autoDistribute = enabled))
+    }
     fun setBackground(bg: SheetBackground) = updateSettings { it.copy(background = bg) }
     fun setShowGuides(enabled: Boolean) = updateSettings { it.copy(showGuides = enabled) }
     fun setShowFrames(enabled: Boolean) = updateSettings { it.copy(showFrames = enabled) }
@@ -245,13 +284,118 @@ class StudioViewModel : ViewModel() {
         }
     }
 
-    fun rotateSelected() {
+    fun rotateSelectedTo(degrees: Int) {
         _state.update { s ->
             val id = s.selectedId ?: return@update s
+            val rotation = when (degrees) {
+                0 -> 0
+                90 -> 90
+                180 -> 180
+                else -> 0
+            }
             val updated = s.cards.map {
-                if (it.id == id) it.copy(rotation = if (it.rotation == 90) 0 else 90) else it
+                if (it.id == id) it.copy(rotation = rotation) else it
             }
             s.copy(cards = arrangeNow(updated, s.settings))
+        }
+    }
+
+    /** Before/after enhance comparison for the selected card. */
+    fun toggleCompareBefore() = _state.update { it.copy(compareBefore = !it.compareBefore) }
+
+    /** Rename the selected card. */
+    fun renameSelected(name: String) {
+        _state.update { s ->
+            val id = s.selectedId ?: return@update s
+            s.copy(cards = s.cards.map { if (it.id == id) it.copy(name = name.take(80)) else it })
+        }
+    }
+
+    /** Set the selected card size (mm) with clamping, keep it inside the sheet. */
+    fun setSelectedSize(widthMm: Float, heightMm: Float) {
+        _state.update { s ->
+            val id = s.selectedId ?: return@update s
+            val w = widthMm.coerceIn(30f, 500f)
+            val h = heightMm.coerceIn(20f, 500f)
+            val updated = s.cards.map {
+                if (it.id != id) it
+                else {
+                    val maxX = (s.settings.sheetWidthMm - w).coerceAtLeast(0f)
+                    val maxY = (s.settings.sheetHeightMm - h).coerceAtLeast(0f)
+                    it.copy(
+                        widthMm = w,
+                        heightMm = h,
+                        xMm = it.xMm.coerceIn(0f, maxX),
+                        yMm = it.yMm.coerceIn(0f, maxY),
+                    )
+                }
+            }
+            s.copy(cards = updated)
+        }
+    }
+
+    fun toggleCardBorder() {
+        _state.update { s ->
+            val id = s.selectedId ?: return@update s
+            s.copy(cards = s.cards.map { if (it.id == id) it.copy(border = !it.border) else it })
+        }
+    }
+
+    fun toggleCardGuides() {
+        _state.update { s ->
+            val id = s.selectedId ?: return@update s
+            s.copy(cards = s.cards.map { if (it.id == id) it.copy(guides = !it.guides) else it })
+        }
+    }
+
+    /** Auto-crop white scanner borders of the selected image, rewriting it in place. */
+    fun autoCropSelected() {
+        viewModelScope.launch {
+            val card = _state.value.selectedCard ?: return@launch
+            val path = card.imageUri ?: return@launch
+            _state.update { it.copy(processing = true) }
+            val newPath = withContext(Dispatchers.IO) { PlatformActions.autoCropImage(path, card.id) }
+            _state.update { st ->
+                st.copy(
+                    processing = false,
+                    cards = st.cards.map { if (it.id == card.id) it.copy(imageUri = newPath ?: it.imageUri) else it },
+                    toast = UiToast(if (newPath != null) "تم قص الحواف تلقائياً" else "لا توجد حواف للقص — الصورة نظيفة"),
+                )
+            }
+        }
+    }
+
+    /** Add one explicitly empty sheet (stays until the user deletes it). */
+    fun addSheet() {
+        _state.update { s ->
+            val next = s.pageCount
+            s.copy(forcedPages = next + 1, currentPage = next, toast = UiToast("تمت إضافة ورقة — بقياس ${s.settings.sheetWidthMm.toInt()}×${s.settings.sheetHeightMm.toInt()} مم"))
+        }
+    }
+
+    /**
+     * Delete a sheet.
+     * - deleteCards=true  -> drop every card on it
+     * - deleteCards=false -> keep the cards and re-distribute everything
+     */
+    fun deleteSheet(page: Int, deleteCards: Boolean) {
+        viewModelScope.launch {
+            val s = _state.value
+            val remaining = if (deleteCards) s.cards.filterNot { it.page == page }
+                else s.cards // full reflow repacks every card, page indexes included
+            val relaid = arrangeNow(remaining, s.settings)
+            _state.update {
+                it.copy(
+                    cards = relaid,
+                    selectedId = null,
+                    currentPage = 0,
+                    forcedPages = 0,
+                    toast = UiToast(
+                        if (deleteCards) "تم حذف الورقة وبطاقاتها"
+                        else "تمت إعادة توزيع البطاقات على الأوراق المتبقية",
+                    ),
+                )
+            }
         }
     }
 

@@ -56,6 +56,9 @@ expect object PlatformActions {
     /** Writes bytes to the private exports directory; returns the absolute path or null. */
     fun writeExport(fileName: String, bytes: ByteArray): String?
 
+    /** Auto-crop white scanner borders of a private image. Returns the new path, or null if clean/unsupported. */
+    fun autoCropImage(path: String, id: Long): String?
+
     /** System notification: download/print finished. No-op where unsupported. */
     fun showExportNotification(title: String, body: String, path: String?)
 }

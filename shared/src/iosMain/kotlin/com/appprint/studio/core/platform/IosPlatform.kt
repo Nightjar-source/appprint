@@ -58,6 +58,11 @@ actual object PlatformActions {
         return null
     }
 
+    actual fun autoCropImage(path: String, id: Long): String? {
+        println("[AppPrint] auto-crop is not wired on iOS yet")
+        return null
+    }
+
     actual fun printPdf(
         pdfBytes: ByteArray,
         pageCount: Int,

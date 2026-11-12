@@ -184,6 +184,27 @@ actual object PlatformActions {
         }.getOrNull()
     }
 
+    actual fun autoCropImage(path: String, id: Long): String? {
+        val context = appContext() ?: return null
+        return runCatching {
+            val decoded = Enhance.decodeSampled(context, path, maxDimensionPx = 4096) ?: return null
+            val cropped = Enhance.cropToContent(decoded)
+            if (cropped === decoded) {
+                decoded.recycle()
+                return null
+            }
+            val stamp = System.currentTimeMillis()
+            val dir = File(privateDir("imports"))
+            val dest = File(dir, "cropped-$id-$stamp.jpg")
+            FileOutputStream(dest).use { out ->
+                cropped.compress(Bitmap.CompressFormat.JPEG, 95, out)
+            }
+            cropped.recycle()
+            decoded.recycle()
+            dest.absolutePath
+        }.getOrNull()
+    }
+
     actual fun printPdf(
         pdfBytes: ByteArray,
         pageCount: Int,
