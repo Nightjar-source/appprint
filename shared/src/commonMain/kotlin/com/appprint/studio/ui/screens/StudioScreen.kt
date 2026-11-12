@@ -2,7 +2,7 @@
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -93,6 +93,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.theme.Motion
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.components.SampleCardArt
 import com.appprint.studio.ui.strings.Str
@@ -161,10 +162,8 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             onAddSample = viewModel::addSampleOfType,
                             modifier = Modifier.fillMaxSize(),
                         )
-                        AnimatedVisibility(
+                        FloatingStrip(
                             visible = !toolbarHidden,
-                            enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
-                            exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -182,10 +181,8 @@ fun StudioScreen(viewModel: StudioViewModel) {
                                 compact = phone,
                             )
                         }
-                        AnimatedVisibility(
+                        FloatingStrip(
                             visible = toolbarHidden,
-                            enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
-                            exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -200,10 +197,8 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxSize(),
                         )
-                        AnimatedVisibility(
+                        FloatingStrip(
                             visible = !toolbarHidden,
-                            enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
-                            exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -221,10 +216,8 @@ fun StudioScreen(viewModel: StudioViewModel) {
                                 compact = phone,
                             )
                         }
-                        AnimatedVisibility(
+                        FloatingStrip(
                             visible = toolbarHidden,
-                            enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
-                            exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -323,7 +316,29 @@ fun StudioScreen(viewModel: StudioViewModel) {
     }
 }
 
+
+/**
+ * A strip that floats above the canvas and slides/fades in and out together.
+ * Declared outside the column scope so the plain (non-scoped) AnimatedVisibility overload is used.
+ */
+@Composable
+private fun FloatingStrip(
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
+        exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
+        modifier = modifier,
+    ) {
+        content()
+    }
+}
+
 // ------------------------------------------------------------ editor toolbar
+
 
 @Composable
 private fun EditorToolbar(
@@ -624,8 +639,8 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                 .pointerInput(Unit) {
                     detectTapGestures(onDoubleTap = {
                         zoomTarget = when {
-                            zoom < 1.6f -> 1.75f
-                            zoom < 2.4f -> 2.5f
+                            zoomTarget < 1.6f -> 1.75f
+                            zoomTarget < 2.4f -> 2.5f
                             else -> 1f
                         }
                         if (zoomTarget == 1f) {
