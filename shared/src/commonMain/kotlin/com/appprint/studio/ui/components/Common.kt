@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.components
+﻿package com.appprint.studio.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,54 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-/** Brand glyph — stylized Iraqi-flag ID card used in header / guide / settings / splash. */
-@Composable
-fun FlagCardGlyph(modifier: Modifier = Modifier, sizeDp: Dp = 44.dp) {
-    Box(
-        modifier = modifier
-            .size(sizeDp)
-            .clip(RoundedCornerShape(sizeDp * 0.26f))
-            .background(Color(0xFFFDFAF1)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(Modifier.fillMaxWidth()) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(0.31f)
-                    .background(Color(0xFFC8102E))
-            )
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(0.38f)
-                    .background(Color(0xFFFDFAF1)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "الله أكبر",
-                    color = Color(0xFF007A3D),
-                    fontWeight = FontWeight.Black,
-                    fontSize = (sizeDp.value * 0.135f).sp,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center,
-                    lineHeight = (sizeDp.value * 0.135f).sp,
-                )
-            }
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(0.31f)
-                    .background(Color(0xFF007A3D))
-            )
-        }
-    }
-}
 
 /** Section header used inside the side panels. */
 @Composable

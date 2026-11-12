@@ -1,6 +1,7 @@
 package com.appprint.studio.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -37,6 +38,25 @@ private val PaperOnSurface = androidx.compose.ui.graphics.Color(0xFF1C1B18)
 private val PaperOnSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF57534A)
 
 private val Green = androidx.compose.ui.graphics.Color(0xFF007A3D)
+
+/**
+ * WCAG-relative luminance (sRGB) of a Compose Color — used to derive contrast-safe text.
+ */
+private fun relativeLuminance(color: androidx.compose.ui.graphics.Color): Float {
+    fun lin(v: Float): Float {
+        val s = v.coerceIn(0f, 1f)
+        return if (s <= 0.03928f) s / 12.92f else Math.pow(((s + 0.055f) / 1.055f).toDouble(), 2.4).toFloat()
+    }
+    return 0.2126f * lin(color.red) + 0.7152f * lin(color.green) + 0.0722f * lin(color.blue)
+}
+
+/**
+ * Returns the text/icon color with maximum WCAG contrast against [background] —
+ * always legible white (paper) or brand-ink slate. Use for text on tonal/accent surfaces.
+ */
+fun contrastingTextColor(background: androidx.compose.ui.graphics.Color): androidx.compose.ui.graphics.Color =
+    if (relativeLuminance(background) > 0.179f) androidx.compose.ui.graphics.Color(0xFF151816)
+    else androidx.compose.ui.graphics.Color(0xFFFDFAF1)
 private val GreenDarkTheme = androidx.compose.ui.graphics.Color(0xFF35C877)
 private val Red = androidx.compose.ui.graphics.Color(0xFFC8102E)
 private val RedDarkTheme = androidx.compose.ui.graphics.Color(0xFFFF6B7E)

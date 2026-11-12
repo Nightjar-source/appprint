@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -81,8 +82,9 @@ import com.appprint.studio.core.platform.rememberCameraCaptureLauncher
 import com.appprint.studio.core.platform.rememberImagePickerLauncher
 import com.appprint.studio.ui.StudioUiState
 import com.appprint.studio.ui.StudioViewModel
-import com.appprint.studio.ui.components.AppIcons
-import com.appprint.studio.ui.components.FlagCardGlyph
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.SampleCardArt
 import com.appprint.studio.ui.strings.Str
 
@@ -113,6 +115,17 @@ fun StudioScreen(viewModel: StudioViewModel) {
         // On phones, tapping a card slides the inspector sheet up
         LaunchedEffect(state.selectedId, phone) {
             if (phone && state.selectedId != null) showInspectorSheet = true
+        }
+
+        // Back: close dialogs/sheets first, then deselect — never exits directly
+        BackHandler {
+            when {
+                showClearConfirm -> showClearConfirm = false
+                showDeletePage != null -> showDeletePage = null
+                showInspectorSheet -> showInspectorSheet = false
+                showPaperSheet -> showPaperSheet = false
+                state.selectedId != null -> viewModel.selectCard(null)
+            }
         }
 
         Row(Modifier.fillMaxSize()) {
@@ -179,13 +192,6 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
-                    ExportRow(
-                        enabled = state.cards.isNotEmpty(),
-                        onPdf = viewModel::sharePdf,
-                        onPng = { viewModel.sharePng(state.currentPage) },
-                        onHtml = viewModel::shareHtml,
-                        compact = phone,
-                    )
                     SheetPageBar(
                         state = state,
                         onSelectPage = viewModel::currentPage,
@@ -309,7 +315,7 @@ private fun EditorToolbar(
         ) {
             item {
                 FilledTonalButton(onClick = onAddImages, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Upload, contentDescription = Str.btn_add_images, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.FileUpload, contentDescription = Str.btn_add_images, modifier = Modifier.size(18.dp))
                     if (!compact) {
                         Spacer(Modifier.size(6.dp))
                         Text(Str.btn_add_images, maxLines = 1)
@@ -318,7 +324,7 @@ private fun EditorToolbar(
             }
             item {
                 FilledTonalButton(onClick = onCamera, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Camera, contentDescription = Str.btn_take_photo, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.PhotoCamera, contentDescription = Str.btn_take_photo, modifier = Modifier.size(18.dp))
                     if (!compact) {
                         Spacer(Modifier.size(6.dp))
                         Text(Str.btn_take_photo, maxLines = 1)
@@ -327,7 +333,7 @@ private fun EditorToolbar(
             }
             item {
                 FilledTonalButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sparkle, contentDescription = Str.btn_samples, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = Str.btn_samples, modifier = Modifier.size(18.dp))
                     if (!compact) {
                         Spacer(Modifier.size(6.dp))
                         Text(Str.btn_samples, maxLines = 1)
@@ -336,7 +342,7 @@ private fun EditorToolbar(
             }
             item {
                 FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sparkle, contentDescription = Str.btn_arrange, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = Str.btn_arrange, modifier = Modifier.size(18.dp))
                     if (!compact) {
                         Spacer(Modifier.size(6.dp))
                         Text(Str.btn_arrange, maxLines = 1)
@@ -345,7 +351,7 @@ private fun EditorToolbar(
             }
             item {
                 FilledTonalButton(onClick = onSortSize, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sort, contentDescription = Str.btn_sort_size, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.SwapVert, contentDescription = Str.btn_sort_size, modifier = Modifier.size(18.dp))
                     if (!compact) {
                         Spacer(Modifier.size(6.dp))
                         Text(Str.btn_sort_size, maxLines = 1)
@@ -354,7 +360,7 @@ private fun EditorToolbar(
             }
             item {
                 FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Image, contentDescription = Str.btn_save_png, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Image, contentDescription = Str.btn_save_png, modifier = Modifier.size(18.dp))
                     if (!compact) {
                         Spacer(Modifier.size(6.dp))
                         Text(Str.btn_save_png, maxLines = 1)
@@ -369,17 +375,13 @@ private fun EditorToolbar(
             if (onOpenPaperSettings != null) {
                 item {
                     IconButton(onClick = onOpenPaperSettings) {
-                        Icon(AppIcons.Menu, contentDescription = Str.paper_title)
+                        Icon(Icons.Filled.Menu, contentDescription = Str.paper_title)
                     }
                 }
             }
         }
         IconButton(onClick = onHide) {
-            Text(
-                text = "▾",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Icon(Icons.Filled.ExpandLess, contentDescription = "إخفاء شريط الأدوات", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -390,17 +392,13 @@ private fun ToolbarHiddenBar(onShow: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.background)
             .padding(start = 8.dp, end = 4.dp),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onShow) {
-            Text(
-                text = "▴",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Icon(Icons.Filled.ExpandMore, contentDescription = "إظهار شريط الأدوات", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -427,7 +425,7 @@ private fun SheetPageBar(
                     onClick = { onSelectPage(page) },
                     label = { Text("ورقة ${page + 1} (${state.cards.count { it.page == page }})") },
                     leadingIcon = if (state.currentPage == page) {
-                        { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                        { Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     } else {
                         null
                     },
@@ -435,13 +433,13 @@ private fun SheetPageBar(
             }
             item {
                 IconButton(onClick = onRequestDelete) {
-                    Text("🗑", style = MaterialTheme.typography.titleMedium)
+                    Icon(Icons.Filled.DeleteOutline, contentDescription = Str.delete_sheet, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(21.dp))
                 }
             }
         }
         item {
             IconButton(onClick = onAddSheet) {
-                Icon(AppIcons.Plus, contentDescription = Str.add_sheet, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -461,7 +459,7 @@ private fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        FlagCardGlyph(sizeDp = 84.dp)
+        IraqiLogo(size = 84.dp)
         Text(
             text = Str.empty_title,
             style = MaterialTheme.typography.headlineSmall,
@@ -477,12 +475,12 @@ private fun EmptyState(
         )
         Row(Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(onClick = onUpload, shape = RoundedCornerShape(percent = 50)) {
-                Icon(AppIcons.Upload, contentDescription = null)
+                Icon(Icons.Filled.FileUpload, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
                 Text(Str.empty_upload)
             }
             OutlinedButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
-                Icon(AppIcons.Sparkle, contentDescription = null)
+                Icon(Icons.Filled.AutoAwesome, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
                 Text(Str.empty_cta)
             }
@@ -582,49 +580,57 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
         panY += panChange.y
     }
 
-    BoxWithConstraints(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-            .clipToBounds(),
-    ) {
-        val sheetWdp = settings.sheetWidthMm * DP_PER_MM
-        val sheetHdp = settings.sheetHeightMm * DP_PER_MM
-        val fit = minOf(
-            (maxWidth.value - 24f) / sheetWdp,
-            (maxHeight.value - 24f) / sheetHdp,
-        ).coerceIn(0.25f, 2.4f)
-        val effective = fit * zoom
+    // Gestures behave identically in RTL — pin the canvas to LTR coordinates.
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+        BoxWithConstraints(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                .clipToBounds(),
+        ) {
+            val sheetWdp = settings.sheetWidthMm * DP_PER_MM
+            val sheetHdp = settings.sheetHeightMm * DP_PER_MM
+            val fit = minOf(
+                (maxWidth.value - 24f) / sheetWdp,
+                (maxHeight.value - 24f) / sheetHdp,
+            ).coerceIn(0.25f, 2.4f)
+            val effective = fit * zoom
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .transformable(transformable)
-                .pointerInput(Unit) {
-                    detectTapGestures(onDoubleTap = {
-                        zoom = 1f
-                        panX = 0f
-                        panY = 0f
-                    })
-                },
-        )
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .transformable(transformable)
+                    .pointerInput(Unit) {
+                        detectTapGestures(onDoubleTap = {
+                            zoom = when {
+                                zoom < 1.6f -> 1.75f
+                                zoom < 2.4f -> 2.5f
+                                else -> 1f
+                            }
+                            if (zoom == 1f) {
+                                panX = 0f
+                                panY = 0f
+                            }
+                        })
+                    },
+            )
 
-        // light blueprint backdrop (adapts to theme)
-        Canvas(Modifier.fillMaxSize()) {
-            val step = 26.dp.toPx()
-            val dot = 1.1.dp.toPx()
-            val color = Color(0xFF8F8C82).copy(alpha = 0.35f)
-            var x = step / 2
-            while (x < size.width) {
-                var y = step / 2
-                while (y < size.height) {
-                    drawCircle(color, radius = dot, center = Offset(x, y))
-                    y += step
+            // light blueprint backdrop (adapts to theme)
+            Canvas(Modifier.fillMaxSize()) {
+                val step = 26.dp.toPx()
+                val dot = 1.1.dp.toPx()
+                val color = Color(0xFF8F8C82).copy(alpha = 0.35f)
+                var x = step / 2
+                while (x < size.width) {
+                    var y = step / 2
+                    while (y < size.height) {
+                        drawCircle(color, radius = dot, center = Offset(x, y))
+                        y += step
+                    }
+                    x += step
                 }
-                x += step
             }
-        }
 
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Box(
                 Modifier
                     .size(sheetWdp.dp, sheetHdp.dp)
@@ -649,9 +655,15 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                         .background(paperColor)
                         .pointerInput(Unit) {
                             detectTapGestures(onDoubleTap = {
-                                zoom = 1f
-                                panX = 0f
-                                panY = 0f
+                                zoom = when {
+                                    zoom < 1.6f -> 1.75f
+                                    zoom < 2.4f -> 2.5f
+                                    else -> 1f
+                                }
+                                if (zoom == 1f) {
+                                    panX = 0f
+                                    panY = 0f
+                                }
                             })
                         }
                         .clickable { viewModel.selectCard(null) },
@@ -687,7 +699,51 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                     }
                 }
             }
+            // floating zoom controls — always visible on the sheet
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 8.dp, top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                ZoomButton(icon = Icons.Filled.ZoomIn, contentDescription = Str.zoom_in) {
+                    zoom = (zoom * 1.33f).coerceIn(1f, 4.5f)
+                }
+                ZoomButton(icon = Icons.Filled.ZoomOut, contentDescription = Str.zoom_out) {
+                    zoom = (zoom / 1.33f).coerceIn(1f, 4.5f)
+                }
+                ZoomButton(icon = Icons.Filled.Restore, contentDescription = Str.reset_view) {
+                    zoom = 1f
+                    panX = 0f
+                    panY = 0f
+                }
+            }
+            }
         }
+    }
+}
+
+@Composable
+private fun ZoomButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(48.dp)
+            .shadow(8.dp, CircleShape, clip = false)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+    ) {
+        Icon(
+            icon,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 
@@ -795,87 +851,4 @@ private fun CardImage(card: CardItem, compareBefore: Boolean) {
             modifier = Modifier.fillMaxSize(),
         )
     }
-}
-
-// ------------------------------------------------------------ export row
-
-@Composable
-private fun ExportRow(
-    enabled: Boolean,
-    onPdf: () -> Unit,
-    onPng: () -> Unit,
-    onHtml: () -> Unit,
-    compact: Boolean,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (compact) {
-            FilledTonalButton(
-                onClick = onPdf,
-                enabled = enabled,
-                modifier = Modifier.weight(1f).height(44.dp),
-                shape = RoundedCornerShape(percent = 50),
-            ) {
-                Icon(AppIcons.Pdf, contentDescription = Str.btn_export_pdf, modifier = Modifier.size(18.dp))
-            }
-            FilledTonalButton(
-                onClick = onPng,
-                enabled = enabled,
-                modifier = Modifier.weight(1f).height(44.dp),
-                shape = RoundedCornerShape(percent = 50),
-            ) {
-                Icon(AppIcons.Image, contentDescription = Str.btn_save_png, modifier = Modifier.size(18.dp))
-            }
-            FilledTonalButton(
-                onClick = onHtml,
-                enabled = enabled,
-                modifier = Modifier.weight(1f).height(44.dp),
-                shape = RoundedCornerShape(percent = 50),
-            ) {
-                Icon(AppIcons.Html, contentDescription = Str.btn_export_html, modifier = Modifier.size(18.dp))
-            }
-        } else {
-            FilledTonalButton(
-                onClick = onPdf,
-                enabled = enabled,
-                modifier = Modifier.weight(1f).height(46.dp),
-                shape = RoundedCornerShape(percent = 50),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = Color(0xFFC8102E),
-                    contentColor = Color.White,
-                ),
-            ) {
-                Icon(AppIcons.Pdf, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(6.dp))
-                Text(Str.btn_export_pdf, maxLines = 1, style = MaterialTheme.typography.labelLarge)
-            }
-            OutlinedButton(
-                onClick = onPng,
-                enabled = enabled,
-                modifier = Modifier.weight(1f).height(46.dp),
-                shape = RoundedCornerShape(percent = 50),
-            ) {
-                Icon(AppIcons.Image, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(6.dp))
-                Text(Str.btn_save_png, maxLines = 1, style = MaterialTheme.typography.labelLarge)
-            }
-            FilledTonalButton(
-                onClick = onHtml,
-                enabled = enabled,
-                modifier = Modifier.weight(1f).height(46.dp),
-                shape = RoundedCornerShape(percent = 50),
-            ) {
-                Icon(AppIcons.Html, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(6.dp))
-                Text(Str.btn_export_html, maxLines = 1, style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 }

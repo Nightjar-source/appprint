@@ -43,7 +43,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.ui)
             implementation(compose.material3)
-            implementation("org.jetbrains.compose.material:material-icons-extended:1.5.12")
+            implementation(compose.materialIconsExtended)
             implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.12.2")
 
             implementation(libs.lifecycle.viewmodel)

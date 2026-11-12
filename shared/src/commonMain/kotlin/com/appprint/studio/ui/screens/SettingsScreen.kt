@@ -26,12 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.StudioViewModel
-import com.appprint.studio.ui.components.FlagCardGlyph
+import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
-private const val VERSION_NAME = "1.0.6"
-private const val VERSION_CODE = 7
+private const val VERSION_NAME = "1.0.7"
+private const val VERSION_CODE = 8
 
 @Composable
 fun SettingsScreen(viewModel: StudioViewModel) {
@@ -125,7 +125,7 @@ fun SettingsScreen(viewModel: StudioViewModel) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                FlagCardGlyph(sizeDp = 64.dp)
+                IraqiLogo(size = 64.dp)
                 Column {
                     Text(
                         text = "مطبعة البطاقات العراقية",

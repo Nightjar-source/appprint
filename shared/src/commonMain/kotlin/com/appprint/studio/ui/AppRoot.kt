@@ -9,18 +9,28 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
+import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -51,12 +61,12 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.rememberNotificationPermissionRequester
-import com.appprint.studio.ui.components.AppIcons
 import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.screens.GuideScreen
 import com.appprint.studio.ui.screens.SettingsScreen
 import com.appprint.studio.ui.screens.StudioScreen
 import com.appprint.studio.ui.theme.AppPrintTheme
+import com.appprint.studio.ui.theme.contrastingTextColor
 import com.appprint.studio.ui.strings.Str
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
@@ -81,16 +91,18 @@ private data class TopLevelItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
 )
 
-private val InkHeader = Color(0xFF151816)
-private val InkText = Color(0xFFFDFAF1)
-private val InkMuted = Color(0xFFB9B6AC)
+private fun routeName(route: AppRoute): String = when (route) {
+    AppRoute.Studio -> Str.nav_studio
+    AppRoute.Guide -> Str.nav_guide
+    AppRoute.Settings -> Str.nav_settings
+}
 
 /**
- * App root — brand-ink header + Material 3 Expressive content +
- * compact centered bottom pill (visible on every width).
- *
- * No floating «glass» chrome anymore: the header is a solid brand bar,
- * the navigation is a small centered pill, and every screen draws edge to edge.
+ * App root — unified edge-to-edge chrome (Material 3 Expressive):
+ *  - Fixed top bar shares the content tone with a hairline divider — no color blocks, no floats.
+ *  - Title shows the current screen name, with circular action buttons.
+ *  - One unified export menu button (PDF / PNG / HTML / share) + direct print button.
+ *  - Bottom bar matches the scaffold tone with a hairline divider.
  */
 @Composable
 fun AppRoot(viewModel: StudioViewModel = viewModel()) {
@@ -136,20 +148,29 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         }
 
         val items = listOf(
-            TopLevelItem(AppRoute.Studio, Str.nav_studio, AppIcons.Print),
-            TopLevelItem(AppRoute.Guide, Str.nav_guide, AppIcons.Guide),
-            TopLevelItem(AppRoute.Settings, Str.nav_settings, AppIcons.Settings),
+            TopLevelItem(AppRoute.Studio, Str.nav_studio, Icons.Filled.Print),
+            TopLevelItem(AppRoute.Guide, Str.nav_guide, Icons.Filled.MenuBook),
+            TopLevelItem(AppRoute.Settings, Str.nav_settings, Icons.Filled.Settings),
         )
 
         val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
+        // Back: leave secondary screens to the studio; at the studio, history handled inside the screen.
+        BackHandler {
+            if (current != AppRoute.Studio) navigateTopLevel(backStack, AppRoute.Studio)
+        }
+
         BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             val wide = maxWidth >= 1000.dp
-            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                BrandHeader(
+            Column(Modifier.fillMaxSize()) {
+                TopBar(
+                    title = routeName(current),
+                    onExportPdf = viewModel::sharePdf,
+                    onExportPng = { viewModel.sharePng(state.currentPage) },
+                    onExportHtml = viewModel::shareHtml,
+                    onShare = { viewModel.sharePng(state.currentPage) },
                     onPrint = { requestNotifications(); viewModel.printPdf() },
-                    onExportPdf = { requestNotifications(); viewModel.sharePdf() },
                     exporting = state.processing,
                     modifier = Modifier.padding(top = statusTop),
                 )
@@ -159,15 +180,14 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                         hostState = snackbarHostState,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = navBottom + 68.dp),
+                            .padding(bottom = navBottom + 96.dp),
                     )
                 }
-                BottomNavPill(
+                BottomNavBar(
                     items = items,
                     current = current,
                     onSelect = { route -> navigateTopLevel(backStack, route) },
-                    modifier = Modifier
-                        .padding(bottom = if (wide) 10.dp else navBottom + 10.dp),
+                    showLabels = !wide,
                 )
             }
         }
@@ -181,130 +201,181 @@ private fun navigateTopLevel(backStack: MutableList<NavKey>, route: AppRoute) {
     }
 }
 
-// ---------------------------------------------------------------- header
+// ---------------------------------------------------------------- top bar
 
 @Composable
-private fun BrandHeader(
-    onPrint: () -> Unit,
+private fun TopBar(
+    title: String,
     onExportPdf: () -> Unit,
+    onExportPng: () -> Unit,
+    onExportHtml: () -> Unit,
+    onShare: () -> Unit,
+    onPrint: () -> Unit,
     exporting: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Surface(color = InkHeader, modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            IraqiLogo(size = 38.dp)
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = Str.app_title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = InkText,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = Str.app_eyebrow,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, letterSpacing = 1.3.sp),
-                    color = InkMuted,
-                    maxLines = 1,
-                )
-            }
-            HeaderIconButton(
-                onClick = onExportPdf,
-                contentDescription = Str.btn_export_pdf,
-                enabled = !exporting,
+    var exportMenuOpen by remember { mutableStateOf(false) }
+    val scheme = MaterialTheme.colorScheme
+
+    Surface(color = scheme.background, modifier = modifier.fillMaxWidth()) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (exporting) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = InkText)
-                } else {
-                    Icon(AppIcons.Pdf, contentDescription = null, tint = InkText, modifier = Modifier.size(20.dp))
+                // circular brand button (also goes Back→studio when pressed on a child screen)
+                IconButton(
+                    onClick = { /* handled by system back — no navigation needed here */ },
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.surfaceContainerHigh),
+                ) {
+                    IraqiLogo(size = 30.dp)
+                }
+                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                    Text(
+                        text = Str.app_eyebrow,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, letterSpacing = 1.4.sp),
+                        color = scheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = scheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                // unified export menu — PDF / PNG / HTML / share
+                Box {
+                    IconButton(
+                        onClick = { exportMenuOpen = true },
+                        enabled = !exporting,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(if (exportMenuOpen) scheme.secondaryContainer else scheme.surfaceContainerHigh),
+                    ) {
+                        if (exporting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = contrastingTextColor(scheme.secondaryContainer),
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.FileUpload,
+                                contentDescription = Str.export_menu,
+                                tint = if (exportMenuOpen) contrastingTextColor(scheme.secondaryContainer) else scheme.onSurface,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = exportMenuOpen,
+                        onDismissRequest = { exportMenuOpen = false },
+                        shape = RoundedCornerShape(20.dp),
+                        containerColor = scheme.surfaceContainerHigh,
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(Str.btn_export_pdf, maxLines = 1) },
+                            onClick = { exportMenuOpen = false; onExportPdf() },
+                            leadingIcon = { Icon(Icons.Filled.PictureAsPdf, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.btn_save_png, maxLines = 1) },
+                            onClick = { exportMenuOpen = false; onExportPng() },
+                            leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.btn_export_html, maxLines = 1) },
+                            onClick = { exportMenuOpen = false; onExportHtml() },
+                            leadingIcon = { Icon(Icons.Filled.Code, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.share_page, maxLines = 1) },
+                            onClick = { exportMenuOpen = false; onShare() },
+                            leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                        )
+                    }
+                }
+
+                // direct print button
+                IconButton(
+                    onClick = onPrint,
+                    enabled = !exporting,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.surfaceContainerHigh),
+                ) {
+                    Icon(
+                        Icons.Filled.Print,
+                        contentDescription = Str.btn_print,
+                        tint = scheme.onSurface,
+                        modifier = Modifier.size(22.dp),
+                    )
                 }
             }
-            HeaderIconButton(
-                onClick = onPrint,
-                contentDescription = Str.btn_print,
-                enabled = !exporting,
-            ) {
-                Icon(AppIcons.Print, contentDescription = null, tint = InkText, modifier = Modifier.size(20.dp))
-            }
+            HorizontalDivider(color = scheme.outlineVariant.copy(alpha = 0.45f))
         }
     }
 }
 
-@Composable
-private fun HeaderIconButton(
-    onClick: () -> Unit,
-    contentDescription: String,
-    enabled: Boolean,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        shape = RoundedCornerShape(percent = 50),
-        color = Color.White.copy(alpha = if (enabled) 0.12f else 0.06f),
-        modifier = Modifier
-            .size(42.dp)
-            .clip(RoundedCornerShape(percent = 50))
-            .clickable(enabled = enabled, onClick = onClick),
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            content()
-        }
-    }
-}
-
-// ---------------------------------------------------------------- bottom navigation
+// ---------------------------------------------------------------- bottom navigation (fixed)
 
 @Composable
-private fun BottomNavPill(
+private fun BottomNavBar(
     items: List<TopLevelItem>,
     current: AppRoute,
     onSelect: (AppRoute) -> Unit,
-    modifier: Modifier = Modifier,
+    showLabels: Boolean,
 ) {
-    Surface(
-        shape = RoundedCornerShape(percent = 50),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-        modifier = modifier.width(300.dp).height(60.dp),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 6.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items.forEach { item ->
-                BottomNavItem(
-                    item = item,
-                    selected = current == item.route,
-                    onClick = { onSelect(item.route) },
-                    modifier = Modifier.weight(1f),
-                )
+    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
+        Column {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+                    .windowInsetsPadding(WindowInsets.navigationBars),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                items.forEach { item ->
+                    NavItem(
+                        item = item,
+                        selected = current == item.route,
+                        onClick = { onSelect(item.route) },
+                        showLabel = showLabels,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun BottomNavItem(
+private fun NavItem(
     item: TopLevelItem,
     selected: Boolean,
     onClick: () -> Unit,
+    showLabel: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val contentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
-    else MaterialTheme.colorScheme.onSurfaceVariant
-    val pillColor = MaterialTheme.colorScheme.secondaryContainer
+    val pill = MaterialTheme.colorScheme.secondaryContainer
+    val content = if (selected) contrastingTextColor(pill) else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(percent = 50))
             .clickable(onClick = onClick)
             .semantics { role = Role.Tab }
             .padding(horizontal = 2.dp, vertical = 6.dp),
@@ -314,24 +385,21 @@ private fun BottomNavItem(
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(percent = 50))
-                .background(if (selected) pillColor else Color.Transparent)
+                .background(if (selected) pill else Color.Transparent)
                 .height(28.dp)
                 .width(52.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                item.icon,
-                contentDescription = item.label,
-                tint = contentColor,
-                modifier = Modifier.size(20.dp),
+            Icon(item.icon, contentDescription = item.label, tint = content, modifier = Modifier.size(20.dp))
+        }
+        if (showLabel) {
+            Text(
+                text = item.label,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
+                color = content,
+                maxLines = 1,
             )
         }
-        Text(
-            text = item.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-            color = contentColor,
-            maxLines = 1,
-        )
     }
 }
