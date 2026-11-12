@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,19 +17,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.padding
-import com.appprint.studio.core.model.CardType
-import com.appprint.studio.ui.components.Chrome
-import com.appprint.studio.ui.components.EdgeFadeRow
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -62,6 +61,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -71,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.math.roundToInt
 import com.appprint.studio.core.image.PixelOps
 import com.appprint.studio.core.model.CardItem
+import com.appprint.studio.core.model.CardType
 import com.appprint.studio.core.model.FrameStyle
 import com.appprint.studio.core.model.SheetBackground
 import com.appprint.studio.core.platform.rememberCardBitmap
@@ -81,7 +82,6 @@ import com.appprint.studio.ui.StudioViewModel
 import com.appprint.studio.ui.components.AppIcons
 import com.appprint.studio.ui.components.FlagCardGlyph
 import com.appprint.studio.ui.components.SampleCardArt
-import com.appprint.studio.ui.components.TagChip
 import com.appprint.studio.ui.strings.Str
 
 /** Compose density-independent dp per millimetre (96 dp/inch). */
@@ -95,6 +95,7 @@ fun StudioScreen(viewModel: StudioViewModel) {
     var showClearConfirm by rememberSaveable { mutableStateOf(false) }
     var showPaperSheet by rememberSaveable { mutableStateOf(false) }
     var showInspectorSheet by rememberSaveable { mutableStateOf(false) }
+    var toolbarHidden by rememberSaveable { mutableStateOf(false) }
 
     val pickImages = rememberImagePickerLauncher(maxItems = 100) { uris -> viewModel.importImages(uris) }
     val onCamera = rememberCameraCaptureLauncher { path ->
@@ -102,7 +103,7 @@ fun StudioScreen(viewModel: StudioViewModel) {
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val wide = maxWidth >= 1150.dp
+        val wide = maxWidth >= 1000.dp
         val medium = !wide && maxWidth >= 640.dp
         val phone = !wide && !medium
 
@@ -119,40 +120,16 @@ fun StudioScreen(viewModel: StudioViewModel) {
                     modifier = Modifier
                         .width(290.dp)
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .padding(top = Chrome.topReserve()),
+                        .verticalScroll(rememberScrollState())
+                        .background(MaterialTheme.colorScheme.surfaceContainer),
                 )
                 Box(Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
             }
 
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 if (state.cards.isEmpty()) {
-                    StudioToolbar(
-                        state = state,
-                        onAddImages = pickImages,
-                        onCamera = onCamera,
-                        onSamples = viewModel::addSamples,
-                        onArrange = viewModel::arrangeSmart,
-                        onSortSize = viewModel::sortBySize,
-                        onClear = { showClearConfirm = true },
-                        onSharePng = { viewModel.sharePng(state.currentPage) },
-                        onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
-                        modifier = Modifier.padding(top = Chrome.topReserve()),
-                    )
-                    EmptyState(
-                        onUpload = pickImages,
-                        onSamples = viewModel::addSamples,
-                        onAddSample = viewModel::addSampleOfType,
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                    )
-                } else {
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        SheetCanvas(
-                            state = state,
-                            viewModel = viewModel,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        StudioToolbar(
+                    if (!toolbarHidden) {
+                        EditorToolbar(
                             state = state,
                             onAddImages = pickImages,
                             onCamera = onCamera,
@@ -162,29 +139,59 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             onClear = { showClearConfirm = true },
                             onSharePng = { viewModel.sharePng(state.currentPage) },
                             onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = Chrome.topReserve()),
+                            onHide = { toolbarHidden = true },
+                        )
+                    } else {
+                        ToolbarHiddenBar { toolbarHidden = false }
+                    }
+                    EmptyState(
+                        onUpload = pickImages,
+                        onSamples = viewModel::addSamples,
+                        onAddSample = viewModel::addSampleOfType,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    )
+                } else {
+                    if (!toolbarHidden) {
+                        EditorToolbar(
+                            state = state,
+                            onAddImages = pickImages,
+                            onCamera = onCamera,
+                            onSamples = viewModel::addSamples,
+                            onArrange = viewModel::arrangeSmart,
+                            onSortSize = viewModel::sortBySize,
+                            onClear = { showClearConfirm = true },
+                            onSharePng = { viewModel.sharePng(state.currentPage) },
+                            onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
+                            onHide = { toolbarHidden = true },
+                        )
+                    } else {
+                        ToolbarHiddenBar { toolbarHidden = false }
+                    }
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        SheetCanvas(
+                            state = state,
+                            viewModel = viewModel,
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                     SheetPageBar(
                         state = state,
                         onSelectPage = viewModel::currentPage,
-                        modifier = Modifier.padding(bottom = Chrome.bottomReserve()),
+                        modifier = Modifier.padding(bottom = 6.dp, top = 2.dp),
                     )
                 }
             }
 
-            if (wide || medium) {
+            if (wide) {
                 Box(Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                 InspectorPanel(
                     state = state,
                     viewModel = viewModel,
                     modifier = Modifier
-                        .width(if (wide) 320.dp else 300.dp)
+                        .width(320.dp)
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .padding(top = Chrome.topReserve()),
+                        .verticalScroll(rememberScrollState())
+                        .background(MaterialTheme.colorScheme.surfaceContainer),
                 )
             }
         }
@@ -227,10 +234,10 @@ fun StudioScreen(viewModel: StudioViewModel) {
     }
 }
 
-// ------------------------------------------------------------ toolbar
+// ------------------------------------------------------------ editor toolbar
 
 @Composable
-private fun StudioToolbar(
+private fun EditorToolbar(
     state: StudioUiState,
     onAddImages: () -> Unit,
     onCamera: () -> Unit,
@@ -240,54 +247,60 @@ private fun StudioToolbar(
     onClear: () -> Unit,
     onSharePng: () -> Unit,
     onOpenPaperSettings: (() -> Unit)?,
-    modifier: Modifier = Modifier,
+    onHide: () -> Unit,
 ) {
-    // Edge-to-edge scroll strip — the scaffold melts into the strip on both screen edges
-    EdgeFadeRow(edgeColor = MaterialTheme.colorScheme.background, modifier = modifier) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 6.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier.weight(1f),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             item {
                 FilledTonalButton(onClick = onAddImages, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Upload, contentDescription = null)
+                    Icon(AppIcons.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(Str.btn_add_images, maxLines = 1)
                 }
             }
             item {
                 FilledTonalButton(onClick = onCamera, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Camera, contentDescription = null)
+                    Icon(AppIcons.Camera, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(Str.btn_take_photo, maxLines = 1)
                 }
             }
             item {
                 FilledTonalButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sparkle, contentDescription = null)
+                    Icon(AppIcons.Sparkle, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(Str.btn_samples, maxLines = 1)
                 }
             }
             item {
                 FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sparkle, contentDescription = null)
+                    Icon(AppIcons.Sparkle, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(Str.btn_arrange, maxLines = 1)
                 }
             }
             item {
                 FilledTonalButton(onClick = onSortSize, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sort, contentDescription = null)
+                    Icon(AppIcons.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(Str.btn_sort_size, maxLines = 1)
                 }
             }
             item {
                 FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Image, contentDescription = null)
+                    Icon(AppIcons.Image, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(Str.btn_save_png, maxLines = 1)
                 }
@@ -305,6 +318,34 @@ private fun StudioToolbar(
                 }
             }
         }
+        IconButton(onClick = onHide) {
+            Text(
+                text = "▾",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Slim bar shown when the toolbar is hidden — one tap brings it back. */
+@Composable
+private fun ToolbarHiddenBar(onShow: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(start = 8.dp, end = 4.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onShow) {
+            Text(
+                text = "▴",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -313,24 +354,22 @@ private fun StudioToolbar(
 @Composable
 private fun SheetPageBar(state: StudioUiState, onSelectPage: (Int) -> Unit, modifier: Modifier = Modifier) {
     if (state.pageCount <= 1) return
-    EdgeFadeRow(edgeColor = MaterialTheme.colorScheme.background, modifier = modifier) {
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items((0 until state.pageCount).toList(), key = { it }) { page ->
-                AssistChip(
-                    onClick = { onSelectPage(page) },
-                    label = { Text("ورقة ${page + 1}") },
-                    leadingIcon = if (state.currentPage == page) {
-                        { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                    } else {
-                        null
-                    },
-                )
-            }
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        items((0 until state.pageCount).toList(), key = { it }) { page ->
+            AssistChip(
+                onClick = { onSelectPage(page) },
+                label = { Text("ورقة ${page + 1} (${state.cards.count { it.page == page }})") },
+                leadingIcon = if (state.currentPage == page) {
+                    { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                } else {
+                    null
+                },
+            )
         }
     }
 }
@@ -376,24 +415,22 @@ private fun EmptyState(
             }
         }
 
-        // edge-to-edge samples strip — official Iraqi card types with true measurements
+        // official Iraqi card samples strip — edge to edge
         Text(
             text = Str.sample_strip_title,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 22.dp, start = 24.dp, end = 24.dp),
+            modifier = Modifier.padding(top = 18.dp, start = 24.dp, end = 24.dp),
         )
         Spacer(Modifier.size(8.dp))
-        EdgeFadeRow(edgeColor = MaterialTheme.colorScheme.background) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                items(CardType.PRINTABLE.filter { it != CardType.CUSTOM }, key = { it.key }) { type ->
-                    SampleCardTile(type = type, onClick = { onAddSample(type) })
-                }
+        LazyRow(
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items(CardType.PRINTABLE.filter { it != CardType.CUSTOM }, key = { it.key }) { type ->
+                SampleCardTile(type = type, onClick = { onAddSample(type) })
             }
         }
     }
@@ -411,11 +448,10 @@ private fun SampleCardTile(type: CardType, onClick: () -> Unit) {
             .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // mini official-card preview — same artwork language as the canvas samples
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .shadow(6.dp, RoundedCornerShape(8.dp))
+                .shadow(4.dp, RoundedCornerShape(8.dp))
                 .size(92.dp, 58.dp)
                 .background(if (isPassport) Color(0xFF17365A) else Color(0xFFFDFAF1)),
         ) {
@@ -462,10 +498,11 @@ private fun SampleCardTile(type: CardType, onClick: () -> Unit) {
 @Composable
 private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifier: Modifier = Modifier) {
     val settings = state.settings
+    val densityPx = LocalDensity.current.density
     var zoom by rememberSaveable { mutableFloatStateOf(1f) }
     var panX by rememberSaveable { mutableFloatStateOf(0f) }
     var panY by rememberSaveable { mutableFloatStateOf(0f) }
-    // gestures live on the WHOLE canvas area → coordinates map 1:1 to the finger
+    // gestures live on the WHOLE canvas area -> 1:1 finger-follow
     val transformable = rememberTransformableState { zoomChange, panChange, _ ->
         zoom = (zoom * zoomChange).coerceIn(1f, 4.5f)
         panX += panChange.x
@@ -480,12 +517,11 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
         val sheetWdp = settings.sheetWidthMm * DP_PER_MM
         val sheetHdp = settings.sheetHeightMm * DP_PER_MM
         val fit = minOf(
-            (maxWidth.value - 20f) / sheetWdp,
-            (maxHeight.value - 20f) / sheetHdp,
-        ).coerceIn(0.25f, 2.2f)
+            (maxWidth.value - 24f) / sheetWdp,
+            (maxHeight.value - 24f) / sheetHdp,
+        ).coerceIn(0.25f, 2.4f)
         val effective = fit * zoom
 
-        // full-bleed pan/zoom surface — any finger anywhere moves the paper
         Box(
             Modifier
                 .fillMaxSize()
@@ -499,7 +535,7 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                 },
         )
 
-        // blueprint dot grid backdrop
+        // light blueprint backdrop (adapts to theme)
         Canvas(Modifier.fillMaxSize()) {
             val step = 26.dp.toPx()
             val dot = 1.1.dp.toPx()
@@ -531,10 +567,11 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                     SheetBackground.OFFWHITE -> Color(0xFFFDFAF1)
                     SheetBackground.TRANSPARENT -> Color(0x66FFFFFF)
                 }
+                // the sheet itself
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .shadow(18.dp, RoundedCornerShape(3.dp))
+                        .shadow(16.dp, RoundedCornerShape(3.dp))
                         .clip(RoundedCornerShape(3.dp))
                         .background(paperColor)
                         .pointerInput(Unit) {
@@ -558,10 +595,11 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                             )
                         }
                     }
+                    // cards on this page
                     state.cardsOnPage.forEach { card ->
                         CardOnSheet(
                             card = card,
-                            density = DP_PER_MM,
+                            densityPx = densityPx,
                             scale = effective,
                             selected = card.id == state.selectedId,
                             showGuides = settings.showGuides,
@@ -573,14 +611,6 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                             onMove = viewModel::moveCard,
                         )
                     }
-                    if (state.pageCount > 1) {
-                        TagChip(
-                            text = "ورقة ${state.currentPage + 1}",
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(6.dp),
-                        )
-                    }
                 }
             }
         }
@@ -590,7 +620,7 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
 @Composable
 private fun CardOnSheet(
     card: CardItem,
-    density: Float,
+    densityPx: Float,
     scale: Float,
     selected: Boolean,
     showGuides: Boolean,
@@ -602,25 +632,26 @@ private fun CardOnSheet(
     onMove: (Long, Float, Float) -> Unit,
 ) {
     val currentCard by rememberUpdatedState(card)
+    val mmToPx = DP_PER_MM * densityPx
 
     Box(
         Modifier
-            .offset { IntOffset((card.xMm * density).roundToInt(), (card.yMm * density).roundToInt()) }
-            .size((card.effectiveWidth * density).dp, (card.effectiveHeight * density).dp)
+            .offset { IntOffset((card.xMm * mmToPx).roundToInt(), (card.yMm * mmToPx).roundToInt()) }
+            .size((card.effectiveWidth * DP_PER_MM).dp, (card.effectiveHeight * DP_PER_MM).dp)
             .pointerInput(card.id, scale) {
                 detectDragGestures { _, dragAmount ->
                     val cur = currentCard
                     onMove(
                         cur.id,
-                        cur.xMm + dragAmount.x / (density * scale),
-                        cur.yMm + dragAmount.y / (density * scale),
+                        cur.xMm + dragAmount.x / (mmToPx * scale),
+                        cur.yMm + dragAmount.y / (mmToPx * scale),
                     )
                 }
             }
             .clickable { onSelect(card.id) },
     ) {
-        val contentW = card.widthMm * density
-        val contentH = card.heightMm * density
+        val contentW = card.widthMm * DP_PER_MM
+        val contentH = card.heightMm * DP_PER_MM
         Box(
             Modifier
                 .align(Alignment.Center)
@@ -652,7 +683,7 @@ private fun CardOnSheet(
         if (showGuides && card.guides) {
             Canvas(Modifier.fillMaxSize()) {
                 val dash = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
-                val outside = 1.2f * density
+                val outside = 1.2f * DP_PER_MM * densityPx
                 drawRect(
                     color = Color(0xFFC8102E).copy(alpha = 0.7f),
                     topLeft = Offset(-outside, -outside),
@@ -665,11 +696,7 @@ private fun CardOnSheet(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .border(2.dp, Color(0xFF00914A), RoundedCornerShape(6.dp)),
-            )
-            TagChip(
-                text = "${card.type.shortAr} · ${card.effectiveWidth.toInt()}×${card.effectiveHeight.toInt()}",
-                modifier = Modifier.align(Alignment.TopStart).padding(3.dp),
+                    .border(2.dp, Color(0xFF007A3D), RoundedCornerShape(6.dp)),
             )
         }
     }

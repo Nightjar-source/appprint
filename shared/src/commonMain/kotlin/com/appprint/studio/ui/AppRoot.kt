@@ -1,8 +1,5 @@
 ﻿package com.appprint.studio.ui
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,8 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,16 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,18 +34,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,10 +52,7 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.rememberNotificationPermissionRequester
 import com.appprint.studio.ui.components.AppIcons
-import com.appprint.studio.ui.components.Chrome
-import com.appprint.studio.ui.components.FlagCardGlyph
-import com.appprint.studio.ui.components.GlassContainer
-import com.appprint.studio.ui.components.GlassIconButton
+import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.screens.GuideScreen
 import com.appprint.studio.ui.screens.SettingsScreen
 import com.appprint.studio.ui.screens.StudioScreen
@@ -98,13 +81,16 @@ private data class TopLevelItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
 )
 
+private val InkHeader = Color(0xFF151816)
+private val InkText = Color(0xFFFDFAF1)
+private val InkMuted = Color(0xFFB9B6AC)
+
 /**
- * App root — full-bleed «Liquid Glass» chrome, Material 3 Expressive:
- *  - One unified background role; every screen draws edge-to-edge behind floating chrome.
- *  - Floating oval top bar (brand glyph + title) with separate round action buttons.
- *  - Floating bottom pill bar (phones) or a clipped 80dp vertical rail (≥700dp),
- *    always visible labels, animated M3 pill indicators with Expressive springs.
- *  - Bottom/edge snackbar always sits above the floating bar.
+ * App root — brand-ink header + Material 3 Expressive content +
+ * compact centered bottom pill (visible on every width).
+ *
+ * No floating «glass» chrome anymore: the header is a solid brand bar,
+ * the navigation is a small centered pill, and every screen draws edge to edge.
  */
 @Composable
 fun AppRoot(viewModel: StudioViewModel = viewModel()) {
@@ -112,7 +98,6 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
 
     AppPrintTheme(theme = state.theme) {
         val snackbarHostState = remember { SnackbarHostState() }
-
         val toast = state.toast
         LaunchedEffect(toast) {
             if (toast != null) {
@@ -140,6 +125,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         fun content() {
             NavDisplay(
                 backStack = backStack,
+                modifier = Modifier.fillMaxSize(),
                 onBack = { backStack.removeLastOrNull(); Unit },
                 entryProvider = entryProvider {
                     entry<AppRoute.Studio> { StudioScreen(viewModel = viewModel) }
@@ -157,68 +143,32 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
 
         val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        val cutoutStart = WindowInsets.displayCutout.asPaddingValues().calculateStartPadding(LocalLayoutDirection.current)
 
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val railMode = maxWidth >= 700.dp
-
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to MaterialTheme.colorScheme.surfaceContainerLowest,
-                            0.55f to MaterialTheme.colorScheme.background,
-                            1f to MaterialTheme.colorScheme.surfaceContainerLowest,
-                        )
-                    ),
-            ) {
-                // ---- screens fill the whole window, edge to edge, behind the floating chrome
-                content()
-
-                // ---- floating oval top bar (56 dp)
-                FloatingTopBar(
-                    theme = state.theme,
-                    onTheme = viewModel::setTheme,
+        BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            val wide = maxWidth >= 1000.dp
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                BrandHeader(
                     onPrint = { requestNotifications(); viewModel.printPdf() },
                     onExportPdf = { requestNotifications(); viewModel.sharePdf() },
                     exporting = state.processing,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(start = Chrome.EdgeInset + cutoutStart, top = statusTop + Chrome.TopBarGap, end = Chrome.EdgeInset, bottom = 0.dp),
+                    modifier = Modifier.padding(top = statusTop),
                 )
-
-                if (railMode) {
-                    FloatingRail(
-                        items = items,
-                        current = current,
-                        onSelect = { route -> navigateTopLevel(backStack, route) },
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .padding(start = cutoutStart + Chrome.EdgeInset, top = 0.dp, end = 0.dp, bottom = 0.dp),
-                    )
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    content()
                     SnackbarHost(
                         hostState = snackbarHostState,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(horizontal = 24.dp, vertical = 24.dp),
-                    )
-                } else {
-                    FloatingNavBar(
-                        items = items,
-                        current = current,
-                        onSelect = { route -> navigateTopLevel(backStack, route) },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(start = Chrome.EdgeInset + cutoutStart, top = 0.dp, end = Chrome.EdgeInset, bottom = navBottom + Chrome.BottomBarGap),
-                    )
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(start = 20.dp, top = 0.dp, end = 20.dp, bottom = navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 12.dp),
+                            .padding(bottom = navBottom + 68.dp),
                     )
                 }
+                BottomNavPill(
+                    items = items,
+                    current = current,
+                    onSelect = { route -> navigateTopLevel(backStack, route) },
+                    modifier = Modifier
+                        .padding(bottom = if (wide) 10.dp else navBottom + 10.dp),
+                )
             }
         }
     }
@@ -231,199 +181,107 @@ private fun navigateTopLevel(backStack: MutableList<NavKey>, route: AppRoute) {
     }
 }
 
-// ---------------------------------------------------------------- floating top bar
+// ---------------------------------------------------------------- header
 
 @Composable
-private fun FloatingTopBar(
-    theme: AppTheme,
-    onTheme: (AppTheme) -> Unit,
+private fun BrandHeader(
     onPrint: () -> Unit,
     onExportPdf: () -> Unit,
     exporting: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier.height(Chrome.TopBarHeight),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        // oval brand container
-        GlassContainer(
-            shape = RoundedCornerShape(percent = 50),
-            modifier = Modifier.weight(1f).height(Chrome.TopBarHeight),
+    Surface(color = InkHeader, modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            IraqiLogo(size = 38.dp)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = Str.app_title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = InkText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = Str.app_eyebrow,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, letterSpacing = 1.3.sp),
+                    color = InkMuted,
+                    maxLines = 1,
+                )
+            }
+            HeaderIconButton(
+                onClick = onExportPdf,
+                contentDescription = Str.btn_export_pdf,
+                enabled = !exporting,
             ) {
-                FlagCardGlyph(sizeDp = 34.dp)
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = Str.app_eyebrow,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, letterSpacing = TextUnit(1.4f, TextUnitType.Sp)),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = Str.app_title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                if (exporting) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = InkText)
+                } else {
+                    Icon(AppIcons.Pdf, contentDescription = null, tint = InkText, modifier = Modifier.size(20.dp))
                 }
             }
-        }
-
-        // separate round actions
-        TopThemeMenu(theme = theme, onTheme = onTheme)
-        GlassIconButton(
-            onClick = onPrint,
-            contentDescription = Str.btn_print,
-            enabled = !exporting,
-        ) {
-            Icon(AppIcons.Print, contentDescription = null, modifier = Modifier.size(20.dp))
-        }
-        GlassIconButton(
-            onClick = onExportPdf,
-            contentDescription = Str.btn_export_pdf,
-            enabled = !exporting,
-        ) {
-            if (exporting) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            } else {
-                Icon(AppIcons.Pdf, contentDescription = null, modifier = Modifier.size(20.dp))
+            HeaderIconButton(
+                onClick = onPrint,
+                contentDescription = Str.btn_print,
+                enabled = !exporting,
+            ) {
+                Icon(AppIcons.Print, contentDescription = null, tint = InkText, modifier = Modifier.size(20.dp))
             }
         }
     }
 }
 
 @Composable
-private fun TopThemeMenu(theme: AppTheme, onTheme: (AppTheme) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        GlassIconButton(onClick = { expanded = true }, contentDescription = Str.appearance) {
-            Icon(AppIcons.Theme, contentDescription = null, modifier = Modifier.size(20.dp))
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            val options = listOf(
-                AppTheme.SYSTEM to Str.theme_auto,
-                AppTheme.LIGHT to Str.theme_light,
-                AppTheme.DARK to Str.theme_dark,
-            )
-            options.forEach { (option, label) ->
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    onClick = {
-                        onTheme(option)
-                        expanded = false
-                    },
-                    trailingIcon = {
-                        if (theme == option) {
-                            Icon(AppIcons.Check, contentDescription = null)
-                        }
-                    },
-                )
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------- floating navigation
-
-@Composable
-private fun NavPillItem(
-    item: TopLevelItem,
-    selected: Boolean,
+private fun HeaderIconButton(
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    contentDescription: String,
+    enabled: Boolean,
+    content: @Composable () -> Unit,
 ) {
-    val pillColor = MaterialTheme.colorScheme.secondaryContainer
-    val contentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
-    else MaterialTheme.colorScheme.onSurfaceVariant
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.9f else 1f,
-        animationSpec = spring(dampingRatio = 0.72f, stiffness = 500f),
-        label = "navItemPress",
-    )
-    val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.14f else 1f,
-        animationSpec = spring(dampingRatio = 0.72f, stiffness = 420f),
-        label = "navIcon",
-    )
-    val pillWidth by animateDpAsState(
-        targetValue = if (selected) 56.dp else 0.dp,
-        animationSpec = spring(dampingRatio = 0.72f, stiffness = 420f),
-        label = "navPillWidth",
-    )
-    Column(
-        modifier = modifier
-            .graphicsLayer { scaleX = pressScale; scaleY = pressScale }
+    Surface(
+        shape = RoundedCornerShape(percent = 50),
+        color = Color.White.copy(alpha = if (enabled) 0.12f else 0.06f),
+        modifier = Modifier
+            .size(42.dp)
             .clip(RoundedCornerShape(percent = 50))
-            .clickable(onClick = onClick, interactionSource = interaction)
-            .semantics { role = Role.Tab }
-            .padding(horizontal = 2.dp, vertical = 5.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .clickable(enabled = enabled, onClick = onClick),
     ) {
-        Box(
-            modifier = Modifier
-                .height(30.dp)
-                .width(56.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (pillWidth > 0.5.dp) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(pillColor)
-                        .height(30.dp)
-                        .width(pillWidth),
-                )
-            }
-            Icon(
-                item.icon,
-                contentDescription = item.label,
-                tint = contentColor,
-                modifier = Modifier
-                    .size(22.dp)
-                    .graphicsLayer { scaleX = iconScale; scaleY = iconScale },
-            )
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            content()
         }
-        Text(
-            text = item.label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-            color = contentColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
+// ---------------------------------------------------------------- bottom navigation
+
 @Composable
-private fun FloatingNavBar(
+private fun BottomNavPill(
     items: List<TopLevelItem>,
     current: AppRoute,
     onSelect: (AppRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    GlassContainer(
+    Surface(
         shape = RoundedCornerShape(percent = 50),
-        modifier = modifier.height(Chrome.BottomBarHeight),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+        modifier = modifier.width(300.dp).height(60.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+            modifier = Modifier.padding(horizontal = 6.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             items.forEach { item ->
-                NavPillItem(
+                BottomNavItem(
                     item = item,
                     selected = current == item.route,
                     onClick = { onSelect(item.route) },
@@ -435,30 +293,45 @@ private fun FloatingNavBar(
 }
 
 @Composable
-private fun FloatingRail(
-    items: List<TopLevelItem>,
-    current: AppRoute,
-    onSelect: (AppRoute) -> Unit,
+private fun BottomNavItem(
+    item: TopLevelItem,
+    selected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    GlassContainer(
-        shape = RoundedCornerShape(28.dp),
-        modifier = modifier.width(76.dp),
+    val contentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+    else MaterialTheme.colorScheme.onSurfaceVariant
+    val pillColor = MaterialTheme.colorScheme.secondaryContainer
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .clickable(onClick = onClick)
+            .semantics { role = Role.Tab }
+            .padding(horizontal = 2.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 4.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .clip(RoundedCornerShape(percent = 50))
+                .background(if (selected) pillColor else Color.Transparent)
+                .height(28.dp)
+                .width(52.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            items.forEach { item ->
-                NavPillItem(
-                    item = item,
-                    selected = current == item.route,
-                    onClick = { onSelect(item.route) },
-                )
-            }
+            Icon(
+                item.icon,
+                contentDescription = item.label,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp),
+            )
         }
+        Text(
+            text = item.label,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
+            color = contentColor,
+            maxLines = 1,
+        )
     }
 }

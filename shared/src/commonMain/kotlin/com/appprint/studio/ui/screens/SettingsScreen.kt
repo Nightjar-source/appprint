@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,13 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.StudioViewModel
-import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.FlagCardGlyph
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
-private const val VERSION_NAME = "1.0.3"
-private const val VERSION_CODE = 4
+private const val VERSION_NAME = "1.0.4"
+private const val VERSION_CODE = 5
 
 @Composable
 fun SettingsScreen(viewModel: StudioViewModel) {
@@ -42,8 +40,10 @@ fun SettingsScreen(viewModel: StudioViewModel) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            top = Chrome.topReserve(),
-            bottom = Chrome.bottomReserve(),
+            start = 0.dp,
+            top = 4.dp,
+            end = 0.dp,
+            bottom = 24.dp,
         ),
     ) {
         // Appearance
@@ -149,14 +149,6 @@ fun SettingsScreen(viewModel: StudioViewModel) {
             HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         }
 
-        item(contentType = "footer") {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "صُنع للشعب العراقي وبأيادٍ عراقية — بقياس حقيقي 1:1.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp),
-            )
         }
     }
 }
