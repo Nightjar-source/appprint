@@ -675,6 +675,7 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                             densityPx = densityPx,
                             scale = effective,
                             selected = card.id == state.selectedId,
+                            compareBefore = state.compareBefore,
                             showGuides = settings.showGuides,
                             frameWidthDp = settings.frameWidthDp,
                             frameColorHex = settings.frameColorHex,
@@ -696,6 +697,7 @@ private fun CardOnSheet(
     densityPx: Float,
     scale: Float,
     selected: Boolean,
+    compareBefore: Boolean,
     showGuides: Boolean,
     frameWidthDp: Float,
     frameColorHex: Long,
@@ -733,7 +735,7 @@ private fun CardOnSheet(
                 .clip(RoundedCornerShape(6.dp)),
         ) {
             if (card.imageUri != null) {
-                CardImage(card = card, compareBefore = state.compareBefore)
+                CardImage(card = card, compareBefore = compareBefore)
             } else {
                 SampleCardArt(card = card, modifier = Modifier.fillMaxSize())
             }
