@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -29,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.activity.compose.BackHandler
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -196,7 +196,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 exporting = state.processing,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = statusTop + Chrome.TopBarGap, start = Chrome.EdgeInset + cutoutStart, end = Chrome.EdgeInset),
+                    .padding(start = Chrome.EdgeInset + cutoutStart, top = statusTop + Chrome.TopBarGap, end = Chrome.EdgeInset, bottom = 0.dp),
             )
 
             if (isCompact) {
@@ -206,13 +206,13 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                     onSelect = { route -> navigateTopLevel(backStack, route) },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = navBottom + Chrome.BottomBarGap, start = Chrome.EdgeInset + cutoutStart, end = Chrome.EdgeInset),
+                        .padding(start = Chrome.EdgeInset + cutoutStart, top = 0.dp, end = Chrome.EdgeInset, bottom = navBottom + Chrome.BottomBarGap),
                 )
                 SnackbarHost(
                     hostState = snackbarHostState,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(horizontal = 20.dp, bottom = navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 10.dp),
+                        .padding(start = 20.dp, top = 0.dp, end = 20.dp, bottom = navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 10.dp),
                 )
             } else {
                 FloatingRail(
@@ -221,7 +221,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                     onSelect = { route -> navigateTopLevel(backStack, route) },
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .padding(start = cutoutStart + Chrome.EdgeInset),
+                        .padding(start = cutoutStart + Chrome.EdgeInset, top = 0.dp, end = 0.dp, bottom = 0.dp),
                 )
                 SnackbarHost(
                     hostState = snackbarHostState,
