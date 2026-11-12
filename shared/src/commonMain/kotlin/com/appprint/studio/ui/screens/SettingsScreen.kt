@@ -30,8 +30,8 @@ import com.appprint.studio.ui.components.FlagCardGlyph
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
-private const val VERSION_NAME = "1.0.4"
-private const val VERSION_CODE = 5
+private const val VERSION_NAME = "1.0.5"
+private const val VERSION_CODE = 6
 
 @Composable
 fun SettingsScreen(viewModel: StudioViewModel) {

@@ -17,6 +17,7 @@ object Str {
     const val btn_sort_size = "ترتيب حسب الحجم"
     const val btn_clear_all = "مسح الكل"
     const val btn_export_pdf = "تصدير PDF"
+    const val btn_export_html = "HTML (بديل)"
     const val btn_print = "طباعة"
     const val btn_save_png = "حفظ PNG"
     const val btn_delete = "حذف"

@@ -286,9 +286,11 @@ class StudioViewModel : ViewModel() {
 
     fun sharePdf() = exportAndShare("iraqi-cards-print.pdf", "application/pdf", page = null)
 
+    fun shareHtml() = exportAndShare("iraqi-cards-print.html", "text/html", page = null, html = true)
+
     fun sharePng(page: Int) = exportAndShare("sheet-${page + 1}.png", "image/png", page = page)
 
-    private fun exportAndShare(fileName: String, mimeType: String, page: Int?) {
+    private fun exportAndShare(fileName: String, mimeType: String, page: Int?, html: Boolean = false) {
         viewModelScope.launch {
             val s = _state.value
             if (s.cards.isEmpty()) {
@@ -298,7 +300,8 @@ class StudioViewModel : ViewModel() {
             _state.update { it.copy(processing = true) }
             val result = withContext(Dispatchers.IO) {
                 val bytes = if (page == null) {
-                    PlatformActions.exportPdf(s.cards, s.settings, s.pageCount)
+                    if (html) PlatformActions.exportHtml(s.cards, s.settings, s.pageCount)
+                    else PlatformActions.exportPdf(s.cards, s.settings, s.pageCount)
                 } else {
                     PlatformActions.exportPng(page, s.cards, s.settings)
                 }
@@ -316,6 +319,8 @@ class StudioViewModel : ViewModel() {
                 _state.update { it.copy(toast = UiToast("تعذرت المشاركة — الملف محفوظ في التطبيق: $fileName")) }
             } else if (page != null) {
                 _state.update { it.copy(toast = UiToast(Str.msg_png_saved)) }
+            } else if (html) {
+                _state.update { it.copy(toast = UiToast("تم إنشاء ملف HTML — يفتح في المتصفح ويطبع مباشرة")) }
             } else {
                 _state.update { it.copy(toast = UiToast("تم إنشاء ملف PDF — ${_state.value.pageCount} ورقة، 300 DPI")) }
             }

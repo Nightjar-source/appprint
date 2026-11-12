@@ -22,6 +22,7 @@ import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import com.appprint.studio.core.export.SheetRenderer
 import com.appprint.studio.core.image.Enhance
+import com.appprint.studio.core.export.HtmlExport
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.model.SheetSettings
@@ -138,6 +139,22 @@ actual object PlatformActions {
     }
 
     // ------------------------------------------------------------- export
+
+    /** Renders every sheet at 300 DPI into a standalone print-ready HTML document. */
+    actual fun exportHtml(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray? {
+        val context = appContext() ?: return null
+        return runCatching {
+            val pages = (0 until pageCount).map { page ->
+                val rendered = SheetRenderer.renderPageJpeg(context, page, cards, settings)
+                HtmlExport.EmbeddedPage(
+                    jpegBytes = rendered.jpegBytes,
+                    widthPt = rendered.widthPt,
+                    heightPt = rendered.heightPt,
+                )
+            }
+            HtmlExport.buildPrintDocument(pages, settings.sheetWidthMm, settings.sheetHeightMm, title = "iraqi-cards-print")
+        }.getOrNull()
+    }
 
     actual fun exportPdf(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray? {
         val context = appContext() ?: return null

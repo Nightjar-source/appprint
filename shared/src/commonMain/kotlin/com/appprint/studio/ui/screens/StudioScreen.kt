@@ -36,7 +36,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -140,6 +142,7 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             onSharePng = { viewModel.sharePng(state.currentPage) },
                             onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
                             onHide = { toolbarHidden = true },
+                            compact = phone,
                         )
                     } else {
                         ToolbarHiddenBar { toolbarHidden = false }
@@ -163,6 +166,7 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             onSharePng = { viewModel.sharePng(state.currentPage) },
                             onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
                             onHide = { toolbarHidden = true },
+                            compact = phone,
                         )
                     } else {
                         ToolbarHiddenBar { toolbarHidden = false }
@@ -174,6 +178,13 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
+                    ExportRow(
+                        enabled = state.cards.isNotEmpty(),
+                        onPdf = viewModel::sharePdf,
+                        onPng = { viewModel.sharePng(state.currentPage) },
+                        onHtml = viewModel::shareHtml,
+                        compact = phone,
+                    )
                     SheetPageBar(
                         state = state,
                         onSelectPage = viewModel::currentPage,
@@ -248,6 +259,7 @@ private fun EditorToolbar(
     onSharePng: () -> Unit,
     onOpenPaperSettings: (() -> Unit)?,
     onHide: () -> Unit,
+    compact: Boolean = false,
 ) {
     Row(
         modifier = Modifier
@@ -265,44 +277,56 @@ private fun EditorToolbar(
         ) {
             item {
                 FilledTonalButton(onClick = onAddImages, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(Str.btn_add_images, maxLines = 1)
+                    Icon(AppIcons.Upload, contentDescription = Str.btn_add_images, modifier = Modifier.size(18.dp))
+                    if (!compact) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(Str.btn_add_images, maxLines = 1)
+                    }
                 }
             }
             item {
                 FilledTonalButton(onClick = onCamera, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Camera, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(Str.btn_take_photo, maxLines = 1)
+                    Icon(AppIcons.Camera, contentDescription = Str.btn_take_photo, modifier = Modifier.size(18.dp))
+                    if (!compact) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(Str.btn_take_photo, maxLines = 1)
+                    }
                 }
             }
             item {
                 FilledTonalButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sparkle, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(Str.btn_samples, maxLines = 1)
+                    Icon(AppIcons.Sparkle, contentDescription = Str.btn_samples, modifier = Modifier.size(18.dp))
+                    if (!compact) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(Str.btn_samples, maxLines = 1)
+                    }
                 }
             }
             item {
                 FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sparkle, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(Str.btn_arrange, maxLines = 1)
+                    Icon(AppIcons.Sparkle, contentDescription = Str.btn_arrange, modifier = Modifier.size(18.dp))
+                    if (!compact) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(Str.btn_arrange, maxLines = 1)
+                    }
                 }
             }
             item {
                 FilledTonalButton(onClick = onSortSize, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(Str.btn_sort_size, maxLines = 1)
+                    Icon(AppIcons.Sort, contentDescription = Str.btn_sort_size, modifier = Modifier.size(18.dp))
+                    if (!compact) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(Str.btn_sort_size, maxLines = 1)
+                    }
                 }
             }
             item {
                 FilledTonalButton(onClick = onSharePng, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(AppIcons.Image, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(Str.btn_save_png, maxLines = 1)
+                    Icon(AppIcons.Image, contentDescription = Str.btn_save_png, modifier = Modifier.size(18.dp))
+                    if (!compact) {
+                        Spacer(Modifier.size(6.dp))
+                        Text(Str.btn_save_png, maxLines = 1)
+                    }
                 }
             }
             item {
@@ -717,4 +741,87 @@ private fun CardImage(card: CardItem) {
             modifier = Modifier.fillMaxSize(),
         )
     }
+}
+
+// ------------------------------------------------------------ export row
+
+@Composable
+private fun ExportRow(
+    enabled: Boolean,
+    onPdf: () -> Unit,
+    onPng: () -> Unit,
+    onHtml: () -> Unit,
+    compact: Boolean,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (compact) {
+            FilledTonalButton(
+                onClick = onPdf,
+                enabled = enabled,
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(percent = 50),
+            ) {
+                Icon(AppIcons.Pdf, contentDescription = Str.btn_export_pdf, modifier = Modifier.size(18.dp))
+            }
+            FilledTonalButton(
+                onClick = onPng,
+                enabled = enabled,
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(percent = 50),
+            ) {
+                Icon(AppIcons.Image, contentDescription = Str.btn_save_png, modifier = Modifier.size(18.dp))
+            }
+            FilledTonalButton(
+                onClick = onHtml,
+                enabled = enabled,
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(percent = 50),
+            ) {
+                Icon(AppIcons.Html, contentDescription = Str.btn_export_html, modifier = Modifier.size(18.dp))
+            }
+        } else {
+            FilledTonalButton(
+                onClick = onPdf,
+                enabled = enabled,
+                modifier = Modifier.weight(1f).height(46.dp),
+                shape = RoundedCornerShape(percent = 50),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = Color(0xFFC8102E),
+                    contentColor = Color.White,
+                ),
+            ) {
+                Icon(AppIcons.Pdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(6.dp))
+                Text(Str.btn_export_pdf, maxLines = 1, style = MaterialTheme.typography.labelLarge)
+            }
+            OutlinedButton(
+                onClick = onPng,
+                enabled = enabled,
+                modifier = Modifier.weight(1f).height(46.dp),
+                shape = RoundedCornerShape(percent = 50),
+            ) {
+                Icon(AppIcons.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(6.dp))
+                Text(Str.btn_save_png, maxLines = 1, style = MaterialTheme.typography.labelLarge)
+            }
+            FilledTonalButton(
+                onClick = onHtml,
+                enabled = enabled,
+                modifier = Modifier.weight(1f).height(46.dp),
+                shape = RoundedCornerShape(percent = 50),
+            ) {
+                Icon(AppIcons.Html, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(6.dp))
+                Text(Str.btn_export_html, maxLines = 1, style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 }

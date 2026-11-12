@@ -41,6 +41,9 @@ expect object PlatformActions {
     /** Renders every sheet at 300 DPI into a single PDF byte array. */
     fun exportPdf(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray?
 
+    /** Renders every sheet at 300 DPI into a standalone print-ready HTML document. */
+    fun exportHtml(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray?
+
     /** Renders one sheet at 300 DPI into PNG bytes. */
     fun exportPng(page: Int, cards: List<CardItem>, settings: SheetSettings): ByteArray?
 

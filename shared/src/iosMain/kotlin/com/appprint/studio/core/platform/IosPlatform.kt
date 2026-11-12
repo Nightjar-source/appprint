@@ -43,6 +43,11 @@ actual object PlatformActions {
     actual fun displayNameOf(source: String): String? =
         source.substringAfterLast('/').substringBeforeLast('.').takeIf { it.isNotBlank() }
 
+    actual fun exportHtml(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray? {
+        println("[AppPrint] iOS HTML export is not wired yet")
+        return null
+    }
+
     actual fun exportPdf(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray? {
         println("[AppPrint] iOS PDF export is not wired yet")
         return null
