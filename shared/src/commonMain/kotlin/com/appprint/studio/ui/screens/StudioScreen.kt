@@ -1,6 +1,13 @@
 ﻿package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -86,6 +93,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.components.SampleCardArt
 import com.appprint.studio.ui.strings.Str
 
@@ -153,7 +161,14 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             onAddSample = viewModel::addSampleOfType,
                             modifier = Modifier.fillMaxSize(),
                         )
-                        if (!toolbarHidden) {
+                        AnimatedVisibility(
+                            visible = !toolbarHidden,
+                            enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
+                            exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(start = 10.dp, end = 10.dp, top = 8.dp),
+                        ) {
                             EditorToolbar(
                                 state = state,
                                 onAddImages = pickImages,
@@ -165,17 +180,17 @@ fun StudioScreen(viewModel: StudioViewModel) {
                                 onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
                                 onHide = { toolbarHidden = true },
                                 compact = phone,
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(start = 10.dp, end = 10.dp, top = 8.dp),
                             )
-                        } else {
-                            ToolbarHiddenBar(
-                                onShow = { toolbarHidden = false },
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(start = 10.dp, end = 10.dp, top = 8.dp),
-                            )
+                        }
+                        AnimatedVisibility(
+                            visible = toolbarHidden,
+                            enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
+                            exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(start = 10.dp, end = 10.dp, top = 8.dp),
+                        ) {
+                            ToolbarHiddenBar(onShow = { toolbarHidden = false })
                         }
                     }
                 } else {
@@ -185,7 +200,14 @@ fun StudioScreen(viewModel: StudioViewModel) {
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxSize(),
                         )
-                        if (!toolbarHidden) {
+                        AnimatedVisibility(
+                            visible = !toolbarHidden,
+                            enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
+                            exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(start = 10.dp, end = 10.dp, top = 8.dp),
+                        ) {
                             EditorToolbar(
                                 state = state,
                                 onAddImages = pickImages,
@@ -197,17 +219,17 @@ fun StudioScreen(viewModel: StudioViewModel) {
                                 onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
                                 onHide = { toolbarHidden = true },
                                 compact = phone,
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(start = 10.dp, end = 10.dp, top = 8.dp),
                             )
-                        } else {
-                            ToolbarHiddenBar(
-                                onShow = { toolbarHidden = false },
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(start = 10.dp, end = 10.dp, top = 8.dp),
-                            )
+                        }
+                        AnimatedVisibility(
+                            visible = toolbarHidden,
+                            enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { -it },
+                            exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(start = 10.dp, end = 10.dp, top = 8.dp),
+                        ) {
+                            ToolbarHiddenBar(onShow = { toolbarHidden = false })
                         }
                     }
                     SheetPageBar(
@@ -583,12 +605,12 @@ private fun SampleCardTile(type: CardType, onClick: () -> Unit) {
 private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifier: Modifier = Modifier) {
     val settings = state.settings
     val densityPx = LocalDensity.current.density
-    var zoom by rememberSaveable { mutableFloatStateOf(1f) }
+    var zoomTarget by rememberSaveable { mutableFloatStateOf(1f) }
     var panX by rememberSaveable { mutableFloatStateOf(0f) }
     var panY by rememberSaveable { mutableFloatStateOf(0f) }
     // gestures live on the WHOLE canvas area -> 1:1 finger-follow
     val transformable = rememberTransformableState { zoomChange, panChange, _ ->
-        zoom = (zoom * zoomChange).coerceIn(1f, 4.5f)
+        zoomTarget = (zoomTarget * zoomChange).coerceIn(1f, 4.5f)
         panX += panChange.x
         panY += panChange.y
     }
@@ -601,12 +623,12 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                 .clipToBounds()
                 .pointerInput(Unit) {
                     detectTapGestures(onDoubleTap = {
-                        zoom = when {
+                        zoomTarget = when {
                             zoom < 1.6f -> 1.75f
                             zoom < 2.4f -> 2.5f
                             else -> 1f
                         }
-                        if (zoom == 1f) {
+                        if (zoomTarget == 1f) {
                             panX = 0f
                             panY = 0f
                         }
@@ -620,6 +642,7 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                 (maxWidth.value - 24f) / sheetWdp,
                 (maxHeight.value - 24f) / sheetHdp,
             ).coerceIn(0.25f, 2.4f)
+            val zoom by animateFloatAsState(zoomTarget, Motion.spatialFast(), label = "zoom")
             val effective = fit * zoom
 
             // light blueprint backdrop (adapts to theme)
@@ -663,12 +686,12 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                         .background(paperColor)
                         .pointerInput(Unit) {
                             detectTapGestures(onDoubleTap = {
-                                zoom = when {
+                                zoomTarget = when {
                                     zoom < 1.6f -> 1.75f
                                     zoom < 2.4f -> 2.5f
                                     else -> 1f
                                 }
-                                if (zoom == 1f) {
+                                if (zoomTarget == 1f) {
                                     panX = 0f
                                     panY = 0f
                                 }
@@ -716,13 +739,13 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 ZoomButton(icon = Icons.Filled.ZoomIn, contentDescription = Str.zoom_in) {
-                    zoom = (zoom * 1.33f).coerceIn(1f, 4.5f)
+                    zoomTarget = (zoomTarget * 1.33f).coerceIn(1f, 4.5f)
                 }
                 ZoomButton(icon = Icons.Filled.ZoomOut, contentDescription = Str.zoom_out) {
-                    zoom = (zoom / 1.33f).coerceIn(1f, 4.5f)
+                    zoomTarget = (zoomTarget / 1.33f).coerceIn(1f, 4.5f)
                 }
                 ZoomButton(icon = Icons.Filled.Restore, contentDescription = Str.reset_view) {
-                    zoom = 1f
+                    zoomTarget = 1f
                     panX = 0f
                     panY = 0f
                 }
@@ -738,13 +761,21 @@ private fun ZoomButton(
     contentDescription: String,
     onClick: () -> Unit,
 ) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val container by animateColorAsState(
+        targetValue = MaterialTheme.colorScheme.surfaceContainerHigh,
+        animationSpec = Motion.effects(),
+        label = "zoomContainer",
+    )
     IconButton(
         onClick = onClick,
+        interactionSource = interaction,
         modifier = Modifier
             .size(48.dp)
+            .pressScale(interaction)
             .shadow(8.dp, CircleShape, clip = false)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            .background(container),
     ) {
         Icon(
             icon,
@@ -772,11 +803,25 @@ private fun CardOnSheet(
 ) {
     val currentCard by rememberUpdatedState(card)
     val mmToPx = DP_PER_MM * densityPx
+    val selectionScale by animateFloatAsState(
+        targetValue = if (selected) 1.02f else 1f,
+        animationSpec = Motion.spatial(),
+        label = "cardSelectionScale",
+    )
+    val selectionAlpha by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = Motion.effects(),
+        label = "cardSelectionAlpha",
+    )
 
     Box(
         Modifier
             .offset { IntOffset((card.xMm * mmToPx).roundToInt(), (card.yMm * mmToPx).roundToInt()) }
             .size((card.effectiveWidth * DP_PER_MM).dp, (card.effectiveHeight * DP_PER_MM).dp)
+            .graphicsLayer {
+                scaleX = selectionScale
+                scaleY = selectionScale
+            }
             .pointerInput(card.id, scale) {
                 detectDragGestures { _, dragAmount ->
                     val cur = currentCard
@@ -831,11 +876,11 @@ private fun CardOnSheet(
                 )
             }
         }
-        if (selected) {
+        if (selectionAlpha > 0.01f) {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .border(2.dp, Color(0xFF007A3D), RoundedCornerShape(6.dp)),
+                    .border(2.dp, Color(0xFF007A3D).copy(alpha = selectionAlpha), RoundedCornerShape(6.dp)),
             )
         }
     }

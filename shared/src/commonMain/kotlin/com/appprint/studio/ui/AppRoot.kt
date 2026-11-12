@@ -1,7 +1,17 @@
 ﻿package com.appprint.studio.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Box
@@ -44,6 +54,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalIndication
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -65,12 +78,15 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.rememberNotificationPermissionRequester
+import com.appprint.studio.ui.components.AppSnackbarHost
 import com.appprint.studio.ui.components.IraqiLogo
+import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.screens.GuideScreen
 import com.appprint.studio.ui.screens.SettingsScreen
 import com.appprint.studio.ui.screens.StudioScreen
 import com.appprint.studio.ui.theme.AppPrintTheme
+import com.appprint.studio.ui.theme.Motion
 import com.appprint.studio.ui.theme.contrastingTextColor
 import com.appprint.studio.ui.strings.Str
 import com.appprint.studio.ui.platform.PlatformBackHandler
@@ -211,7 +227,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                         .align(Alignment.BottomCenter)
                         .padding(start = Chrome.EdgeInset + cutoutStart, top = 0.dp, end = Chrome.EdgeInset, bottom = navBottom + Chrome.BottomBarGap),
                 )
-                SnackbarHost(
+                AppSnackbarHost(
                     hostState = snackbarHostState,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -226,7 +242,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                         .align(Alignment.CenterStart)
                         .padding(start = cutoutStart + Chrome.EdgeInset, top = 0.dp, end = 0.dp, bottom = 0.dp),
                 )
-                SnackbarHost(
+                AppSnackbarHost(
                     hostState = snackbarHostState,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -260,6 +276,11 @@ private fun FloatingTopBar(
     var exportMenuOpen by remember { mutableStateOf(false) }
     val scheme = MaterialTheme.colorScheme
     val container = scheme.surfaceContainerHigh.copy(alpha = 0.90f)
+    val exportTurns by animateFloatAsState(
+        targetValue = if (exportMenuOpen) 135f else 0f,
+        animationSpec = Motion.effects(),
+        label = "exportTurns",
+    )
 
     Row(
         modifier = modifier
@@ -290,14 +311,25 @@ private fun FloatingTopBar(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = scheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    AnimatedContent(
+                        targetState = title,
+                        transitionSpec = {
+                            (fadeIn(Motion.effects()) + slideInVertically(Motion.spatialFast()) { it / 3 })
+                                .togetherWith(
+                                    fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it / 3 },
+                                )
+                        },
+                        label = "screenTitle",
+                    ) { value ->
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = scheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -316,7 +348,12 @@ private fun FloatingTopBar(
                     color = scheme.onSurface,
                 )
             } else {
-                Icon(Icons.Filled.FileUpload, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(21.dp))
+                Icon(
+                    Icons.Filled.FileUpload,
+                    contentDescription = null,
+                    tint = scheme.onSurface,
+                    modifier = Modifier.size(21.dp).rotate(exportTurns),
+                )
             }
         }
         DropdownMenu(
@@ -367,13 +404,26 @@ private fun CircularIconButton(
     container: Color,
     content: @Composable () -> Unit,
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val indication = LocalIndication.current
+    val containerColor by animateColorAsState(
+        targetValue = if (enabled) container else container.copy(alpha = 0.5f),
+        animationSpec = Motion.effects(),
+        label = "circularContainer",
+    )
     Box(
         modifier = Modifier
             .size(48.dp)
+            .pressScale(interaction)
             .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
             .clip(RoundedCornerShape(percent = 50))
-            .background(if (enabled) container else container.copy(alpha = 0.5f))
-            .clickable(enabled = enabled, onClick = onClick)
+            .background(containerColor)
+            .clickable(
+                interactionSource = interaction,
+                indication = indication,
+                enabled = enabled,
+                onClick = onClick,
+            )
             .semantics { role = Role.Button },
         contentAlignment = Alignment.Center,
     ) { content() }
@@ -443,63 +493,68 @@ private fun NavPillItem(
     modifier: Modifier = Modifier,
     vertical: Boolean = false,
 ) {
-    val pillColor = MaterialTheme.colorScheme.secondaryContainer
-    val contentColor = if (selected) contrastingTextColor(pillColor) else MaterialTheme.colorScheme.onSurfaceVariant
-    if (vertical) {
-        Column(
-            modifier = modifier
+    val scheme = MaterialTheme.colorScheme
+    val interaction = remember { MutableInteractionSource() }
+    val indication = LocalIndication.current
+    val pill by animateColorAsState(
+        targetValue = if (selected) scheme.secondaryContainer else Color.Transparent,
+        animationSpec = Motion.effects(),
+        label = "navPill",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) contrastingTextColor(scheme.secondaryContainer) else scheme.onSurfaceVariant,
+        animationSpec = Motion.effects(),
+        label = "navContent",
+    )
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1.09f else 1f,
+        animationSpec = Motion.spatial(),
+        label = "navIconScale",
+    )
+    val boxWidth = if (vertical) 44.dp else 52.dp
+    val boxHeight = if (vertical) 34.dp else 30.dp
+    val iconSize = if (vertical) 21.dp else 20.dp
+
+    Column(
+        modifier = modifier
+            .pressScale(interaction, pressedScale = 0.92f)
+            .clip(RoundedCornerShape(percent = 50))
+            .clickable(
+                interactionSource = interaction,
+                indication = indication,
+                onClick = onClick,
+            )
+            .semantics { role = Role.Tab }
+            .padding(horizontal = 2.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Box(
+            modifier = Modifier
                 .clip(RoundedCornerShape(percent = 50))
-                .clickable(onClick = onClick)
-                .semantics { role = Role.Tab }
-                .padding(horizontal = 2.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+                .background(pill)
+                .height(boxHeight)
+                .width(boxWidth),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.label,
+                tint = contentColor,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(if (selected) pillColor else Color.Transparent)
-                    .height(34.dp)
-                    .width(44.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(item.icon, contentDescription = item.label, tint = contentColor, modifier = Modifier.size(21.dp))
-            }
-            Text(
-                text = item.label,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-                color = contentColor,
-                maxLines = 1,
+                    .size(iconSize)
+                    .graphicsLayer {
+                        scaleX = iconScale
+                        scaleY = iconScale
+                    },
             )
         }
-    } else {
-        Column(
-            modifier = modifier
-                .clip(RoundedCornerShape(percent = 50))
-                .clickable(onClick = onClick)
-                .semantics { role = Role.Tab }
-                .padding(horizontal = 2.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(if (selected) pillColor else Color.Transparent)
-                    .height(30.dp)
-                    .width(52.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(item.icon, contentDescription = item.label, tint = contentColor, modifier = Modifier.size(20.dp))
-            }
-            Text(
-                text = item.label,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-                color = contentColor,
-                maxLines = 1,
-            )
-        }
+        Text(
+            text = item.label,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
+            color = contentColor,
+            maxLines = 1,
+        )
     }
 }
