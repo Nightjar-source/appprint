@@ -83,7 +83,7 @@ class SheetArrangerTest {
             a4.copy(mode = ArrangeMode.GRID, smartGroup = false),
         )
         val byId = result.cards.associateBy { it.id }
-        val gap = a4.effectiveGapMm
+        val gap = 6f // GRID uses settings.gapMm verbatim (6mm) — not the COMFORTABLE 8mm floor
         assertEquals(a4.marginMm, byId.getValue(1L).xMm, eps)
         assertEquals(a4.marginMm + 80f + gap, byId.getValue(2L).xMm, eps)
         assertEquals(a4.marginMm + 80f + gap + 60f + gap, byId.getValue(3L).xMm, eps)
