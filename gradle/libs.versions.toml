@@ -11,7 +11,7 @@ adaptive = "1.3.0"   # org.jetbrains.compose.material3.adaptive — Compose Adap
 navigation3Multiplatform = "1.2.0"  # org.jetbrains.androidx.navigation3:navigation3-ui — KMP UI variant (klibs stable=1.2.0)
 lifecycle = "2.11.0"   # org.jetbrains.androidx.lifecycle — latestStableVersion via klibs.io
 coroutines = "1.11.0"  # latestStableVersion via klibs.io
-serialization = "1.12.0"  # latestStableVersion via klibs.io
+serialization = "1.13.0"  # latestStableVersion via klibs.io
 coreKtx = "1.19.1"     # Google Maven release
 activity = "1.13.0"    # Google Maven release
 coreSplashscreen = "1.2.0"  # Google Maven release

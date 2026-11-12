@@ -31,8 +31,8 @@ import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
-private const val VERSION_NAME = "1.0.9"
-private const val VERSION_CODE = 10
+private const val VERSION_NAME = "1.0.10"
+private const val VERSION_CODE = 11
 
 @Composable
 fun SettingsScreen(viewModel: StudioViewModel) {

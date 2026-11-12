@@ -2,8 +2,11 @@ package com.appprint.studio.ui.components
 
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
@@ -24,10 +27,17 @@ object Chrome {
     @OptIn(ExperimentalLayoutApi::class)
     @Composable
     fun topReserve(): Dp =
-        WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + TopBarGap + TopBarHeight
+        WindowInsets.statusBars
+            .union(WindowInsets.captionBar)
+            .union(WindowInsets.displayCutout)
+            .asPaddingValues()
+            .calculateTopPadding() + TopBarGap + TopBarHeight
 
     @OptIn(ExperimentalLayoutApi::class)
     @Composable
     fun bottomReserve(): Dp =
-        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BottomBarGap + BottomBarHeight + 12.dp
+        WindowInsets.navigationBars
+            .union(WindowInsets.displayCutout)
+            .asPaddingValues()
+            .calculateBottomPadding() + BottomBarGap + BottomBarHeight + 12.dp
 }

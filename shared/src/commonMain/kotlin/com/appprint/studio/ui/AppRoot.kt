@@ -1,10 +1,13 @@
 ﻿package com.appprint.studio.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.animateColorAsState
@@ -65,6 +68,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -159,11 +163,31 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         val current = backStack.lastOrNull() as? AppRoute ?: AppRoute.Studio
         val requestNotifications = rememberNotificationPermissionRequester()
 
+        val adaptiveInfo = currentWindowAdaptiveInfoV2()
+        val sizeClass = adaptiveInfo.windowSizeClass
+        val isCompact = !sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
+        val isExpanded = sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
+
+        // Official adaptive navigation widths: 64dp for medium/foldable,
+        // 72dp for expanded tablets, Chromebooks and Samsung DeX.
+        val railWidth = if (isExpanded) 72.dp else 64.dp
+        val animatedRailWidth by animateDpAsState(
+            targetValue = railWidth,
+            animationSpec = Motion.spatial(),
+            label = "railWidth",
+        )
+        // Page content padding follows the rail width so content never hides underneath it.
+        val pageContentPadding by animateDpAsState(
+            targetValue = if (isCompact) 0.dp else animatedRailWidth + Chrome.EdgeInset,
+            animationSpec = Motion.spatial(),
+            label = "pageContentPadding",
+        )
+
         @Composable
         fun content() {
             NavDisplay(
                 backStack = backStack,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(start = pageContentPadding),
                 onBack = { backStack.removeLastOrNull(); Unit },
                 entryProvider = entryProvider {
                     entry<AppRoute.Studio> { StudioScreen(viewModel = viewModel) }
@@ -172,9 +196,6 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 },
             )
         }
-
-        val adaptiveInfo = currentWindowAdaptiveInfoV2()
-        val isCompact = !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
 
         val items = listOf(
             TopLevelItem(AppRoute.Studio, Str.nav_studio, Icons.Filled.Print),
@@ -218,37 +239,55 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                     .padding(start = Chrome.EdgeInset + cutoutStart, top = statusTop + Chrome.TopBarGap, end = Chrome.EdgeInset, bottom = 0.dp),
             )
 
-            if (isCompact) {
+            AnimatedVisibility(
+                visible = isCompact,
+                enter = fadeIn(Motion.effects()) + slideInVertically(Motion.spatial()) { it },
+                exit = fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { it },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) {
                 FloatingNavPill(
                     items = items,
                     current = current,
                     onSelect = { route -> navigateTopLevel(backStack, route) },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(start = Chrome.EdgeInset + cutoutStart, top = 0.dp, end = Chrome.EdgeInset, bottom = navBottom + Chrome.BottomBarGap),
+                    modifier = Modifier.padding(
+                        start = Chrome.EdgeInset + cutoutStart,
+                        top = 0.dp,
+                        end = Chrome.EdgeInset,
+                        bottom = navBottom + Chrome.BottomBarGap,
+                    ),
                 )
-                AppSnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(start = 20.dp, top = 0.dp, end = 20.dp, bottom = navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 10.dp),
-                )
-            } else {
+            }
+
+            AnimatedVisibility(
+                visible = !isCompact,
+                enter = fadeIn(Motion.effects()) + slideInHorizontally(Motion.spatial()) { -it / 3 },
+                exit = fadeOut(Motion.effectsFast()) + slideOutHorizontally(Motion.effectsFast()) { -it / 3 },
+                modifier = Modifier.align(Alignment.CenterStart),
+            ) {
                 FloatingRail(
                     items = items,
                     current = current,
                     onSelect = { route -> navigateTopLevel(backStack, route) },
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = cutoutStart + Chrome.EdgeInset, top = 0.dp, end = 0.dp, bottom = 0.dp),
-                )
-                AppSnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 24.dp, vertical = 24.dp),
+                    railWidth = animatedRailWidth,
+                    modifier = Modifier.padding(start = cutoutStart + Chrome.EdgeInset, top = 0.dp, end = 0.dp, bottom = 0.dp),
                 )
             }
+
+            AppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        start = pageContentPadding / 2,
+                        top = 0.dp,
+                        end = pageContentPadding / 2,
+                        bottom = if (isCompact) {
+                            navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 10.dp
+                        } else {
+                            24.dp
+                        },
+                    ),
+            )
         }
     }
 }
@@ -463,6 +502,7 @@ private fun FloatingRail(
     items: List<TopLevelItem>,
     current: AppRoute,
     onSelect: (AppRoute) -> Unit,
+    railWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -471,7 +511,7 @@ private fun FloatingRail(
         color = container,
         shadowElevation = 12.dp,
         shape = RoundedCornerShape(percent = 50),
-        modifier = modifier.width(72.dp),
+        modifier = modifier.width(railWidth),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 12.dp).verticalScroll(rememberScrollState()),
