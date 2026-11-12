@@ -148,7 +148,5 @@ fun SettingsScreen(viewModel: StudioViewModel) {
             )
             HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         }
-
-        }
     }
 }

@@ -93,7 +93,7 @@ fun IraqiLogo(size: Dp, modifier: Modifier = Modifier) {
                 .size(size * 0.24f),
         ) {
             Canvas(Modifier.fillMaxSize()) {
-                drawPath(starPath(size.minDimension), Gold)
+                drawPath(starPath(this.size.minDimension), Gold)
             }
         }
     }
