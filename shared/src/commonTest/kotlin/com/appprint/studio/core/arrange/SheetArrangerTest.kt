@@ -72,6 +72,24 @@ class SheetArrangerTest {
     }
 
     @Test
+    fun gridPacksMixedWidthsSideBySideWithoutUniformCells() {
+        val cards = listOf(
+            card(1, 80f, 60f, "same"),
+            card(2, 60f, 40f, "same"),
+            card(3, 30f, 20f, "same"),
+        )
+        val result = SheetArranger.arrange(
+            cards,
+            a4.copy(mode = ArrangeMode.GRID, smartGroup = false),
+        )
+        val byId = result.cards.associateBy { it.id }
+        val gap = a4.effectiveGapMm
+        assertEquals(a4.marginMm, byId.getValue(1L).xMm, eps)
+        assertEquals(a4.marginMm + 80f + gap, byId.getValue(2L).xMm, eps)
+        assertEquals(a4.marginMm + 80f + gap + 60f + gap, byId.getValue(3L).xMm, eps)
+    }
+
+    @Test
     fun emptyInputProducesSingleEmptyPage() {
         val result = SheetArranger.arrange(emptyList(), a4.copy(mode = ArrangeMode.COMFORTABLE))
         assertTrue(result.cards.isEmpty(), "no cards expected for empty input")

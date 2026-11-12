@@ -78,9 +78,6 @@ object SheetArranger {
         contentH: Float,
         gap: Float,
     ): Result {
-        val gridColW = normalized.maxOfOrNull { it.effectiveWidth } ?: 0f
-        val gridRowH = normalized.maxOfOrNull { it.effectiveHeight } ?: 0f
-
         var cursorX = margin
         var cursorY = margin
         var rowHeight = 0f
@@ -89,8 +86,8 @@ object SheetArranger {
         var lastGroup = ""
 
         for (card in normalized) {
-            val cellW = gridColW
-            val cellH = gridRowH
+            val w = card.effectiveWidth
+            val h = card.effectiveHeight
             val group = card.typeKey
 
             // Group break: start a new row (and possibly a new page)
@@ -98,36 +95,37 @@ object SheetArranger {
                 cursorX = margin
                 cursorY += rowHeight + gap
                 rowHeight = 0f
-                if (out.isNotEmpty() && cursorY + cellH > settings.sheetHeightMm - margin) {
+                if (out.isNotEmpty() && cursorY + h > settings.sheetHeightMm - margin) {
                     page += 1
                     cursorY = margin
                 }
             }
             lastGroup = group
 
-            // Line wrap
-            if (cursorX + cellW > settings.sheetWidthMm - margin && cursorX > margin) {
+            // Row wrap — shelf packing: every card keeps its real width, so mixed
+            // sizes sit next to each other and no uniform empty column is left.
+            if (cursorX + w > settings.sheetWidthMm - margin && cursorX > margin) {
                 cursorX = margin
                 cursorY += rowHeight + gap
                 rowHeight = 0f
             }
             // Page overflow
-            if (cursorY + cellH > settings.sheetHeightMm - margin && out.isNotEmpty()) {
+            if (cursorY + h > settings.sheetHeightMm - margin && out.isNotEmpty()) {
                 page += 1
                 cursorX = margin
                 cursorY = margin
                 rowHeight = 0f
             }
 
-            val placeX = cursorX + (gridColW - card.effectiveWidth) / 2f
-            val placed = card.copy(
-                xMm = round1(placeX),
-                yMm = round1(cursorY),
-                page = page,
+            out.add(
+                card.copy(
+                    xMm = round1(cursorX),
+                    yMm = round1(cursorY),
+                    page = page,
+                ),
             )
-            out.add(placed)
-            cursorX += cellW + gap
-            rowHeight = maxOf(rowHeight, cellH)
+            cursorX += w + gap
+            rowHeight = maxOf(rowHeight, h)
         }
 
         val sorted = out.sortedWith(compareBy({ it.page }, { it.yMm }, { it.xMm }))
