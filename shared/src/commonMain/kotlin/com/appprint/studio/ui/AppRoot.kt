@@ -4,35 +4,34 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import com.appprint.studio.ui.platform.PlatformBackHandler
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,12 +41,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,14 +61,19 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.rememberNotificationPermissionRequester
 import com.appprint.studio.ui.components.IraqiLogo
+import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.screens.GuideScreen
 import com.appprint.studio.ui.screens.SettingsScreen
 import com.appprint.studio.ui.screens.StudioScreen
 import com.appprint.studio.ui.theme.AppPrintTheme
 import com.appprint.studio.ui.theme.contrastingTextColor
 import com.appprint.studio.ui.strings.Str
+import com.appprint.studio.ui.platform.PlatformBackHandler
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.window.core.layout.WindowSizeClass
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -95,11 +104,12 @@ private fun routeName(route: AppRoute): String = when (route) {
 }
 
 /**
- * App root — unified edge-to-edge chrome (Material 3 Expressive):
- *  - Fixed top bar shares the content tone with a hairline divider — no color blocks, no floats.
- *  - Title shows the current screen name, with circular action buttons.
- *  - One unified export menu button (PDF / PNG / HTML / share) + direct print button.
- *  - Bottom bar matches the scaffold tone with a hairline divider.
+ * App root — fully floating chrome on edge-to-edge content, unified on the
+ * Material 3 Expressive + Compose Adaptive (`currentWindowAdaptiveInfoV2`) + Navigation 3 trio.
+ *  - Floating oval top bar (composite: brand + screen name + circular actions).
+ *  - Floating bottom pill (compact) / floating vertical rail (medium+).
+ *  - One unified export menu button + direct print button in the top bar.
+ *  - System Back wired step-by-step through panels/dialogs/selection.
  */
 @Composable
 fun AppRoot(viewModel: StudioViewModel = viewModel()) {
@@ -144,6 +154,9 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
             )
         }
 
+        val adaptiveInfo = currentWindowAdaptiveInfoV2()
+        val isCompact = !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
+
         val items = listOf(
             TopLevelItem(AppRoute.Studio, Str.nav_studio, Icons.Filled.Print),
             TopLevelItem(AppRoute.Guide, Str.nav_guide, Icons.Filled.MenuBook),
@@ -152,39 +165,69 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
 
         val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val cutoutStart = WindowInsets.displayCutout.asPaddingValues().calculateStartPadding(LocalLayoutDirection.current)
 
-        // Back: leave secondary screens to the studio; at the studio, history handled inside the screen.
         PlatformBackHandler(enabled = true) {
             if (current != AppRoute.Studio) navigateTopLevel(backStack, AppRoute.Studio)
         }
 
-        BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            val wide = maxWidth >= 1000.dp
-            Column(Modifier.fillMaxSize()) {
-                TopBar(
-                    title = routeName(current),
-                    onExportPdf = viewModel::sharePdf,
-                    onExportPng = { viewModel.sharePng(state.currentPage) },
-                    onExportHtml = viewModel::shareHtml,
-                    onShare = { viewModel.sharePng(state.currentPage) },
-                    onPrint = { requestNotifications(); viewModel.printPdf() },
-                    exporting = state.processing,
-                    modifier = Modifier.padding(top = statusTop),
-                )
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    content()
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = navBottom + 96.dp),
-                    )
-                }
-                BottomNavBar(
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceContainerLowest,
+                            MaterialTheme.colorScheme.background,
+                        ),
+                    ),
+                ),
+        ) {
+            // screens fill edge-to-edge, behind the floating chrome
+            content()
+
+            FloatingTopBar(
+                title = routeName(current),
+                onExportPdf = viewModel::sharePdf,
+                onExportPng = { viewModel.sharePng(state.currentPage) },
+                onExportHtml = viewModel::shareHtml,
+                onShare = { viewModel.sharePng(state.currentPage) },
+                onPrint = { requestNotifications(); viewModel.printPdf() },
+                exporting = state.processing,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = statusTop + Chrome.TopBarGap, start = Chrome.EdgeInset + cutoutStart, end = Chrome.EdgeInset),
+            )
+
+            if (isCompact) {
+                FloatingNavPill(
                     items = items,
                     current = current,
                     onSelect = { route -> navigateTopLevel(backStack, route) },
-                    showLabels = !wide,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = navBottom + Chrome.BottomBarGap, start = Chrome.EdgeInset + cutoutStart, end = Chrome.EdgeInset),
+                )
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 20.dp, bottom = navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 10.dp),
+                )
+            } else {
+                FloatingRail(
+                    items = items,
+                    current = current,
+                    onSelect = { route -> navigateTopLevel(backStack, route) },
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = cutoutStart + Chrome.EdgeInset),
+                )
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 24.dp, vertical = 24.dp),
                 )
             }
         }
@@ -198,10 +241,10 @@ private fun navigateTopLevel(backStack: MutableList<NavKey>, route: AppRoute) {
     }
 }
 
-// ---------------------------------------------------------------- top bar
+// ---------------------------------------------------------------- floating top bar
 
 @Composable
-private fun TopBar(
+private fun FloatingTopBar(
     title: String,
     onExportPdf: () -> Unit,
     onExportPng: () -> Unit,
@@ -213,188 +256,245 @@ private fun TopBar(
 ) {
     var exportMenuOpen by remember { mutableStateOf(false) }
     val scheme = MaterialTheme.colorScheme
+    val container = scheme.surfaceContainerHigh.copy(alpha = 0.90f)
 
-    Surface(color = scheme.background, modifier = modifier.fillMaxWidth()) {
-        Column {
+    Row(
+        modifier = modifier
+            .height(Chrome.TopBarHeight),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        // oval brand container
+        Surface(
+            shape = RoundedCornerShape(percent = 50),
+            color = container,
+            shadowElevation = 10.dp,
+            modifier = Modifier.weight(1f).height(Chrome.TopBarHeight),
+        ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(horizontal = 12.dp),
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                // circular brand button (also goes Back→studio when pressed on a child screen)
-                IconButton(
-                    onClick = { /* handled by system back — no navigation needed here */ },
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.surfaceContainerHigh),
-                ) {
-                    IraqiLogo(size = 30.dp)
-                }
-                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                IraqiLogo(size = 34.dp)
+                Column(Modifier.weight(1f)) {
                     Text(
                         text = Str.app_eyebrow,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, letterSpacing = 1.4.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, letterSpacing = 1.2.sp),
                         color = scheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = scheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-
-                // unified export menu — PDF / PNG / HTML / share
-                Box {
-                    IconButton(
-                        onClick = { exportMenuOpen = true },
-                        enabled = !exporting,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(if (exportMenuOpen) scheme.secondaryContainer else scheme.surfaceContainerHigh),
-                    ) {
-                        if (exporting) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = contrastingTextColor(scheme.secondaryContainer),
-                            )
-                        } else {
-                            Icon(
-                                Icons.Filled.FileUpload,
-                                contentDescription = Str.export_menu,
-                                tint = if (exportMenuOpen) contrastingTextColor(scheme.secondaryContainer) else scheme.onSurface,
-                                modifier = Modifier.size(22.dp),
-                            )
-                        }
-                    }
-                    DropdownMenu(
-                        expanded = exportMenuOpen,
-                        onDismissRequest = { exportMenuOpen = false },
-                        shape = RoundedCornerShape(20.dp),
-                        containerColor = scheme.surfaceContainerHigh,
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(Str.btn_export_pdf, maxLines = 1) },
-                            onClick = { exportMenuOpen = false; onExportPdf() },
-                            leadingIcon = { Icon(Icons.Filled.PictureAsPdf, contentDescription = null) },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(Str.btn_save_png, maxLines = 1) },
-                            onClick = { exportMenuOpen = false; onExportPng() },
-                            leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(Str.btn_export_html, maxLines = 1) },
-                            onClick = { exportMenuOpen = false; onExportHtml() },
-                            leadingIcon = { Icon(Icons.Filled.Code, contentDescription = null) },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(Str.share_page, maxLines = 1) },
-                            onClick = { exportMenuOpen = false; onShare() },
-                            leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
-                        )
-                    }
-                }
-
-                // direct print button
-                IconButton(
-                    onClick = onPrint,
-                    enabled = !exporting,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.surfaceContainerHigh),
-                ) {
-                    Icon(
-                        Icons.Filled.Print,
-                        contentDescription = Str.btn_print,
-                        tint = scheme.onSurface,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
             }
-            HorizontalDivider(color = scheme.outlineVariant.copy(alpha = 0.45f))
+        }
+
+        // unified export menu — circular button opening an elegant dropdown
+        CircularIconButton(
+            onClick = { exportMenuOpen = true },
+            contentDescription = Str.export_menu,
+            enabled = !exporting,
+            container = container,
+        ) {
+            if (exporting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = scheme.onSurface,
+                )
+            } else {
+                Icon(Icons.Filled.FileUpload, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(21.dp))
+            }
+        }
+        DropdownMenu(
+            expanded = exportMenuOpen,
+            onDismissRequest = { exportMenuOpen = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = scheme.surfaceContainerHigh,
+        ) {
+            DropdownMenuItem(
+                text = { Text(Str.btn_export_pdf, maxLines = 1) },
+                onClick = { exportMenuOpen = false; onExportPdf() },
+                leadingIcon = { Icon(Icons.Filled.PictureAsPdf, contentDescription = null) },
+            )
+            DropdownMenuItem(
+                text = { Text(Str.btn_save_png, maxLines = 1) },
+                onClick = { exportMenuOpen = false; onExportPng() },
+                leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
+            )
+            DropdownMenuItem(
+                text = { Text(Str.btn_export_html, maxLines = 1) },
+                onClick = { exportMenuOpen = false; onExportHtml() },
+                leadingIcon = { Icon(Icons.Filled.Code, contentDescription = null) },
+            )
+            DropdownMenuItem(
+                text = { Text(Str.share_page, maxLines = 1) },
+                onClick = { exportMenuOpen = false; onShare() },
+                leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+            )
+        }
+
+        // direct print button — prints the current file immediately
+        CircularIconButton(
+            onClick = onPrint,
+            contentDescription = Str.btn_print,
+            enabled = !exporting,
+            container = container,
+        ) {
+            Icon(Icons.Filled.Print, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(21.dp))
         }
     }
 }
 
-// ---------------------------------------------------------------- bottom navigation (fixed)
+@Composable
+private fun CircularIconButton(
+    onClick: () -> Unit,
+    contentDescription: String,
+    enabled: Boolean,
+    container: Color,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(if (enabled) container else container.copy(alpha = 0.5f))
+            .clickable(enabled = enabled, onClick = onClick)
+            .semantics { role = Role.Button },
+        contentAlignment = Alignment.Center,
+    ) { content() }
+}
+
+// ---------------------------------------------------------------- floating bottom navigation
 
 @Composable
-private fun BottomNavBar(
+private fun FloatingNavPill(
     items: List<TopLevelItem>,
     current: AppRoute,
     onSelect: (AppRoute) -> Unit,
-    showLabels: Boolean,
+    modifier: Modifier = Modifier,
 ) {
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
-        Column {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(58.dp)
-                    .windowInsetsPadding(WindowInsets.navigationBars),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                items.forEach { item ->
-                    NavItem(
-                        item = item,
-                        selected = current == item.route,
-                        onClick = { onSelect(item.route) },
-                        showLabel = showLabels,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
+    val scheme = MaterialTheme.colorScheme
+    val container = scheme.surfaceContainerHigh.copy(alpha = 0.90f)
+    Surface(
+        color = container,
+        shadowElevation = 12.dp,
+        shape = RoundedCornerShape(percent = 50),
+        modifier = modifier.height(Chrome.BottomBarHeight).fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items.forEach { item ->
+                NavPillItem(item = item, selected = current == item.route, onClick = { onSelect(item.route) }, modifier = Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun NavItem(
+private fun FloatingRail(
+    items: List<TopLevelItem>,
+    current: AppRoute,
+    onSelect: (AppRoute) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val container = scheme.surfaceContainerHigh.copy(alpha = 0.90f)
+    Surface(
+        color = container,
+        shadowElevation = 12.dp,
+        shape = RoundedCornerShape(percent = 50),
+        modifier = modifier.width(72.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 12.dp).verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items.forEach { item ->
+                NavPillItem(item = item, selected = current == item.route, onClick = { onSelect(item.route) }, vertical = true)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NavPillItem(
     item: TopLevelItem,
     selected: Boolean,
     onClick: () -> Unit,
-    showLabel: Boolean,
     modifier: Modifier = Modifier,
+    vertical: Boolean = false,
 ) {
-    val pill = MaterialTheme.colorScheme.secondaryContainer
-    val content = if (selected) contrastingTextColor(pill) else MaterialTheme.colorScheme.onSurfaceVariant
-    Column(
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .semantics { role = Role.Tab }
-            .padding(horizontal = 2.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(1.dp),
-    ) {
-        Box(
-            modifier = Modifier
+    val pillColor = MaterialTheme.colorScheme.secondaryContainer
+    val contentColor = if (selected) contrastingTextColor(pillColor) else MaterialTheme.colorScheme.onSurfaceVariant
+    if (vertical) {
+        Column(
+            modifier = modifier
                 .clip(RoundedCornerShape(percent = 50))
-                .background(if (selected) pill else Color.Transparent)
-                .height(28.dp)
-                .width(52.dp),
-            contentAlignment = Alignment.Center,
+                .clickable(onClick = onClick)
+                .semantics { role = Role.Tab }
+                .padding(horizontal = 2.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Icon(item.icon, contentDescription = item.label, tint = content, modifier = Modifier.size(20.dp))
-        }
-        if (showLabel) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(if (selected) pillColor else Color.Transparent)
+                    .height(34.dp)
+                    .width(44.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(item.icon, contentDescription = item.label, tint = contentColor, modifier = Modifier.size(21.dp))
+            }
             Text(
                 text = item.label,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                 fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-                color = content,
+                color = contentColor,
+                maxLines = 1,
+            )
+        }
+    } else {
+        Column(
+            modifier = modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .clickable(onClick = onClick)
+                .semantics { role = Role.Tab }
+                .padding(horizontal = 2.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(if (selected) pillColor else Color.Transparent)
+                    .height(30.dp)
+                    .width(52.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(item.icon, contentDescription = item.label, tint = contentColor, modifier = Modifier.size(20.dp))
+            }
+            Text(
+                text = item.label,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
+                color = contentColor,
                 maxLines = 1,
             )
         }

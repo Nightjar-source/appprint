@@ -44,6 +44,7 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
+            implementation(libs.material3.adaptive)
             implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.12.2")
 
             implementation(libs.lifecycle.viewmodel)

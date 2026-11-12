@@ -85,6 +85,7 @@ import com.appprint.studio.ui.StudioViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import com.appprint.studio.ui.components.IraqiLogo
+import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.SampleCardArt
 import com.appprint.studio.ui.strings.Str
 
@@ -128,7 +129,7 @@ fun StudioScreen(viewModel: StudioViewModel) {
             }
         }
 
-        Row(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxSize().padding(top = Chrome.topReserve(), bottom = Chrome.bottomReserve())) {
             if (wide) {
                 PaperSettingsPanel(
                     state = state,
@@ -168,36 +169,44 @@ fun StudioScreen(viewModel: StudioViewModel) {
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                     )
                 } else {
-                    if (!toolbarHidden) {
-                        EditorToolbar(
-                            state = state,
-                            onAddImages = pickImages,
-                            onCamera = onCamera,
-                            onSamples = viewModel::addSamples,
-                            onArrange = viewModel::arrangeSmart,
-                            onSortSize = viewModel::sortBySize,
-                            onClear = { showClearConfirm = true },
-                            onSharePng = { viewModel.sharePng(state.currentPage) },
-                            onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
-                            onHide = { toolbarHidden = true },
-                            compact = phone,
-                        )
-                    } else {
-                        ToolbarHiddenBar { toolbarHidden = false }
-                    }
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         SheetCanvas(
                             state = state,
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxSize(),
                         )
+                        if (!toolbarHidden) {
+                            EditorToolbar(
+                                state = state,
+                                onAddImages = pickImages,
+                                onCamera = onCamera,
+                                onSamples = viewModel::addSamples,
+                                onArrange = viewModel::arrangeSmart,
+                                onSortSize = viewModel::sortBySize,
+                                onClear = { showClearConfirm = true },
+                                onSharePng = { viewModel.sharePng(state.currentPage) },
+                                onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
+                                onHide = { toolbarHidden = true },
+                                compact = phone,
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(start = 10.dp, end = 10.dp, top = 8.dp),
+                            )
+                        } else {
+                            ToolbarHiddenBar(
+                                onShow = { toolbarHidden = false },
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(start = 10.dp, end = 10.dp, top = 8.dp),
+                            )
+                        }
                     }
                     SheetPageBar(
                         state = state,
                         onSelectPage = viewModel::currentPage,
                         onAddSheet = viewModel::addSheet,
                         onRequestDelete = { showDeletePage = state.currentPage },
-                        modifier = Modifier.padding(bottom = 6.dp, top = 2.dp),
+                        modifier = Modifier.padding(bottom = 2.dp, top = 2.dp),
                     )
                 }
             }
@@ -298,11 +307,14 @@ private fun EditorToolbar(
     onOpenPaperSettings: (() -> Unit)?,
     onHide: () -> Unit,
     compact: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
             .padding(horizontal = 6.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -388,11 +400,13 @@ private fun EditorToolbar(
 
 /** Slim bar shown when the toolbar is hidden — one tap brings it back. */
 @Composable
-private fun ToolbarHiddenBar(onShow: () -> Unit) {
+private fun ToolbarHiddenBar(onShow: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
             .padding(start = 8.dp, end = 4.dp),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,

@@ -27,11 +27,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.StudioViewModel
 import com.appprint.studio.ui.components.IraqiLogo
+import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
-private const val VERSION_NAME = "1.0.7"
-private const val VERSION_CODE = 8
+private const val VERSION_NAME = "1.0.8"
+private const val VERSION_CODE = 9
 
 @Composable
 fun SettingsScreen(viewModel: StudioViewModel) {
@@ -41,9 +42,9 @@ fun SettingsScreen(viewModel: StudioViewModel) {
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 0.dp,
-            top = 4.dp,
+            top = Chrome.topReserve(),
             end = 0.dp,
-            bottom = 24.dp,
+            bottom = Chrome.bottomReserve(),
         ),
     ) {
         // Appearance

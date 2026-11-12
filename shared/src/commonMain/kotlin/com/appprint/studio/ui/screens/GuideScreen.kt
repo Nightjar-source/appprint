@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.appprint.studio.core.model.CardType
+import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.SectionHeader
 import com.appprint.studio.ui.strings.Str
 
@@ -61,9 +62,9 @@ fun GuideScreen() {
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 0.dp,
-            top = 4.dp,
+            top = Chrome.topReserve(),
             end = 0.dp,
-            bottom = 24.dp,
+            bottom = Chrome.bottomReserve(),
         ),
     ) {
         item(contentType = "header") {
