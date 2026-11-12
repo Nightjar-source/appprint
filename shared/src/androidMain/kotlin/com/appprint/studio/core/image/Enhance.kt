@@ -3,6 +3,7 @@ package com.appprint.studio.core.image
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.exifinterface.media.ExifInterface
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorMatrix
@@ -49,8 +50,51 @@ object Enhance {
                 inSampleSize = sample
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             }
-            stream()?.use { BitmapFactory.decodeStream(it, null, opts) }
+            val bitmap = stream()?.use { BitmapFactory.decodeStream(it, null, opts) } ?: return null
+            return applyExifRotation(bitmap, context, source, uri)
         }.getOrNull()
+    }
+
+    /**
+     * Rotate the decoded bitmap to its EXIF orientation — without this,
+     * camera photos print/preview sideways or upside-down.
+     */
+    private fun applyExifRotation(
+        bitmap: Bitmap,
+        context: Context,
+        source: String,
+        uri: android.net.Uri?,
+    ): Bitmap {
+        return runCatching {
+            val orientation = when {
+                uri != null && (source.startsWith("content:") || source.startsWith("file:")) ->
+                    context.contentResolver.openInputStream(uri)?.use { ExifInterface(it) }
+                        ?.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+                else -> File(source).takeIf { it.exists() }?.let { ExifInterface(it) }
+                        ?.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            } ?: return bitmap
+
+            val matrix = android.graphics.Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.postScale(-1f, 1f)
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.postScale(1f, -1f)
+                ExifInterface.ORIENTATION_TRANSPOSE -> {
+                    matrix.postRotate(90f)
+                    matrix.postScale(-1f, 1f)
+                }
+                ExifInterface.ORIENTATION_TRANSVERSE -> {
+                    matrix.postRotate(270f)
+                    matrix.postScale(-1f, 1f)
+                }
+                else -> return bitmap
+            }
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true).also { rotated ->
+                if (rotated !== bitmap) bitmap.recycle()
+            }
+        }.getOrDefault(bitmap)
     }
 
     /** Bounding box of non-near-white content, via shared pixel kernels. */

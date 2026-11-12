@@ -174,13 +174,13 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         val railWidth = if (isExpanded) 72.dp else 64.dp
         val animatedRailWidth by animateDpAsState(
             targetValue = railWidth,
-            animationSpec = Motion.spatial(),
+            animationSpec = Motion.effects(),
             label = "railWidth",
         )
         // Page content padding follows the rail width so content never hides underneath it.
         val pageContentPadding by animateDpAsState(
             targetValue = if (isCompact) 0.dp else animatedRailWidth + Chrome.EdgeInset,
-            animationSpec = Motion.spatial(),
+            animationSpec = Motion.effects(),
             label = "pageContentPadding",
         )
 

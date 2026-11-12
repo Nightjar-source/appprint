@@ -14,7 +14,8 @@ coroutines = "1.11.0"  # latestStableVersion via klibs.io
 serialization = "1.13.0"  # latestStableVersion via klibs.io
 coreKtx = "1.19.1"     # Google Maven release
 activity = "1.13.0"    # Google Maven release
-coreSplashscreen = "1.2.0"  # Google Maven release
+coreSplashscreen = "1.2.0"
+exifinterface = "1.4.2"   # androidx.exifinterface — EXIF orientation (stable on Google Maven, verified Nov 2026)  # Google Maven release
 
 [libraries]
 # Android app only
@@ -23,6 +24,7 @@ androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscree
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
 androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activity" }
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 
 # Compose Multiplatform is wired through the org.jetbrains.compose plugin accessors (same as reference project)
 # Compose Multiplatform (org.jetbrains.* republished KMP artifacts — klibs.io verified)

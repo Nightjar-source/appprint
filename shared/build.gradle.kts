@@ -66,6 +66,7 @@ kotlin {
             implementation(libs.androidx.activity)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
+            implementation(libs.androidx.exifinterface)
             implementation("org.jetbrains.compose.ui:ui-tooling:1.12.2")
         }
         jvmMain.dependencies {

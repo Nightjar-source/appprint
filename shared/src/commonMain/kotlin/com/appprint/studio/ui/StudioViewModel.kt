@@ -55,6 +55,30 @@ class StudioViewModel : ViewModel() {
     private val _state = MutableStateFlow(StudioUiState(theme = PlatformActions.loadTheme()))
     val state: StateFlow<StudioUiState> = _state.asStateFlow()
 
+    /** Full undo history of editing operations — one entry per user action, capped at 50. */
+    private val undoStack = ArrayDeque<StudioUiState>()
+    private val _canUndo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo.asStateFlow()
+
+    private fun pushUndo() {
+        undoStack.addLast(_state.value)
+        while (undoStack.size > 50) undoStack.removeFirst()
+        _canUndo.value = true
+    }
+
+    /** Step the workspace back exactly one edit. */
+    fun undo() {
+        if (undoStack.isEmpty()) return
+        val prev = undoStack.removeLast()
+        _state.update { current ->
+            prev.copy(
+                theme = current.theme, // theme is not an editing action — never revert it
+                toast = null,
+            )
+        }
+        _canUndo.value = undoStack.isNotEmpty()
+    }
+
     // ------------------------------------------------------------- theme
 
     fun setTheme(theme: AppTheme) {
@@ -66,6 +90,7 @@ class StudioViewModel : ViewModel() {
 
     fun importImages(sources: List<String>) {
         if (sources.isEmpty()) return
+        pushUndo()
         viewModelScope.launch {
             _state.update { it.copy(processing = true) }
             val imported = withContext(Dispatchers.IO) {
@@ -114,6 +139,7 @@ class StudioViewModel : ViewModel() {
 
     /** Adds one sample card of every Iraqi card type (تعليمية). */
     fun addSamples() {
+        pushUndo()
         val samples = listOf(
             CardType.NATIONAL, CardType.DRIVING, CardType.VOTER, CardType.STUDENT,
             CardType.RESIDENCE, CardType.RATION, CardType.PASSPORT,
@@ -137,6 +163,7 @@ class StudioViewModel : ViewModel() {
 
     /** Add a single sample card of an exact official Iraqi type (from the samples strip). */
     fun addSampleOfType(type: CardType) {
+        pushUndo()
         val item = CardItem(
             id = nextId(),
             typeKey = type.key,
@@ -183,6 +210,7 @@ class StudioViewModel : ViewModel() {
     }
 
     fun arrangeSmart() {
+        pushUndo()
         _state.update { s ->
             if (s.cards.isEmpty()) s.copy(toast = UiToast(Str.msg_no_cards))
             else s.copy(
@@ -193,6 +221,7 @@ class StudioViewModel : ViewModel() {
     }
 
     fun sortBySize() {
+        pushUndo()
         _state.update { s ->
             if (s.cards.isEmpty()) s.copy(toast = UiToast(Str.msg_no_cards))
             else s.copy(
@@ -203,6 +232,7 @@ class StudioViewModel : ViewModel() {
     }
 
     fun clearAll() {
+        pushUndo()
         _state.update {
             it.copy(cards = emptyList(), selectedId = null, currentPage = 0, toast = UiToast(Str.msg_cleared))
         }
@@ -270,6 +300,7 @@ class StudioViewModel : ViewModel() {
     }
 
     fun deleteSelected() {
+        pushUndo()
         _state.update { s ->
             val id = s.selectedId ?: return@update s
             s.copy(cards = s.cards.filterNot { it.id == id }, selectedId = null, currentPage = 0)
@@ -277,6 +308,7 @@ class StudioViewModel : ViewModel() {
     }
 
     fun duplicateSelected() {
+        pushUndo()
         _state.update { s ->
             val card = s.selectedCard ?: return@update s
             val copy = card.copy(id = nextId(), xMm = card.xMm + 12f, yMm = card.yMm + 12f)
@@ -285,6 +317,7 @@ class StudioViewModel : ViewModel() {
     }
 
     fun rotateSelectedTo(degrees: Int) {
+        pushUndo()
         _state.update { s ->
             val id = s.selectedId ?: return@update s
             val rotation = when (degrees) {
@@ -305,6 +338,7 @@ class StudioViewModel : ViewModel() {
 
     /** Rename the selected card. */
     fun renameSelected(name: String) {
+        pushUndo()
         _state.update { s ->
             val id = s.selectedId ?: return@update s
             s.copy(cards = s.cards.map { if (it.id == id) it.copy(name = name.take(80)) else it })
@@ -335,6 +369,7 @@ class StudioViewModel : ViewModel() {
     }
 
     fun toggleCardBorder() {
+        pushUndo()
         _state.update { s ->
             val id = s.selectedId ?: return@update s
             s.copy(cards = s.cards.map { if (it.id == id) it.copy(border = !it.border) else it })
@@ -342,6 +377,7 @@ class StudioViewModel : ViewModel() {
     }
 
     fun toggleCardGuides() {
+        pushUndo()
         _state.update { s ->
             val id = s.selectedId ?: return@update s
             s.copy(cards = s.cards.map { if (it.id == id) it.copy(guides = !it.guides) else it })
@@ -350,6 +386,7 @@ class StudioViewModel : ViewModel() {
 
     /** Auto-crop white scanner borders of the selected image, rewriting it in place. */
     fun autoCropSelected() {
+        pushUndo()
         viewModelScope.launch {
             val card = _state.value.selectedCard ?: return@launch
             val path = card.imageUri ?: return@launch
@@ -367,6 +404,7 @@ class StudioViewModel : ViewModel() {
 
     /** Add one explicitly empty sheet (stays until the user deletes it). */
     fun addSheet() {
+        pushUndo()
         _state.update { s ->
             val next = s.pageCount
             s.copy(forcedPages = next + 1, currentPage = next, toast = UiToast("تمت إضافة ورقة — بقياس ${s.settings.sheetWidthMm.toInt()}×${s.settings.sheetHeightMm.toInt()} مم"))
@@ -379,6 +417,7 @@ class StudioViewModel : ViewModel() {
      * - deleteCards=false -> keep the cards and re-distribute everything
      */
     fun deleteSheet(page: Int, deleteCards: Boolean) {
+        pushUndo()
         viewModelScope.launch {
             val s = _state.value
             val remaining = if (deleteCards) s.cards.filterNot { it.page == page }
@@ -412,6 +451,7 @@ class StudioViewModel : ViewModel() {
     fun resetEnhanceSelected() = updateEnhance { EnhanceSettings.IDENTITY }
 
     fun applyEnhanceToAll() {
+        pushUndo()
         _state.update { s ->
             val source = s.selectedCard?.enhance ?: return@update s
             s.copy(cards = s.cards.map { it.copy(enhance = source) }, toast = UiToast(Str.msg_applied_all))
@@ -419,10 +459,12 @@ class StudioViewModel : ViewModel() {
     }
 
     fun autoEnhanceAll() {
+        pushUndo()
         _state.update { s -> s.copy(cards = s.cards.map { it.copy(enhance = EnhanceSettings.AUTO) }) }
     }
 
     fun resetEnhanceAll() {
+        pushUndo()
         _state.update { s -> s.copy(cards = s.cards.map { it.copy(enhance = EnhanceSettings.IDENTITY) }) }
     }
 
