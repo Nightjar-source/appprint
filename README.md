@@ -18,7 +18,7 @@
 - 🌍 **RTL عربي كامل** + نسخة إنجليزية (`values-en`) · شاشات متكيفة: هاتف (bottom bar + bottom sheets) / لوح (rail) / سطح مكتب (3 أعمدة: إعدادات | لوح | مفتش).
 - 🔒 **خصوصية كاملة**: كل شيء داخل جهازك — لا إنترنت إطلاقاً، لا حسابات، لا إعلانات، لا تتبّع. لا صلاحيات ملفات: الصور عبر Photo Picker، التصدير عبر SAF/طباعة/FileProvider.
 
-## البنية (Kotlin Multiplatform + Compose Multiplatform 1.11.1)
+## البنية (Kotlin Multiplatform + Compose Multiplatform 1.12.2)
 
 ```
 appprint/

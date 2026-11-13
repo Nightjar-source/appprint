@@ -14,7 +14,7 @@ plugins {
 // theming APIs would not resolve.
 configurations.all {
     resolutionStrategy {
-        force("org.jetbrains.compose.material3:material3:1.12.0-alpha03")
+        force(libs.material3.expressive.get().toString())
     }
 }
 
@@ -54,10 +54,10 @@ kotlin {
             // Material 3 Expressive theming (official Compose Multiplatform guidance:
             // "Decoupled Material3 versioning" — the expressive APIs live in the alpha
             // Material3 artifact and need to be requested explicitly).
-            implementation("org.jetbrains.compose.material3:material3:1.12.0-alpha03")
+            implementation(libs.material3.expressive)
             implementation(compose.materialIconsExtended)
             implementation(libs.material3.adaptive)
-            implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.12.2")
+            implementation(libs.ui.tooling.preview)
 
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.viewmodel.compose)
@@ -71,7 +71,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
-            implementation("junit:junit:4.13.2")
+            implementation(libs.junit4)
         }
         androidMain.dependencies {
             // image picker + camera capture launchers live behind expect composables
@@ -79,7 +79,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.exifinterface)
-            implementation("org.jetbrains.compose.ui:ui-tooling:1.12.2")
+            implementation(libs.ui.tooling)
         }
         jvmMain.dependencies {
             // Skia-backed Compose for Desktop comes transitively via the Compose plugin
