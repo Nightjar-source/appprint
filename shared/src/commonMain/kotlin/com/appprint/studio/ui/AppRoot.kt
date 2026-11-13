@@ -133,6 +133,7 @@ private data class TopLevelItem(
     val route: AppRoute,
     val label: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val key: String,
 )
 
 private fun routeName(route: AppRoute): String = when (route) {
@@ -232,9 +233,9 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         }
 
         val items = listOf(
-            TopLevelItem(AppRoute.Studio, Str.nav_studio, Icons.Filled.Print),
-            TopLevelItem(AppRoute.Guide, Str.nav_guide, Icons.Filled.MenuBook),
-            TopLevelItem(AppRoute.Settings, Str.nav_settings, Icons.Filled.Settings),
+            TopLevelItem(AppRoute.Studio, Str.nav_studio, Icons.Filled.Print, "studio"),
+            TopLevelItem(AppRoute.Guide, Str.nav_guide, Icons.Filled.MenuBook, "guide"),
+            TopLevelItem(AppRoute.Settings, Str.nav_settings, Icons.Filled.Settings, "settings"),
         )
 
         val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -696,10 +697,10 @@ private fun FloatingNavPill(
         modifier = modifier.height(Chrome.NavBarHeight).widthIn(max = 336.dp),
     ) {
         LiquidNavGroup(
-            items = items.map { NavItemModel(key = it.route.name, label = it.label, icon = it.icon) },
-            selectedKey = current.name,
+            items = items.map { NavItemModel(key = it.key, label = it.label, icon = it.icon) },
+            selectedKey = items.firstOrNull { it.route == current }?.key ?: items.first().key,
             onSelect = { model ->
-                items.firstOrNull { it.route.name == model.key }?.let { onSelect(it.route) }
+                items.firstOrNull { it.key == model.key }?.let { onSelect(it.route) }
             },
             vertical = false,
             modifier = Modifier.padding(start = 8.dp, top = 0.dp, end = 8.dp, bottom = 0.dp),
@@ -740,10 +741,10 @@ private fun FloatingDock(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             LiquidNavGroup(
-                items = items.map { NavItemModel(key = it.route.name, label = it.label, icon = it.icon) },
-                selectedKey = current.name,
+                items = items.map { NavItemModel(key = it.key, label = it.label, icon = it.icon) },
+                selectedKey = items.firstOrNull { it.route == current }?.key ?: items.first().key,
                 onSelect = { model ->
-                    items.firstOrNull { it.route.name == model.key }?.let { onSelect(it.route) }
+                    items.firstOrNull { it.key == model.key }?.let { onSelect(it.route) }
                 },
                 vertical = true,
             )

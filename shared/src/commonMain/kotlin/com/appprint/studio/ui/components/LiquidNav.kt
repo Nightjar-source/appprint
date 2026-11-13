@@ -7,11 +7,9 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,21 +40,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appprint.studio.ui.theme.Motion
 import com.appprint.studio.ui.theme.contrastingTextColor
-import kotlin.math.roundToInt
 
 /**
  * Liquid glass navigation — the floating droplet that glides between destinations.
@@ -67,10 +68,7 @@ import kotlin.math.roundToInt
  *    per-item background;
  *  - the selected item expands (icon + full label) while the others keep a
  *    tiny sub-label, so the bar grows around the selection without shifting;
- *  - the active icon pops (0.88 → 1) like a water drop settling.
- *
- * The container stays translucent with a hairline border and a soft shadow, so
- * it floats above edge-to-edge content in both light and dark themes.
+ *  - the active icon pops (0.86 → 1) like a water drop settling.
  */
 @Composable
 fun LiquidNavGroup(
@@ -84,28 +82,32 @@ fun LiquidNavGroup(
     val density = LocalDensity.current
     val activeIndex = items.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
 
-    var hostOrigin by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-    val bounds = remember { mutableStateMapOf<Int, RectBounds>() }
+    var hostOrigin by remember { mutableStateOf(Offset.Zero) }
+    val bounds = remember { mutableStateMapOf<Int, NavBounds>() }
 
     val target = bounds[activeIndex]
     val dropletSpec = spring(dampingRatio = 0.55f, stiffness = 420f)
+
+    val targetOffset: Offset = target?.position ?: Offset.Zero
+    val targetSize: IntSize = target?.size ?: IntSize.Zero
+
     val offsetX by animateDpAsState(
-        targetValue = with(density) { ((target?.x ?: 0) - hostOrigin.x).toDp() },
+        targetValue = with(density) { (targetOffset.x - hostOrigin.x).toDp() },
         animationSpec = dropletSpec,
         label = "dropletX",
     )
     val offsetY by animateDpAsState(
-        targetValue = with(density) { ((target?.y ?: 0) - hostOrigin.y).toDp() },
+        targetValue = with(density) { (targetOffset.y - hostOrigin.y).toDp() },
         animationSpec = dropletSpec,
         label = "dropletY",
     )
     val dropletW by animateDpAsState(
-        targetValue = with(density) { (target?.width ?: 0).toDp() },
+        targetValue = with(density) { targetSize.width.toDp() },
         animationSpec = dropletSpec,
         label = "dropletW",
     )
     val dropletH by animateDpAsState(
-        targetValue = with(density) { (target?.height ?: 0).toDp() },
+        targetValue = with(density) { targetSize.height.toDp() },
         animationSpec = dropletSpec,
         label = "dropletH",
     )
@@ -141,11 +143,14 @@ fun LiquidNavGroup(
             )
         }
 
-        val itemsContent: @Composable (Int, NavItemModel) -> Unit = { index, item ->
+        @Composable
+        fun ItemSlot(index: Int, item: NavItemModel) {
             Box(
                 modifier = Modifier.onGloballyPositioned { coordinates ->
-                    val b = coordinates.boundsInParent()
-                    bounds[index] = RectBounds(b.left, b.top, b.right, b.bottom)
+                    bounds[index] = NavBounds(
+                        position = coordinates.positionInParent(),
+                        size = coordinates.size,
+                    )
                 },
             ) {
                 LiquidNavItem(
@@ -159,21 +164,21 @@ fun LiquidNavGroup(
 
         if (vertical) {
             Column(
-                modifier = Modifier.onGloballyPositioned { hostOrigin = it.boundsInParent().topLeft },
+                modifier = Modifier.onGloballyPositioned { hostOrigin = it.positionInParent() },
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                items.forEachIndexed { index, item -> itemsContent(index, item) }
+                items.forEachIndexed { index, item -> ItemSlot(index, item) }
             }
         } else {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .onGloballyPositioned { hostOrigin = it.boundsInParent().topLeft },
+                    .onGloballyPositioned { hostOrigin = it.positionInParent() },
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                items.forEachIndexed { index, item -> itemsContent(index, item) }
+                items.forEachIndexed { index, item -> ItemSlot(index, item) }
             }
         }
     }
@@ -186,17 +191,10 @@ data class NavItemModel(
     val icon: ImageVector,
 )
 
-private data class RectBounds(
-    val left: Float,
-    val top: Float,
-    val right: Float,
-    val bottom: Float,
-) {
-    val x: Float get() = left
-    val y: Float get() = top
-    val width: Float get() = right - left
-    val height: Float get() = bottom - top
-}
+private data class NavBounds(
+    val position: Offset,
+    val size: IntSize,
+)
 
 @Composable
 private fun LiquidNavItem(
