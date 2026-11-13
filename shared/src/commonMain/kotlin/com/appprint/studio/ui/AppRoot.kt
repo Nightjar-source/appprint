@@ -68,6 +68,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalContentColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -242,20 +243,21 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
             navigateTopLevel(backStack, AppRoute.Studio)
         }
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceContainerLowest,
-                            MaterialTheme.colorScheme.background,
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.surfaceContainerLowest,
+                                MaterialTheme.colorScheme.background,
+                            ),
                         ),
                     ),
-                ),
-        ) {
-            // screens fill edge-to-edge, behind the floating chrome
-            content()
+            ) {
+                // screens fill edge-to-edge, behind the floating chrome
+                content()
 
             FloatingTopBar(
                 title = if (current == AppRoute.Studio && state.selectedId != null) {
@@ -411,6 +413,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                         },
                     ),
             )
+        }
         }
     }
 }
