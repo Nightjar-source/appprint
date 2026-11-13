@@ -77,7 +77,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.LocalIndication
+import androidx.compose.ui.platform.LocalIndication
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -179,7 +179,7 @@ fun StudioScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
                         FloatingStrip(
-                            visible = phone && !toolbarHidden && state.selectedId == null,
+                            visible = phone && !toolbarHidden && state.selectedId == null && state.cards.isEmpty(),
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -216,7 +216,7 @@ fun StudioScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
                         FloatingStrip(
-                            visible = phone && !toolbarHidden && state.selectedId == null,
+                            visible = phone && !toolbarHidden && state.selectedId == null && state.cards.isNotEmpty(),
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),

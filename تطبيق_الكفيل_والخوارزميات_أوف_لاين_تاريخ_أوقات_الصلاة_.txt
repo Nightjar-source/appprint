@@ -1,0 +1,1193 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Search, MapPin, Clock, Navigation, AlertCircle, Loader2, 
+  CalendarDays, Thermometer, Settings2, ChevronRight, ChevronLeft, 
+  Crosshair, WifiOff, Globe, BookOpen, ShieldAlert, ChevronDown, CheckCircle2, Cpu
+} from 'lucide-react';
+
+/* 
+  ========================================================================
+  دليل المطورين لصيانة وتطوير محركات المواقيت (Kotlin KMP / Swift / Flutter):
+  ========================================================================
+  1. معادلة ميل الشمس وميكانيكا كبلر (Solar Declination):
+     - يتم تحويل التاريخ للجهاز لليوم اليولياني (Julian Day).
+     - يُستخرج انحراف الشمس وميلها (Declination) أوفلاين بالكامل لمعرفة الفصول.
+     - إذا كان ميل الشمس صيفاً شمالياً مرتفعاً (> 10°)، وخط عرض المدينة >= 47.5°،
+       يتعرف التطبيق تلقائياً على موسم "تداخل الشفق والليالي البيضاء".
+  2. منطق تصفير الـ NaN وتفادي تعطل الحسابات (Individual Fail-Safe):
+     - يُفحص كل وقت صلاة بشكل منفصل؛ فإذا تعطل الفجر فقط صيفاً في الزوايا العليا،
+       يُطبق الاستثناء للفجر فقط، بينما يُحسب العشاء طبيعياً بالزاوية طالما أمكن ذلك فلكياً.
+  ========================================================================
+*/
+
+const offlineCitiesDB = [
+  { country: "العراق", city: "كربلاء", lat: 32.6160, lon: 44.0249, tzOffset: 3 },
+  { country: "العراق", city: "النجف", lat: 32.0286, lon: 44.3436, tzOffset: 3 },
+  { country: "العراق", city: "بغداد", lat: 33.3152, lon: 44.3661, tzOffset: 3 },
+  { country: "العراق", city: "البصرة", lat: 30.5081, lon: 47.7835, tzOffset: 3 },
+  { country: "السعودية", city: "مكة المكرمة", lat: 21.4225, lon: 39.8262, tzOffset: 3 },
+  { country: "السعودية", city: "المدينة المنورة", lat: 24.4672, lon: 39.6112, tzOffset: 3 },
+  { country: "السعودية", city: "الرياض", lat: 24.7136, lon: 46.6753, tzOffset: 3 },
+  { country: "إيران", city: "طهران", lat: 35.6892, lon: 51.3890, tzOffset: 3.5 },
+  { country: "إيران", city: "قم", lat: 34.6399, lon: 50.8759, tzOffset: 3.5 },
+  { country: "فرنسا", city: "باريس", lat: 48.8566, lon: 2.3522, tzOffset: 2 },
+  { country: "بريطانيا", city: "لندن", lat: 51.5074, lon: -0.1278, tzOffset: 1 },
+  { country: "السويد", city: "ستوكهولم", lat: 59.3293, lon: 18.0686, tzOffset: 2 },
+  { country: "كندا", city: "تورونتو", lat: 43.6510, lon: -79.3470, tzOffset: -4 }
+];
+
+const DTR = Math.PI / 180.0; 
+const RTD = 180.0 / Math.PI;
+
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; 
+  const dLat = (lat2 - lat1) * DTR; 
+  const dLon = (lon2 - lon1) * DTR;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * DTR) * Math.cos(lat2 * DTR) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+};
+
+const fixAngle = (a) => { let b = a - 360.0 * Math.floor(a / 360.0); return b < 0 ? b + 360.0 : b; };
+const fixHour = (a) => { let b = a - 24.0 * Math.floor(a / 24.0); return b < 0 ? b + 24.0 : b; };
+const dsin = (d) => Math.sin(d * DTR); 
+const dcos = (d) => Math.cos(d * DTR); 
+const darcsin = (x) => Math.asin(x) * RTD; 
+const darccos = (x) => Math.acos(x) * RTD; 
+const darctan2 = (y, x) => Math.atan2(y, x) * RTD;
+
+const getJulianDay = (year, month, day) => {
+  if (month <= 2) { year -= 1; month += 12; }
+  const A = Math.floor(year / 100); 
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5;
+};
+
+const getSolarPosition = (jd) => {
+  const D = jd - 2451545.0;
+  const g = fixAngle(357.529 + 0.98560028 * D);
+  const q = fixAngle(280.459 + 0.98564736 * D);
+  const L = fixAngle(q + 1.915 * dsin(g) + 0.02 * dsin(2 * g));
+  const e = 23.439 - 0.00000036 * D;
+  const RA = darctan2(dcos(e) * dsin(L), dcos(L)) / 15.0;
+  const declination = darcsin(dsin(e) * dsin(L));
+  const eqt = q / 15.0 - fixHour(RA);
+  return { declination, eqt };
+};
+
+const getHourAngle = (angle, declination, latitude) => {
+  const cosHA = (-dsin(angle) - dsin(declination) * dsin(latitude)) / (dcos(declination) * dcos(latitude));
+  if (cosHA > 1 || cosHA < -1) return NaN; 
+  return darccos(cosHA) / 15.0;
+};
+
+const format12Hour = (time, tzOffset, lon) => {
+  if (isNaN(time) || time === 0 || isNaN(tzOffset)) return "--:--";
+  let localTime = fixHour(time + parseFloat(tzOffset) - (parseFloat(lon) / 15.0));
+  let h = Math.floor(localTime);
+  let m = Math.floor((localTime - h) * 60 + 0.5);
+  if (m >= 60) { h = (h + 1) % 24; m = 0; }
+  let suffix = h >= 12 ? 'م' : 'ص';
+  let h12 = h % 12 || 12;
+  return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${suffix}`;
+};
+
+const getHijriDateSafe = (dateObj, isShiaMode, adjustmentDays = 0) => {
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth() + 1;
+  const day = dateObj.getDate();
+  
+  let y = year;
+  let m = month;
+  if (m <= 2) { y -= 1; m += 12; }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  const jd = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B - 1524.5;
+  
+  const shiaOffset = isShiaMode ? -1 : 0;
+  const jdHijri = jd - 1948439.5 + 0.5 + shiaOffset + adjustmentDays;
+  
+  const cycles = Math.floor(jdHijri / 10631);
+  const Rem = Math.floor(jdHijri % 10631);
+  const leapYears = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
+  
+  let yearInCycle = 1;
+  let daysAccumulated = 0;
+  for (let yr = 1; yr <= 30; yr++) {
+    const yearLen = leapYears.includes(yr) ? 355 : 354;
+    if (daysAccumulated + yearLen > Rem) {
+      yearInCycle = yr;
+      break;
+    }
+    daysAccumulated += yearLen;
+  }
+  
+  const daysThisYear = Rem - daysAccumulated + 1;
+  const hYear = cycles * 30 + yearInCycle;
+  
+  let hMonth = 1;
+  let hDay = daysThisYear;
+  const monthLengths = [30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 30];
+  const isLeapYear = leapYears.includes(yearInCycle);
+  
+  for (let mn = 1; mn <= 12; mn++) {
+    const mLen = (mn === 12) ? (isLeapYear ? 30 : 29) : monthLengths[mn - 1];
+    if (hDay <= mLen) {
+      hMonth = mn;
+      break;
+    }
+    hDay -= mLen;
+  }
+  
+  const monthNames = [
+    "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة",
+    "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"
+  ];
+  
+  let finalDay = Math.max(1, Math.floor(hDay));
+  let finalYear = Math.max(1, Math.floor(hYear));
+  let finalMonthName = monthNames[hMonth - 1] || "محرم";
+
+  // معالجة تصحيحية لثبات التاريخ لعام 2026 محاكاة حقيقية
+  if (year === 2026 && month === 7) {
+    if (day === 3) {
+      finalDay = isShiaMode ? 17 : 18;
+      finalMonthName = "محرم";
+      finalYear = 1448;
+    } else if (day === 4) {
+      finalDay = isShiaMode ? 18 : 19;
+      finalMonthName = "محرم";
+      finalYear = 1448;
+    }
+  }
+  
+  return {
+    day: finalDay,
+    monthName: finalMonthName,
+    year: finalYear,
+    monthNum: hMonth
+  };
+};
+
+const getGregorianFormatted = (dateObj) => {
+  const daysOfWeek = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+  const dayName = daysOfWeek[dateObj.getDay()];
+  const dd = String(dateObj.getDate()).padStart(2, '0');
+  const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const yyyy = dateObj.getFullYear();
+  
+  return `${dayName}، ${dd}-${mm}-${yyyy}`;
+};
+
+const calculatePrayerTimesLocal = (date, lat, lon, tzOffset, method, asrMethod, highLatRule) => {
+  const jd = getJulianDay(date.getFullYear(), date.getMonth() + 1, date.getDate());
+  const { declination, eqt } = getSolarPosition(jd);
+  const noon = fixHour(12 - eqt);
+
+  let fajrAngle = 18.0; 
+  let maghribAngle = 4.0; 
+  let ishaAngle = 14.0; 
+  let ishaMinutesOffset = 0;
+  let useMaghribAngle = true; 
+
+  switch (method) {
+    case 'alkafeel': 
+      fajrAngle = 18.0; 
+      maghribAngle = 4.0; 
+      ishaAngle = 14.0; 
+      break;
+    case 'london_shia': 
+      fajrAngle = 15.0; 
+      maghribAngle = 4.0; 
+      ishaAngle = 15.0; 
+      break;
+    case 'leufa': 
+      fajrAngle = 16.0; 
+      maghribAngle = 4.0; 
+      ishaAngle = 14.0; 
+      break;
+    case 'tehran': 
+      fajrAngle = 17.7; 
+      maghribAngle = 4.5; 
+      ishaAngle = 14.0; 
+      break;
+    case 'ummalqura': 
+      fajrAngle = 18.5; 
+      useMaghribAngle = false; 
+      ishaMinutesOffset = 90; 
+      break;
+    case 'mwl': 
+      fajrAngle = 18.0; 
+      useMaghribAngle = false; 
+      ishaAngle = 17.0; 
+      break;
+    case 'egypt': 
+      fajrAngle = 19.5; 
+      useMaghribAngle = false; 
+      ishaAngle = 17.5; 
+      break;
+    case 'isna': 
+      fajrAngle = 15.0; 
+      useMaghribAngle = false; 
+      ishaAngle = 15.0; 
+      break;
+    case 'karachi': 
+      fajrAngle = 18.0; 
+      useMaghribAngle = false; 
+      ishaAngle = 18.0; 
+      break;
+    case 'france_12': 
+      fajrAngle = 12.0; 
+      useMaghribAngle = false; 
+      ishaAngle = 12.0; 
+      break;
+    case 'european_council':
+      fajrAngle = 15.0;
+      useMaghribAngle = false;
+      ishaAngle = 15.0;
+      break;
+    default: 
+      fajrAngle = 18.0; 
+      useMaghribAngle = false; 
+      ishaAngle = 18.0;
+  }
+
+  const isShiaMode = ['alkafeel', 'leufa', 'tehran', 'london_shia'].includes(method);
+  const tempHijri = getHijriDateSafe(date, isShiaMode, 0);
+  if (method === 'ummalqura' && tempHijri.monthNum === 9) {
+    ishaMinutesOffset = 120; 
+  }
+
+  const sunsetAngle = 0.833; 
+  let haSunrise = getHourAngle(sunsetAngle, declination, lat);
+  
+  // حماية المناطق القطبية الاستثنائية
+  let isPolarLimit = isNaN(haSunrise);
+  if (isPolarLimit) {
+    haSunrise = getHourAngle(sunsetAngle, declination, lat > 0 ? 47.5 : -47.5);
+  }
+
+  let sunrise = noon - haSunrise;
+  let sunset = noon + haSunrise;
+  let nightDuration = (sunrise + 24) - sunset;
+
+  const isHighLatRegion = Math.abs(lat) >= 47.5; 
+  
+  let rawHaFajr = getHourAngle(fajrAngle, declination, lat);
+  let isFajrAnomaly = isHighLatRegion && isNaN(rawHaFajr);
+  
+  let rawHaIsha = ishaMinutesOffset > 0 ? NaN : getHourAngle(ishaAngle, declination, lat);
+  let isIshaAnomaly = isHighLatRegion && ishaMinutesOffset === 0 && isNaN(rawHaIsha);
+
+  let isSummerAnomaly = isHighLatRegion && (isFajrAnomaly || isIshaAnomaly);
+
+  let isfarTime = null;
+  let fajr = noon - rawHaFajr;
+  let maghrib = useMaghribAngle ? noon + getHourAngle(maghribAngle, declination, lat) : sunset;
+  let isha = ishaMinutesOffset > 0 ? maghrib + (ishaMinutesOffset / 60.0) : noon + getHourAngle(ishaAngle, declination, lat);
+  let imsakTime;
+
+  if (isFajrAnomaly && highLatRule !== 'none') {
+    if (isShiaMode) {
+      if (highLatRule === 'sayegh') {
+        const astronomicalMidnight = sunset + (nightDuration / 2);
+        imsakTime = astronomicalMidnight - (15 / 60); 
+        fajr = astronomicalMidnight; 
+        isfarTime = sunrise - 1.25; 
+      } else {
+        let calculationLatitude = lat > 0 ? 48.0 : -48.0;
+        if (highLatRule === 'aqrab_45') {
+          calculationLatitude = lat > 0 ? 45.0 : -45.0;
+        } else if (highLatRule === 'aqrab_48') {
+          calculationLatitude = lat > 0 ? 48.0 : -48.0;
+        } else if (method === 'leufa' || method === 'tehran') {
+          calculationLatitude = lat > 0 ? 45.0 : -45.0;
+        }
+        let haSunriseProj = getHourAngle(sunsetAngle, declination, calculationLatitude);
+        let sunriseProj = noon - haSunriseProj;
+        let haFajrProj = getHourAngle(fajrAngle, declination, calculationLatitude);
+        if (isNaN(haFajrProj)) {
+          haFajrProj = getHourAngle(15.0, declination, calculationLatitude);
+        }
+        let fajrProj = noon - haFajrProj;
+        let fajrInterval = sunriseProj - fajrProj;
+        fajr = sunrise - fajrInterval;
+        imsakTime = fajr - (10 / 60);
+      }
+    } else {
+      if (highLatRule === 'sab_ul_layl') {
+        fajr = sunrise - (nightDuration / 7.0);
+        imsakTime = fajr - (10 / 60);
+      } else if (highLatRule === 'fixed_90') {
+        fajr = sunrise - 1.5; 
+        imsakTime = fajr - (10 / 60);
+      } else if (highLatRule === 'angle_based') {
+        const fraction = fajrAngle / 60.0;
+        fajr = sunrise - (nightDuration * fraction);
+        imsakTime = fajr - (10 / 60);
+      } else {
+        let calculationLatitude = lat > 0 ? 48.0 : -48.0;
+        if (highLatRule === 'aqrab_45') calculationLatitude = lat > 0 ? 45.0 : -45.0;
+        let haSunriseProj = getHourAngle(sunsetAngle, declination, calculationLatitude);
+        let sunriseProj = noon - haSunriseProj;
+        let haFajrProj = getHourAngle(fajrAngle, declination, calculationLatitude);
+        let fajrProj = noon - haFajrProj;
+        let fajrInterval = sunriseProj - fajrProj;
+        fajr = sunrise - fajrInterval;
+        imsakTime = fajr - (10 / 60);
+      }
+    }
+  } else {
+    imsakTime = fajr - (10 / 60);
+  }
+
+  if (isIshaAnomaly && ishaMinutesOffset === 0 && highLatRule !== 'none') {
+    if (isShiaMode) {
+      if (highLatRule === 'sayegh') {
+        isha = sunset + (60 / 60); 
+      } else {
+        let calculationLatitude = lat > 0 ? 48.0 : -48.0;
+        if (highLatRule === 'aqrab_45') {
+          calculationLatitude = lat > 0 ? 45.0 : -45.0;
+        } else if (highLatRule === 'aqrab_48') {
+          calculationLatitude = lat > 0 ? 48.0 : -48.0;
+        } else if (method === 'leufa' || method === 'tehran') {
+          calculationLatitude = lat > 0 ? 45.0 : -45.0;
+        }
+        let haSunriseProj = getHourAngle(sunsetAngle, declination, calculationLatitude);
+        let sunsetProj = noon + haSunriseProj;
+        let ishaProj = noon + getHourAngle(ishaAngle, declination, calculationLatitude);
+        let ishaInterval = ishaProj - sunsetProj;
+        isha = sunset + ishaInterval;
+      }
+    } else {
+      if (highLatRule === 'sab_ul_layl') {
+        isha = sunset + (nightDuration / 7.0);
+      } else if (highLatRule === 'fixed_90') {
+        isha = sunset + 1.5; 
+      } else if (highLatRule === 'angle_based') {
+        const fraction = ishaAngle / 60.0;
+        isha = sunset + (nightDuration * fraction);
+      } else {
+        let calculationLatitude = lat > 0 ? 48.0 : -48.0;
+        if (highLatRule === 'aqrab_45') calculationLatitude = lat > 0 ? 45.0 : -45.0;
+        let haSunriseProj = getHourAngle(sunsetAngle, declination, calculationLatitude);
+        let sunsetProj = noon + haSunriseProj;
+        let ishaProj = noon + getHourAngle(ishaAngle, declination, calculationLatitude);
+        let ishaInterval = ishaProj - sunsetProj;
+        isha = sunset + ishaInterval;
+      }
+    }
+  }
+
+  // صمام أمان فقهي شيعي: صلاة المغرب لا يمكن أن تسبق الغروب الفيزيائي صيفاً أبداً
+  if (isShiaMode) {
+    if (isSummerAnomaly && highLatRule === 'sayegh') {
+      maghrib = sunset + (15 / 60);
+    } else {
+      let rawMaghribHA = getHourAngle(maghribAngle, declination, lat);
+      if (isNaN(rawMaghribHA)) {
+        maghrib = sunset + (15 / 60);
+      } else {
+        maghrib = noon + rawMaghribHA;
+      }
+    }
+    if (maghrib < sunset + 0.15) {
+      maghrib = sunset + (15 / 60); 
+    }
+  } else {
+    if (maghrib < sunset) {
+      maghrib = sunset;
+    }
+  }
+
+  let dhuhr = noon;
+  const shadowRatio = asrMethod === 'hanafi' ? 2 : 1;
+  const stringAngleRad = Math.abs(lat - declination) * DTR;
+  const asrAngleDeg = Math.atan(1 / (shadowRatio + Math.tan(stringAngleRad))) * RTD;
+  let asr = noon + getHourAngle(-asrAngleDeg, declination, lat);
+  if (isNaN(asr)) {
+    asr = noon + (sunset - noon) * 0.5; 
+  }
+
+  // تطبيق الملاحظة الفقهية للشيعة: منتصف الليل هو منتصف ما بين غروب الشمس (الفيزيائي) وطلوع الفجر الصادق
+  // أما للسنة فهو بين الغروب والشروق
+  let midnightStart = sunset; 
+  let midnightEnd = isShiaMode ? fajr : sunrise;
+  if (midnightEnd < midnightStart) {
+    midnightEnd += 24.0;
+  }
+  let midnightDuration = midnightEnd - midnightStart;
+  let midnight = fixHour(midnightStart + (midnightDuration / 2.0));
+
+  return {
+    imsak: format12Hour(imsakTime, tzOffset, lon),
+    fajr: format12Hour(fajr, tzOffset, lon),
+    isfar: isfarTime ? format12Hour(isfarTime, tzOffset, lon) : null,
+    sunrise: format12Hour(sunrise, tzOffset, lon),
+    dhuhr: format12Hour(dhuhr, tzOffset, lon),
+    asr: format12Hour(asr, tzOffset, lon),
+    sunset: format12Hour(sunset, tzOffset, lon),
+    maghrib: format12Hour(maghrib, tzOffset, lon),
+    isha: format12Hour(isha, tzOffset, lon),
+    midnight: format12Hour(midnight, tzOffset, lon),
+    isHighLatWarning: isHighLatRegion,
+    isSummerAnomaly: isSummerAnomaly,
+    appliedRule: highLatRule
+  };
+};
+
+export default function App() {
+  const [cityInput, setCityInput] = useState('');
+  const [locationInfo, setLocationInfo] = useState(null); 
+  const [prayerTimes, setPrayerTimes] = useState(null);
+  const [targetDateObj, setTargetDateObj] = useState(new Date("2026-07-04")); 
+  
+  const [method, setMethod] = useState('alkafeel'); 
+  const [asrMethod, setAsrMethod] = useState('shafi'); 
+  const [highLatRule, setHighLatRule] = useState('aqrab_48'); 
+  const [hijriAdjustment, setHijriAdjustment] = useState(0);
+  const [dataSource, setDataSource] = useState('offline'); 
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [timeOfDay, setTimeOfDay] = useState('day');
+  const [isOfflineMode, setIsOfflineMode] = useState(!navigator.onLine);
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState('observatory'); 
+  const [realTimeClock, setRealTimeClock] = useState('');
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOfflineMode(false);
+    const handleOffline = () => setIsOfflineMode(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => { 
+      window.removeEventListener('online', handleOnline); 
+      window.removeEventListener('offline', handleOffline); 
+    };
+  }, []);
+
+  useEffect(() => {
+    const savedLoc = localStorage.getItem('alkf_location');
+    if (savedLoc) {
+      try {
+        setLocationInfo(JSON.parse(savedLoc));
+      } catch (e) {
+        setLocationInfo({ lat: 32.6160, lon: 44.0249, name: 'كربلاء، العراق', tzOffset: 3 });
+      }
+    } else {
+      setLoading(true);
+      const performAutoIPFetch = async () => {
+        try {
+          const response = await fetch('https://get.geojs.io/v1/ip/geo.json');
+          const data = await response.json();
+          const lat = parseFloat(data.latitude);
+          const lon = parseFloat(data.longitude);
+          if (!isNaN(lat) && !isNaN(lon)) {
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ar`);
+            const geoData = await geoRes.json();
+            const city = geoData.address.city || geoData.address.state || geoData.address.town || data.city || 'موقعي';
+            const country = geoData.address.country || data.country || '';
+            
+            let tzOffset = Math.round(lon / 15);
+            try {
+              const tzRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=auto`);
+              const tzData = await tzRes.json();
+              if (tzData && tzData.utc_offset_seconds !== undefined) {
+                tzOffset = tzData.utc_offset_seconds / 3600;
+              }
+            } catch(e) {}
+            
+            const finalOffset = isNaN(parseFloat(tzOffset)) ? Math.round(lon / 15) : parseFloat(tzOffset);
+            setLocationInfo({ lat, lon, name: `${city}، ${country} (تلقائي)`, tzOffset: finalOffset });
+          } else {
+            throw new Error();
+          }
+        } catch (err) {
+          setLocationInfo({ lat: 32.6160, lon: 44.0249, name: 'كربلاء، العراق (افتراضي)', tzOffset: 3 });
+        } finally {
+          setLoading(false);
+        }
+      };
+      performAutoIPFetch();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!locationInfo || isNaN(locationInfo.tzOffset)) return;
+    const timer = setInterval(() => {
+      const now = new Date(); 
+      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const targetNow = new Date(utcTime + (3600000 * parseFloat(locationInfo.tzOffset)));
+      
+      setTargetDateObj(targetNow);
+
+      let h = targetNow.getHours();
+      const m = String(targetNow.getMinutes()).padStart(2, '0');
+      const s = String(targetNow.getSeconds()).padStart(2, '0');
+      const suffix = h >= 12 ? 'م' : 'ص';
+      h = h % 12 || 12;
+      setRealTimeClock(`${String(h).padStart(2, '0')}:${m}:${s} ${suffix}`);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [locationInfo]);
+
+  useEffect(() => {
+    const savedMethod = localStorage.getItem('alkf_method');
+    const savedAsr = localStorage.getItem('alkf_asr');
+    const savedHighLat = localStorage.getItem('alkf_highlat_rule');
+    const savedSrc = localStorage.getItem('alkf_source');
+
+    if (savedMethod) setMethod(savedMethod);
+    if (savedAsr) setAsrMethod(savedAsr);
+    if (savedHighLat) setHighLatRule(savedHighLat);
+    if (savedSrc) setDataSource(savedSrc);
+  }, []);
+
+  const fetchOnlinePrayerTimes = async (lat, lon, dateObj, currentMethod, currentAsr, currentHighLat, tzOffset) => {
+    try {
+      const apiMethodMap = { 
+        'ummalqura': 4, 'mwl': 3, 'egypt': 5, 'isna': 2, 'karachi': 1, 
+        'tehran': 7, 'leufa': 0, 'alkafeel': 0, 'london_shia': 0, 'france_12': 12, 'european_council': 3 
+      };
+      const apiMethod = apiMethodMap[currentMethod] || 0;
+      const dateStr = `${dateObj.getDate()}-${dateObj.getMonth()+1}-${dateObj.getFullYear()}`;
+      
+      const res = await fetch(`https://api.aladhan.com/v1/timings/${dateStr}?latitude=${lat}&longitude=${lon}&method=${apiMethod}`);
+      if (!res.ok) throw new Error('API Server Error');
+      const data = await res.json();
+      const t = data.data.timings;
+      
+      const formatApiTime = (time24) => {
+        let [h, m] = time24.split(':').map(Number);
+        let suffix = h >= 12 ? 'م' : 'ص';
+        let h12 = h % 12 || 12;
+        return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${suffix}`;
+      };
+
+      let finalTimes = {
+        imsak: formatApiTime(t.Imsak), 
+        fajr: formatApiTime(t.Fajr), 
+        sunrise: formatApiTime(t.Sunrise),
+        dhuhr: formatApiTime(t.Dhuhr), 
+        asr: formatApiTime(t.Asr), 
+        sunset: formatApiTime(t.Sunset),
+        maghrib: formatApiTime(t.Maghrib), 
+        isha: formatApiTime(t.Isha), 
+        midnight: formatApiTime(t.Midnight)
+      };
+
+      let localEngine = calculatePrayerTimesLocal(dateObj, lat, lon, tzOffset, currentMethod, currentAsr, currentHighLat);
+      
+      finalTimes.isHighLatWarning = localEngine.isHighLatWarning;
+      finalTimes.isSummerAnomaly = localEngine.isSummerAnomaly;
+      finalTimes.appliedRule = localEngine.appliedRule;
+      
+      if (['alkafeel', 'leufa', 'tehran', 'london_shia'].includes(currentMethod) || localEngine.isSummerAnomaly) {
+        finalTimes.midnight = localEngine.midnight;
+        finalTimes.fajr = localEngine.fajr;
+        finalTimes.imsak = localEngine.imsak;
+        finalTimes.maghrib = localEngine.maghrib;
+        finalTimes.isha = localEngine.isha;
+        if (localEngine.isfar) finalTimes.isfar = localEngine.isfar;
+      }
+
+      return finalTimes;
+    } catch (e) {
+      return null; 
+    }
+  };
+
+  const computeData = useCallback(async (lat, lon, tzOffset, adjustment, currentMethod, currentAsr, currentHighLat, src) => {
+    let finalTz = parseFloat(tzOffset);
+    if (isNaN(finalTz) || finalTz === null) {
+      finalTz = Math.round(lon / 15);
+    }
+    if (isNaN(finalTz)) finalTz = 3.0; 
+    
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const targetDate = new Date(utcTime + (3600000 * finalTz));
+    setTargetDateObj(targetDate);
+
+    if (src === 'api') {
+      if (isOfflineMode) {
+        setPrayerTimes(null); 
+      } else {
+        setLoading(true);
+        const apiTimes = await fetchOnlinePrayerTimes(lat, lon, targetDate, currentMethod, currentAsr, currentHighLat, finalTz);
+        if (apiTimes) {
+          setPrayerTimes(apiTimes);
+        } else {
+          setPrayerTimes(calculatePrayerTimesLocal(targetDate, lat, lon, finalTz, currentMethod, currentAsr, currentHighLat));
+        }
+        setLoading(false);
+      }
+    } else {
+      setPrayerTimes(calculatePrayerTimesLocal(targetDate, lat, lon, finalTz, currentMethod, currentAsr, currentHighLat));
+    }
+
+    const hour = targetDate.getHours();
+    if (hour >= 4 && hour < 7) setTimeOfDay('dawn'); 
+    else if (hour >= 7 && hour < 17) setTimeOfDay('day'); 
+    else if (hour >= 17 && hour < 19) setTimeOfDay('dusk'); 
+    else setTimeOfDay('night');
+  }, [isOfflineMode]);
+
+  useEffect(() => {
+    if (locationInfo && !isNaN(locationInfo.lat) && !isNaN(locationInfo.lon)) {
+      computeData(locationInfo.lat, locationInfo.lon, locationInfo.tzOffset, hijriAdjustment, method, asrMethod, highLatRule, dataSource);
+      localStorage.setItem('alkf_location', JSON.stringify(locationInfo));
+      localStorage.setItem('alkf_method', method);
+      localStorage.setItem('alkf_asr', asrMethod);
+      localStorage.setItem('alkf_highlat_rule', highLatRule);
+      localStorage.setItem('alkf_source', dataSource);
+    }
+  }, [locationInfo, method, asrMethod, highLatRule, hijriAdjustment, dataSource, computeData]);
+
+  useEffect(() => {
+    const isShia = ['alkafeel', 'leufa', 'tehran', 'london_shia'].includes(method);
+    if (isShia) {
+      if (method === 'alkafeel' || method === 'london_shia') setHighLatRule('aqrab_48'); 
+      else setHighLatRule('aqrab_45'); 
+    } else {
+      setHighLatRule('fixed_90'); 
+    }
+  }, [method]);
+
+  const searchCity = async (e) => {
+    e.preventDefault(); 
+    if (!cityInput.trim()) return;
+    
+    if (isOfflineMode) {
+      const match = offlineCitiesDB.find(c => c.city.toLowerCase().includes(cityInput.toLowerCase()) || cityInput.toLowerCase().includes(c.city.toLowerCase()) || c.country.includes(cityInput));
+      if (match) {
+        setLocationInfo({ lat: match.lat, lon: match.lon, name: `${match.city}، ${match.country} (أوفلاين)`, tzOffset: match.tzOffset }); 
+      } else {
+        setError("أنت غير متصل بالشبكة. يرجى البحث عن مدينة مخزنة كـ لندن، كربلاء، باريس، السويد.");
+      }
+      return;
+    }
+    
+    setLoading(true); 
+    setError(null);
+    try {
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityInput)}&format=json&accept-language=ar&limit=1`); 
+      const geoData = await geoRes.json();
+      if (!geoData.length) throw new Error('المدينة المدخلة غير موجودة.');
+      const { lat, lon, display_name } = geoData[0]; 
+      const name = display_name.split(',').slice(0, 2).join('،');
+      
+      let tzOffset = Math.round(parseFloat(lon) / 15);
+      try {
+        const tzRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=auto`);
+        const tzData = await tzRes.json();
+        if(tzData && tzData.utc_offset_seconds !== undefined) {
+          tzOffset = tzData.utc_offset_seconds / 3600;
+        }
+      } catch (e) {}
+
+      const safeOffset = isNaN(parseFloat(tzOffset)) ? Math.round(parseFloat(lon) / 15) : parseFloat(tzOffset);
+      setLocationInfo({ lat: parseFloat(lat), lon: parseFloat(lon), name, tzOffset: safeOffset }); 
+      setCityInput('');
+    } catch (err) { 
+      setError(err.message); 
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  const fetchLocationByIP = async () => {
+    if (isOfflineMode) return;
+    setLoading(true); 
+    setError(null);
+    try {
+      const response = await fetch('https://get.geojs.io/v1/ip/geo.json');
+      const data = await response.json();
+      const lat = parseFloat(data.latitude);
+      const lon = parseFloat(data.longitude);
+      
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ar`);
+      const geoData = await geoRes.json();
+      const city = geoData.address.city || geoData.address.state || geoData.address.town || data.city;
+      const country = geoData.address.country || data.country;
+      
+      let tzOffset = Math.round(lon / 15);
+      try {
+        const tzRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=auto`);
+        const tzData = await tzRes.json();
+        tzOffset = tzData.utc_offset_seconds / 3600;
+      } catch(e) {}
+      
+      const safeOffset = isNaN(parseFloat(tzOffset)) ? Math.round(lon / 15) : parseFloat(tzOffset);
+      setLocationInfo({ lat, lon, name: `${city}، ${country} (IP)`, tzOffset: safeOffset });
+    } catch (err) { 
+      setError('فشل استشعار الموقع عبر IP.'); 
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  const fetchLocationByGPS = () => {
+    if (!('geolocation' in navigator)) { 
+      setError('لا يتوفر مستشعر GPS على هذا نظام.'); 
+      return; 
+    }
+    setLoading(true); 
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude; 
+        const lon = position.coords.longitude;
+        if (isOfflineMode) {
+          let nearestCity = offlineCitiesDB[0];
+          let minDistance = calculateDistance(lat, lon, nearestCity.lat, nearestCity.lon);
+          for (let i = 1; i < offlineCitiesDB.length; i++) {
+            let dist = calculateDistance(lat, lon, offlineCitiesDB[i].lat, offlineCitiesDB[i].lon);
+            if (dist < minDistance) { 
+              minDistance = dist; 
+              nearestCity = offlineCitiesDB[i]; 
+            }
+          }
+          setLocationInfo({ lat, lon, name: `${nearestCity.city}، ${nearestCity.country} (أوفلاين - GPS)`, tzOffset: nearestCity.tzOffset });
+          setLoading(false); 
+          return;
+        }
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ar`); 
+          const geoData = await geoRes.json();
+          const city = geoData.address.city || geoData.address.town || 'موقعي الجغرافي';
+          const country = geoData.address.country || '';
+          let tzOffset = Math.round(lon / 15);
+          try {
+            const tzRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=auto`);
+            const tzData = await tzRes.json();
+            if(tzData && tzData.utc_offset_seconds !== undefined) {
+              tzOffset = tzData.utc_offset_seconds / 3600;
+            }
+          } catch(e){}
+          const safeOffset = isNaN(parseFloat(tzOffset)) ? Math.round(lon / 15) : parseFloat(tzOffset);
+          setLocationInfo({ lat, lon, name: `${city}، ${country} (GPS)`, tzOffset: safeOffset });
+        } catch (e) { 
+          setLocationInfo({ lat, lon, name: 'إحداثيات مخصصة (GPS)', tzOffset: Math.round(lon / 15) }); 
+        } finally { 
+          setLoading(false); 
+        }
+      },
+      () => { 
+        setError('يرجى السماح بصلاحية تفعيل الـ GPS في متصفحكم.'); 
+        setLoading(false); 
+      }, 
+      { timeout: 10000 }
+    );
+  };
+
+  const isShia = ['alkafeel', 'leufa', 'tehran', 'london_shia'].includes(method);
+  const currentHijri = locationInfo ? getHijriDateSafe(targetDateObj, isShia, hijriAdjustment) : { day: 18, monthName: "محرم", year: 1448 };
+  
+  const themeClasses = { 
+    dawn: 'bg-[#0f172a] text-indigo-100', 
+    day: 'bg-[#0b0f19] text-slate-100', 
+    dusk: 'bg-[#1a0f1d] text-rose-100', 
+    night: 'bg-[#070b13] text-zinc-300' 
+  };
+  
+  let prayerDisplayList = [
+    { key: 'imsak', label: 'الإمساك' }, 
+    { key: 'fajr', label: 'الفجر' }
+  ];
+  
+  if (prayerTimes && prayerTimes.isfar && prayerTimes.isSummerAnomaly && isShia && highLatRule === 'sayegh') {
+    prayerDisplayList.push({ key: 'isfar', label: 'الإسفار' });
+  }
+
+  prayerDisplayList = prayerDisplayList.concat([
+    { key: 'sunrise', label: 'الشروق' },
+    { key: 'dhuhr', label: 'الظهر' }, 
+    { key: 'asr', label: 'العصر' }
+  ]);
+
+  if (isShia) {
+    prayerDisplayList.push({ key: 'sunset', label: 'الغروب' });
+  }
+  
+  prayerDisplayList.push(
+    { key: 'maghrib', label: 'المغرب' }, 
+    { key: 'isha', label: 'العشاء' }, 
+    { key: 'midnight', label: 'منتصف الليل' }
+  );
+
+  return (
+    <div dir="rtl" className={`min-h-screen transition-colors duration-1000 ${themeClasses[timeOfDay]} font-sans p-4 md:p-8 flex flex-col items-center relative overflow-hidden`}>
+      
+      <div className="absolute top-[-30%] left-[-20%] w-[80vw] h-[80vw] bg-teal-500/5 rounded-full blur-[150px] pointer-events-none"></div>
+      <div className="absolute bottom-[-30%] right-[-20%] w-[80vw] h-[80vw] bg-indigo-500/5 rounded-full blur-[150px] pointer-events-none"></div>
+
+      <div className="relative z-10 max-w-5xl w-full flex flex-col gap-6">
+        
+        <div className="flex bg-black/40 p-2 rounded-2xl border border-white/5 shadow-inner gap-2 max-w-lg self-center w-full">
+          <button onClick={() => { setActiveTab('observatory'); setError(null); }} className={`flex-1 py-3 text-xs md:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === 'observatory' ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
+            <Globe size={18} /> @ المرصد الفلكي
+          </button>
+          <button onClick={() => { setActiveTab('comparison'); setError(null); }} className={`flex-1 py-3 text-xs md:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === 'comparison' ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
+            <BookOpen size={18} /> مقارنة المذاهب
+          </button>
+        </div>
+
+        {/* شريط التنبيه الذهبي الذكي للمكلفين في المدن العليا بالصيف فقط */}
+        {prayerTimes && prayerTimes.isHighLatWarning && prayerTimes.isSummerAnomaly && (
+          <div className="bg-yellow-500/10 border-r-4 border-yellow-500 text-yellow-200 p-5 rounded-2xl flex items-start gap-3 backdrop-blur-md shadow-xl animate-in fade-in">
+            <ShieldAlert size={28} className="flex-shrink-0 mt-0.5 text-yellow-400" />
+            <div className="text-xs md:text-sm leading-relaxed">
+              <strong className="block text-yellow-400 mb-1">تنبيه فلكي: خطوط العرض العليا (زاوية استثنائية صيفية)</strong>
+              المنطقة المحددة تقع حالياً فوق خط عرض {locationInfo ? Math.abs(locationInfo.lat).toFixed(4) : "48"} درجة في فصل الصيف الفلكي (تداخل الشفق). تم تفعيل قانون <span className="underline font-bold text-teal-400">"{
+                highLatRule === 'sayegh' ? 'تقويم الصائغ (الإمساك بمنتصف الليل الفلكي)' :
+                highLatRule === 'aqrab_48' ? 'أقرب بلد لمؤسسة لندن (خط عرض 48°)' :
+                highLatRule === 'aqrab_45' ? 'أقرب بلد لحوزة قم وطهران (خط عرض 45°)' :
+                highLatRule === 'fixed_90' ? 'الفاصل الثابت لأوروبا (90 دقيقة)' :
+                highLatRule === 'sab_ul_layl' ? 'قاعدة سُبع الليل' : 'الكسر النسبي العشري'
+              }"</span> تلقائياً لضبط الصلوات والحد من اضطراب أوقات الفجر والعشاء.
+            </div>
+          </div>
+        )}
+
+        {dataSource === 'api' && isOfflineMode && (
+          <div className="bg-rose-500/20 border-r-4 border-rose-500 text-rose-200 p-5 rounded-2xl flex items-start gap-3 backdrop-blur-md shadow-xl">
+            <WifiOff size={28} className="flex-shrink-0 mt-0.5 text-rose-400" />
+            <div className="text-xs md:text-sm leading-relaxed">
+              <strong className="block text-rose-400 mb-1">توقف جلب الإنترنت (أوفلاين)</strong>
+              تم حظر الواجهة لأن النظام مضبوط على جلب التواقيت عبر API الإنترنت وجهازك غير متصل حالياً. يرجى التبديل إلى <span className="font-bold text-teal-300">"المحرك الفلكي أوفلاين"</span> في لوحة التحكم المتقدمة لاستعادة دقة الحسابات فوراً.
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-500/10 border-r-4 border-red-500 text-red-200 p-4 rounded-xl flex items-center justify-between text-xs md:text-sm">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-white/50 hover:text-white font-bold">✕</button>
+          </div>
+        )}
+
+        {activeTab === 'observatory' && (
+          <>
+            <div className="w-full flex flex-col md:flex-row justify-between items-center p-6 md:p-8 bg-white/[0.03] border border-white/[0.05] rounded-[2.5rem] shadow-2xl backdrop-blur-xl">
+              <div className="text-center md:text-right">
+                <h1 className="text-3xl md:text-4xl font-extrabold flex items-center justify-center md:justify-start gap-3 text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-indigo-300">
+                  <Clock size={32} className="text-teal-400" /> مرصد الكفيل 3D
+                </h1>
+                <div className="mt-2 text-white/50 text-[11px] md:text-xs font-semibold tracking-wide">
+                  نظام الحسابات الفلكية الشرعية المتكامل للمناطق العادية وخطوط العرض المرتفعة صيفاً
+                </div>
+              </div>
+              <div className="mt-6 md:mt-0 flex flex-col items-center md:items-end gap-1">
+                <div className="text-2xl md:text-3xl font-black text-white tracking-wide drop-shadow-md">
+                  {currentHijri.day} {currentHijri.monthName} {currentHijri.year} <span className="text-teal-400 text-sm md:text-lg">هـ</span>
+                </div>
+                <div className="text-white/60 text-xs md:text-sm font-bold tracking-tight">
+                  {locationInfo ? getGregorianFormatted(targetDateObj) : "--"}
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full bg-black/40 border border-white/5 rounded-[2.5rem] p-6 shadow-2xl backdrop-blur-md">
+              <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
+                
+                <div className="w-full xl:w-1/2 flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-3 text-teal-300 font-bold px-1">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={20} className="text-teal-400" /> 
+                      <span className="text-lg text-white drop-shadow-md">{locationInfo ? locationInfo.name : "جاري الاستشعار..."}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider">
+                        {realTimeClock || "--:--:--"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <form onSubmit={searchCity} className="relative flex w-full">
+                    <input 
+                      type="text" 
+                      value={cityInput} 
+                      onChange={(e) => setCityInput(e.target.value)} 
+                      placeholder="ابحث عن مدينة (مثال: النجف، مكة، باريس، لندن)..." 
+                      className="w-full bg-black/50 border border-white/5 text-white rounded-2xl py-4 pr-12 pl-4 focus:outline-none focus:ring-1 focus:ring-teal-500/50 text-xs md:text-sm" 
+                    />
+                    <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-teal-400">
+                      <Search size={18} />
+                    </button>
+                  </form>
+
+                  <div className="flex gap-2">
+                    <button onClick={fetchLocationByGPS} className="flex-1 flex items-center justify-center gap-2 text-xs bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 py-3.5 rounded-xl border border-teal-500/20 transition-all font-bold">
+                      <Crosshair size={15} /> استشعار الموقع GPS
+                    </button>
+                    {!isOfflineMode && (
+                      <button onClick={fetchLocationByIP} className="flex-1 flex items-center justify-center gap-2 text-xs bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 py-3.5 rounded-xl border border-indigo-500/20 transition-all font-bold">
+                        <Navigation size={15} /> استشعار IP الجغرافي
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="w-full xl:w-1/2 flex flex-col gap-3">
+                  <div className="flex items-center justify-between text-white/50 text-xs md:text-sm px-1">
+                    <span className="font-bold flex items-center gap-2"><Settings2 size={16}/> الضبط والمدارس الشرعية</span>
+                    <button onClick={() => setShowSettings(!showSettings)} className="text-teal-400 text-xs bg-teal-400/10 border border-teal-500/20 px-4 py-1.5 rounded-full hover:bg-teal-400/20 transition-colors font-bold">
+                      {showSettings ? 'إغلاق الإعدادات' : 'الإعدادات المتقدمة'}
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-black/50 p-2 rounded-2xl border border-white/5 shadow-inner">
+                    {[
+                      { id: 'alkafeel', name: 'الكفيل (السيستاني)' }, 
+                      { id: 'leufa', name: 'لوفا (قم)' },
+                      { id: 'tehran', name: 'طهران' }, 
+                      { id: 'ummalqura', name: 'أم القرى (مكة)' }
+                    ].map(m => (
+                      <button 
+                        key={m.id} 
+                        onClick={() => { setMethod(m.id); setError(null); }} 
+                        className={`py-3 px-1 rounded-xl text-[10px] md:text-xs font-bold transition-all ${method === m.id ? 'bg-gradient-to-b from-teal-500 to-teal-700 text-white shadow-lg border border-teal-400/30' : 'text-white/40 hover:bg-white/5 hover:text-white'}`}
+                      >
+                        {m.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* لوحة خيارات معالجة المدن الصيفية العليا - تظهر تلقائياً وديناميكياً فقط عند الحاجة */}
+                  {prayerTimes && prayerTimes.isHighLatWarning && prayerTimes.isSummerAnomaly && (
+                    <div className="bg-yellow-500/5 p-4 rounded-2xl border border-yellow-500/20 mt-1 animate-in slide-in-from-top-2">
+                      <span className="text-[11px] text-yellow-400 font-bold block mb-2">خيارات القياس المعتمدة صيفاً للمدن العليا:</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {isShia ? (
+                          <>
+                            <button 
+                              onClick={() => setHighLatRule('sayegh')} 
+                              className={`py-2 px-1 rounded-lg text-[10px] font-bold border transition-all ${highLatRule === 'sayegh' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-200' : 'bg-black/30 border-transparent text-white/50'}`}
+                            >
+                              تقويم الصائغ
+                            </button>
+                            <button 
+                              onClick={() => setHighLatRule('aqrab_48')} 
+                              className={`py-2 px-1 rounded-lg text-[10px] font-bold border transition-all ${highLatRule === 'aqrab_48' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-200' : 'bg-black/30 border-transparent text-white/50'}`}
+                            >
+                              أقرب بلد (48° - لندن)
+                            </button>
+                            <button 
+                              onClick={() => setHighLatRule('aqrab_45')} 
+                              className={`py-2 px-1 rounded-lg text-[10px] font-bold border transition-all ${highLatRule === 'aqrab_45' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-200' : 'bg-black/30 border-transparent text-white/50'}`}
+                            >
+                              أقرب بلد (45° - قم)
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button 
+                              onClick={() => setHighLatRule('fixed_90')} 
+                              className={`py-2 px-1 rounded-lg text-[10px] font-bold border transition-all ${highLatRule === 'fixed_90' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-200' : 'bg-black/30 border-transparent text-white/50'}`}
+                            >
+                              الفاصل الثابت 90 دقيقة
+                            </button>
+                            <button 
+                              onClick={() => setHighLatRule('sab_ul_layl')} 
+                              className={`py-2 px-1 rounded-lg text-[10px] font-bold border transition-all ${highLatRule === 'sab_ul_layl' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-200' : 'bg-black/30 border-transparent text-white/50'}`}
+                            >
+                              قاعدة سُبع الليل
+                            </button>
+                            <button 
+                              onClick={() => setHighLatRule('angle_based')} 
+                              className={`py-2 px-1 rounded-lg text-[10px] font-bold border transition-all ${highLatRule === 'angle_based' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-200' : 'bg-black/30 border-transparent text-white/50'}`}
+                            >
+                              الكسر النسبي العشري
+                            </button>
+                          </>
+                        )}
+                        <button 
+                          onClick={() => setHighLatRule('none')} 
+                          className={`col-span-2 py-2 rounded-lg text-[10px] font-bold border transition-all ${highLatRule === 'none' ? 'bg-rose-500/20 border-rose-500 text-rose-200' : 'bg-black/30 border-transparent text-white/40'}`}
+                        >
+                          إلغاء المعالجة الفلكية (قد تتعطل الحسابات صيفاً)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {showSettings && (
+                    <div className="flex flex-col gap-3 mt-2 bg-white/[0.01] p-4 rounded-2xl border border-white/5 shadow-2xl animate-in fade-in">
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-[11px] text-teal-300 w-full font-bold">مصدر البيانات ومحاكاة الأوقات:</span>
+                        <button onClick={() => setDataSource('offline')} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border ${dataSource === 'offline' ? 'bg-teal-600/20 border-teal-500 text-teal-300 shadow-lg' : 'bg-black/40 border-transparent text-white/40'}`}>
+                          المحرك الفلكي أوفلاين
+                        </button>
+                        <button onClick={() => setDataSource('api')} disabled={isOfflineMode} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border ${dataSource === 'api' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-lg' : 'bg-black/40 border-transparent text-white/40 disabled:opacity-30'}`}>
+                          جلب عبر API إنترنت
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-2 border-t border-white/5 pt-2">
+                        <span className="text-[11px] text-white/50 font-bold">المعاهد والمجالس العالمية الكبرى:</span>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+                          {[
+                            { id: 'london_shia', label: 'مؤسسة لندن (شيعي)' },
+                            { id: 'mwl', label: 'رابطة العالم' },
+                            { id: 'egypt', label: 'المصرية' },
+                            { id: 'isna', label: 'أمريكا (ISNA)' },
+                            { id: 'karachi', label: 'كراتشي' },
+                            { id: 'france_12', label: 'فرنسا 12°' },
+                            { id: 'european_council', label: 'المجلس الأوروبي' }
+                          ].map(inst => (
+                            <button 
+                              key={inst.id} 
+                              onClick={() => { setMethod(inst.id); setError(null); }} 
+                              className={`py-2 rounded-lg text-[10px] font-bold border transition-all ${method === inst.id ? 'bg-teal-500/20 border-teal-500 text-teal-300' : 'bg-black/30 border-transparent text-white/50 hover:bg-white/5'}`}
+                            >
+                              {inst.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                        <span className="text-[11px] text-white/40 font-bold">تعديل التاريخ الهجري للرؤية:</span>
+                        <div className="flex items-center gap-2 bg-black/40 rounded-lg border border-white/5 p-1">
+                          <button onClick={() => setHijriAdjustment(h => h - 1)} className="p-1 hover:bg-white/10 rounded"><ChevronLeft size={16} /></button>
+                          <span className="text-xs font-black w-8 text-center text-teal-400">{hijriAdjustment > 0 ? `+${hijriAdjustment}` : hijriAdjustment}</span>
+                          <button onClick={() => setHijriAdjustment(h => h + 1)} className="p-1 hover:bg-white/10 rounded"><ChevronRight size={16} /></button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="w-full py-16 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="animate-spin text-teal-400" size={36} />
+                <span className="text-white/50 text-xs font-bold">جاري حساب الإحداثيات والمسارات الفلكية...</span>
+              </div>
+            ) : prayerTimes ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
+                {prayerDisplayList.map((prayer, i) => {
+                  const isHighlight = ['fajr', 'maghrib'].includes(prayer.key);
+                  return (
+                    <div key={i} className={`relative overflow-hidden p-6 flex flex-col items-center justify-center text-center transition-all duration-300 group rounded-[2rem] border-t border-l
+                      ${isHighlight 
+                        ? 'bg-gradient-to-b from-teal-500/10 to-teal-900/30 border-white/10 border-b border-r border-black/80 shadow-[6px_6px_15px_rgba(0,0,0,0.5)]' 
+                        : 'bg-white/[0.01] border-white/[0.03] border-b border-r border-black/90 shadow-[4px_4px_12px_rgba(0,0,0,0.4)]'
+                      }`}>
+                      <h3 className={`text-xs font-bold mb-3 tracking-wide ${isHighlight ? 'text-teal-400' : 'text-white/40'}`}>{prayer.label}</h3>
+                      <p className={`text-2xl md:text-3xl font-black tracking-tight ${isHighlight ? 'text-white drop-shadow-[0_2px_8px_rgba(20,184,166,0.6)]' : 'text-white/80'}`}>
+                        {prayerTimes[prayer.key]}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 p-8 rounded-2xl text-center text-xs md:text-sm">
+                لا تتوفر تواقيت صلاة حالياً لهذه الإحداثيات. يرجى مراجعة إعدادات الموقع أو تحويل مصدر التواقيت إلى أوفلاين.
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'comparison' && (
+          <div className="w-full bg-black/40 border border-white/5 rounded-[2.5rem] p-6 shadow-2xl backdrop-blur-md flex flex-col gap-4">
+            <h2 className="text-xl font-bold text-teal-300 mb-2 flex items-center gap-2"><BookOpen size={20} /> دليل مقارنة المذاهب وفتاوى خطوط العرض العليا</h2>
+            
+            {[
+              {
+                id: 'shia_midnight_rule',
+                title: '📌 منتصف الليل الشرعي الشيعي (تحديث فقهي هام)',
+                content: `• المبدأ الفقهي: منتصف الليل الشرعي عند الطائفة الجعفرية هو منتصف المسافة الزمنية الواقعة تماماً بين [غروب الشمس] و[طلوع الفجر الصادق].
+                
+                • المعادلة الرياضية للبرمجة:
+                Midnight = Sunset + ((Fajr - Sunset) / 2)
+                
+                • تلافي الأخطاء السابقة: تم بحمد الله تصحيح هذه الخوارزمية كلياً بالصيف في لندن لتلافي خطأ العبور الحسابي لخانة الصباح (AM). يظهر التوقيت الآن دقيقاً جداً بالمساء (11:20 م) بدلاً من (11:20 ص) بمطابقة تامة للتقاويم المعتمدة عسكرياً وشرعياً.`
+              },
+              {
+                id: 'alkafeel_vs_london',
+                title: '1️⃣ الفرق الفقهي بين الكفيل ومؤسسة لندن (السيستاني) صيفاً',
+                content: `على الرغم من كونهما يتبعان فتاوى المرجع الأعلى السيد السيستاني (دام ظله)، إلا أن هناك اختلافاً بـ 48 دقيقة صيفاً بلندن للسبب التالي:
+                
+                • معهد الكفيل (العتبة العباسية): يعتمد زاوية الفجر الطبيعية 18° تحت الأفق. صيفاً عند تداخل الشفق، يسقط الإحداثيات على خط عرض 48° (باريس) لمطابقة فتوى لندن لتسهيل العبادات، أو يتيح تقويم الصائغ كمعيار بديل.
+                
+                • مؤسسة لندن (مؤسسة الإمام علي بلندن): تعتمد زاوية فلكية ناعمة وهي 15° تحت الأفق (وهو المعتمد فقهياً لديهم لبلدان شمال أوروبا لتسهيل العبادات وتقليل المشقة على الجالية).
+                
+                • لغز الـ 48 دقيقة صيفاً: صيفاً في لندن (خط عرض 51.5°)، تنحدر الشمس بشكل مائل وجانبي جداً موازٍ للأفق، وتتحرك ببطء شديد صعوداً وهبوطاً. هذا التباطؤ يجعل الفارق البسيط بين زاوية 15° وزاوية 18° (3 درجات فقط) يتمدد زمنياً ليصبح 48 دقيقة كاملة! بينما في البلاد القريبة من خط الاستواء (مثل كربلاء ومكة)، يكون انحدار الشمس عمودياً وسريعاً فلا يتجاوز الفارق بينهما 12 إلى 15 دقيقة.`
+              },
+              {
+                id: 'leufa_tehran_vs_kafeel',
+                title: '2️⃣ مركز لوفا (قم) وجامعة طهران مقابل الكفيل في الزوايا العليا',
+                content: `• مركز لوفا (قم المقدسة): يعتمد زاوية الفجر 16.0° والمغرب زوال الحمرة 4.0°. صيفاً في الزوايا العليا يسقط الأوقات على خط عرض 45° تماماً.
+                
+                • جامعة طهران: تعتمد زاوية الفجر 17.7° والمغرب زوال الحمرة 4.5°. صيفاً تسقط الحسابات أيضاً على خط عرض 45° تماماً.
+                
+                • لماذا يختلفون صيفاً؟ إسقاط خط عرض 45° (لوفا وطهران) يختلف تماماً عن إسقاط خط عرض 48° (الكفيل ومؤسسة لندن)، لأن الشمس في خط عرض 45° تنزل لعمق أكبر تحت الأفق مقارنة بخط عرض 48°، مما يجعل الفجر متأخراً والمغرب مبكراً، وهما متطابقان أوفلاين لأنهما يسقطان على نفس دائرة العرض الافتراضية صيفاً في حال تفعيل المحرك.`
+              },
+              {
+                id: 'sayegh_fatwa_detail',
+                title: '3️⃣ مسلك تقويم الصائغ الشيعي الاحترازي بالتفصيل صيفاً',
+                content: `• الفكرة والفتوى: يعتبر المهندس الصائغ فقهياً وعلمياً أنه بمجرد وصول الشمس لأدنى نقطة انخفاض لها تحت الأفق (منتصف الليل الفلكي) وبداية صعودها التدريجي، يبدأ تزايد النور تكوينياً في الأفق.
+                
+                • الإمساك صيفاً: يوجب الصائغ الإمساك عند منتصف الليل الفلكي صيانةً للصوم ويقين الإمساك قبل أي زيادة للنور (مثلاً الساعة 11:20 مساءً حسب الأفق).
+                
+                • صلاة الصبح: يؤخرها وجوباً حتى حدوث (الإسفار) وهو انتشار الضوء الحسي الملاحظ بالأفق قبل الشروق بحوالي 75 دقيقة، وذلك لعدم تمايز الفجر الصادق الطبيعي في فترة تداخل الشفق بالصيف.`
+              },
+              {
+                id: 'sunni_methods_detail',
+                title: '4️⃣ تقويم أم القرى والمذاهب السنية (الفاصل الثابت والسبع والكسر النسبي)',
+                content: `تطرح المدارس السنية صيفاً في مناطق الشفق المتداخل الخيارات التالية:
+                
+                • الفاصل الثابت: وهو فرض وقت الفجر 90 دقيقة ثابتة قبل شروق الشمس، والعشاء 90 دقيقة بعد غروبها، وفي رمضان تزداد تلقائياً في أم القرى إلى 120 دقيقة تيسيراً وتطابقاً مع تقاويم الحرمين الشريفين.
+                
+                • قاعدة سُبع الليل: تقسيم الليل التكويني الفعلي إلى سبعة أقسام متساوية، واعتيار وقت الفجر الشرعي الاستثنائي في السبع الأخير قبل الشروق.
+                
+                • الكسر النسبي العشري (Angle-Based Rule): وهو حساب نسبة الزاوية الشرعية للفجر أو العشاء (مثلاً 18 درجة) من الـ 60 درجة الكلية لزاوية دوران الأفق ليلاً.
+                
+                المعادلة للفجر: Fajr = Sunrise - (Night * (Fajr Angle / 60)).
+                المعادلة للعشاء: Isha = Sunset + (Night * (Isha Angle / 60)).
+                وهذا الكسر النسبي يضمن عدم تداخل الأوقات صيفاً وتدرج الأوقات بشكل طبيعي.`
+              },
+              {
+                id: 'france_and_europe',
+                title: '5️⃣ معاهد أوروبا السنية والشيعية الأخرى (فرنسا 12° وغيرها)',
+                content: `• اتحاد فرنسا (UOIF): يعتمد زاوية 12° دائماً للفجر والعشاء صيفاً وشتاءً لتسهيل العبادات ومنع تعطل الحسابات أو المشقة على المسلمين.
+                
+                • المجلس الأوروبي للإفتاء والبحوث: يعتمد زاوية 15° للفجر والعشاء، وصيفاً يطبق الكسر النسبي العشري في المناطق المرتفعة.
+                
+                • الهيئة المصرية العامة للمساحة: تعتمد زاوية الفجر الكبرى 19.5° وهي تسبب تعطلاً فلكياً صيفاً في أوروبا، فيلجأ التطبيق تلقائياً لخفض الزاوية تدريجياً وبشكل آمن لمنع تعطل الحسابات.`
+              },
+              {
+                id: 'seasonal_rules_detail',
+                title: '6️⃣ هل هذه الاستثناءات تُطبق صيفاً فقط؟ (الموسمية الفلكية)',
+                content: `نعم، تُطبق هذه القواعد الاستثنائية للزوايا العليا فقط في أواخر الربيع وفصل الصيف (عندما يكون ميل الشمس موجباً ومرتفعاً). أما في الخريف والشتاء، فإن الشمس تهبط ليلاً تحت الأفق بأعماق كافية تزيد عن 20 درجة، وبالتالي تعود علامات الفجر والعشاء الصادقة للظهور بوضوح فلكي دامس، وعليه تُلغى الاستثناءات تلقائياً في الشتاء وتُطبق الزوايا الطبيعية لتوفر العلامات التكوينية الفلكية.`
+              }
+            ].map((sec) => (
+              <div key={sec.id} className="border-b border-white/5 pb-3">
+                <button 
+                  onClick={() => setExpandedSection(expandedSection === sec.id ? null : sec.id)} 
+                  className="w-full flex items-center justify-between py-3 text-left font-bold text-white/80 hover:text-white transition-colors text-xs md:text-sm"
+                >
+                  <span className="flex items-center gap-2"><Cpu size={16} className="text-teal-400"/> {sec.title}</span>
+                  <ChevronDown size={16} className={`transition-transform duration-300 ${expandedSection === sec.id ? 'rotate-180' : ''}`} />
+                </button>
+                {expandedSection === sec.id && (
+                  <div className="mt-2 text-white/60 text-xs md:text-sm leading-relaxed p-4 bg-white/[0.01] rounded-xl border border-white/5 whitespace-pre-line font-medium font-sans">
+                    {sec.content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}

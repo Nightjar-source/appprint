@@ -107,8 +107,15 @@ fun LiquidNavGroup(
         animationSpec = dropletSpec,
         label = "dropletX",
     )
+    
+    val offsetYFloat by animateFloatAsState(
+        targetValue = if (target != null) targetOffset.y - hostOrigin.y else 0f,
+        animationSpec = dropletSpec,
+        label = "dropletYFloat",
+    )
+    
     val offsetY by animateDpAsState(
-        targetValue = with(density) { (targetOffset.y - hostOrigin.y).toDp() },
+        targetValue = with(density) { offsetYFloat.toDp() },
         animationSpec = dropletSpec,
         label = "dropletY",
     )
