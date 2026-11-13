@@ -9,6 +9,15 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Keep Material 3 on the expressive (alpha) line everywhere — the Compose
+// plugin would otherwise pull the stable material3 back in and the expressive
+// theming APIs would not resolve.
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.compose.material3:material3:1.12.0-alpha03")
+    }
+}
+
 kotlin {
     android {
         namespace = "com.appprint.studio.shared"
@@ -42,7 +51,10 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.ui)
-            implementation(compose.material3)
+            // Material 3 Expressive theming (official Compose Multiplatform guidance:
+            // "Decoupled Material3 versioning" — the expressive APIs live in the alpha
+            // Material3 artifact and need to be requested explicitly).
+            implementation("org.jetbrains.compose.material3:material3:1.12.0-alpha03")
             implementation(compose.materialIconsExtended)
             implementation(libs.material3.adaptive)
             implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.12.2")

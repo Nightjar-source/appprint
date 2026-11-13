@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -56,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appprint.studio.ui.theme.Motion
@@ -82,6 +84,7 @@ fun LiquidNavGroup(
 ) {
     val scheme = MaterialTheme.colorScheme
     val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
     val activeIndex = items.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
 
     var hostOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -93,8 +96,14 @@ fun LiquidNavGroup(
     val targetOffset: Offset = target?.position ?: Offset.Zero
     val targetSize: IntSize = target?.size ?: IntSize.Zero
 
+    // positionInParent() is direction-aware: in RTL the x is measured from the
+    // parent's RIGHT edge, so the delta has to be mirrored back to physical
+    // (left-to-right) space before it can drive Modifier.offset.
+    val rawDx = targetOffset.x - hostOrigin.x
+    val physicalDx = if (layoutDirection == LayoutDirection.Rtl) -rawDx else rawDx
+
     val offsetX by animateDpAsState(
-        targetValue = with(density) { (targetOffset.x - hostOrigin.x).toDp() },
+        targetValue = with(density) { physicalDx.toDp() },
         animationSpec = dropletSpec,
         label = "dropletX",
     )

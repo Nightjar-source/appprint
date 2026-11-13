@@ -179,7 +179,7 @@ fun StudioScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
                         FloatingStrip(
-                            visible = phone && !toolbarHidden,
+                            visible = phone && !toolbarHidden && state.selectedId == null,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -199,7 +199,7 @@ fun StudioScreen(
                             )
                         }
                         FloatingStrip(
-                            visible = phone && toolbarHidden,
+                            visible = phone && toolbarHidden && state.selectedId == null,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -216,7 +216,7 @@ fun StudioScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
                         FloatingStrip(
-                            visible = phone && !toolbarHidden,
+                            visible = phone && !toolbarHidden && state.selectedId == null,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -236,7 +236,7 @@ fun StudioScreen(
                             )
                         }
                         FloatingStrip(
-                            visible = phone && toolbarHidden,
+                            visible = phone && toolbarHidden && state.selectedId == null,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
