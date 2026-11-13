@@ -54,7 +54,8 @@ android {
 }
 
 // No Compose in this module yet — the UI lives in :shared once the new design lands.
-// Keep :shared on the classpath so the module wiring stays identical to the reference layout.
+// core-splashscreen keeps the brand Splash theme working; :shared stays on the classpath.
 dependencies {
     implementation(project(":shared"))
+    implementation(libs.androidx.core.splashscreen)
 }
