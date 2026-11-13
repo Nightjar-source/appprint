@@ -115,7 +115,7 @@ object Str {
     const val done = "تم"
     const val clear = "مسح"
     const val clear_confirm_title = "مسح كل البطاقات؟"
-    const val clear_confirm_body = "ستُحذف كل البطاقات من كل الأوراق. لا يمكن التراجع."
+    const val clear_confirm_body = "سيُحذف كل ما أضفته من الورق والبطاقات. يمكنك التراجع بخطوة واحدة بعد المسح."
     const val rename_card = "اسم البطاقة"
     const val compare_before = "مقارنة قبل / بعد"
     const val auto_crop = "قص تلقائي"
