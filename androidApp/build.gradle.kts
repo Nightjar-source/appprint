@@ -1,25 +1,23 @@
 ﻿// Android application — thin launcher over :shared (KMP + Compose Multiplatform).
 // No org.jetbrains.kotlin.android plugin: AGP 9+ ships built-in Kotlin.
+// Clean slate: the app is being rebuilt from scratch from the new design (HTML → Compose).
 import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
     id("com.android.application")
-    alias(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "com.appprint.studio"
-    compileSdk = 37  // Android 17
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.appprint.studio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 16
-        versionName = "1.1.4"
-        resourceConfigurations += listOf("ar", "en")
+        versionCode = 1
+        versionName = "0.1.0"
     }
 
     val keystoreProperties = Properties()
@@ -30,32 +28,21 @@ android {
 
     signingConfigs {
         create("release") {
-            // Same official key lineage as the owner's other apps (restored from GitHub secrets on CI)
+            // Restored from GitHub secrets on CI. No fallback passwords — a missing keystore MUST fail the build.
             storeFile = file("Nightjar.keystore")
-            storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD") ?: "19941994"
+            storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD") ?: error("KEYSTORE_PASSWORD is missing — set it in local.properties (CI restores it from secrets)")
             keyAlias = "Nightjar"
-            keyPassword = keystoreProperties.getProperty("KEY_PASSWORD") ?: "19941994"
+            keyPassword = keystoreProperties.getProperty("KEY_PASSWORD") ?: error("KEY_PASSWORD is missing — set it in local.properties (CI restores it from secrets)")
         }
     }
 
     buildTypes {
         release {
-            // R8 full mode + resource shrinking; officially signed
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("release")
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
         }
         debug {
             isMinifyEnabled = false
-            // Sign debug builds with the official key when available (release parity),
-            // otherwise fall back to the default debug keystore — CI verify needs no secrets.
-            if (file("Nightjar.keystore").exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
         }
     }
 
@@ -63,17 +50,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    buildFeatures {
-        compose = false
-        buildConfig = true
-    }
 }
 
+// No Compose in this module yet — the UI lives in :shared once the new design lands.
+// Keep :shared on the classpath so the module wiring stays identical to the reference layout.
 dependencies {
     implementation(project(":shared"))
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.activity.ktx)
 }
