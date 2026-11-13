@@ -4,8 +4,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -61,6 +63,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
@@ -73,6 +76,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalIndication
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -96,6 +100,7 @@ import androidx.compose.material.icons.filled.*
 import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.CanvasViewState
+import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.theme.Motion
 import com.appprint.studio.ui.theme.contrastingTextColor
 import com.appprint.studio.ui.components.SampleCardArt
@@ -129,6 +134,11 @@ fun StudioScreen(
         // On phones, tapping a card slides the inspector sheet up
         LaunchedEffect(state.selectedId, phone) {
             if (phone && state.selectedId != null) showInspectorSheet = true
+        }
+
+        // the top-bar arrow button opens the selected card's controls on every size class
+        LaunchedEffect(state.cardPanelRequest) {
+            if (state.cardPanelRequest > 0 && state.selectedId != null) showInspectorSheet = true
         }
 
         // Back: close dialogs/sheets first, then deselect — never exits directly
@@ -174,6 +184,7 @@ fun StudioScreen(
                         ) {
                             EditorToolbar(
                                 state = state,
+                                viewModel = viewModel,
                                 onAddImages = onAddImages,
                                 onCamera = onCamera,
                                 onSamples = viewModel::addSamples,
@@ -210,6 +221,7 @@ fun StudioScreen(
                         ) {
                             EditorToolbar(
                                 state = state,
+                                viewModel = viewModel,
                                 onAddImages = onAddImages,
                                 onCamera = onCamera,
                                 onSamples = viewModel::addSamples,
@@ -263,7 +275,7 @@ fun StudioScreen(
                 )
             }
         }
-        if (showInspectorSheet && phone) {
+        if (showInspectorSheet && !wide) {
             ModalBottomSheet(onDismissRequest = { showInspectorSheet = false }) {
                 InspectorPanel(
                     state = state,
@@ -422,6 +434,7 @@ private fun FloatingStrip(
 @Composable
 private fun EditorToolbar(
     state: StudioUiState,
+    viewModel: StudioViewModel,
     onAddImages: () -> Unit,
     onCamera: () -> Unit,
     onSamples: () -> Unit,
@@ -433,102 +446,270 @@ private fun EditorToolbar(
     compact: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    val scheme = MaterialTheme.colorScheme
+    var controlsOpen by rememberSaveable { mutableStateOf(false) }
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val indication = androidx.compose.ui.platform.LocalIndication.current
+
+    Column(
         modifier = modifier
-            .fillMaxWidth()
+            .widthIn(max = 520.dp)
             .clip(RoundedCornerShape(percent = 50))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
-            .padding(horizontal = 6.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .background(scheme.surfaceContainerHigh.copy(alpha = 0.92f))
+            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(percent = 50)),
     ) {
-        LazyRow(
-            modifier = Modifier.weight(1f),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 6.dp, top = 5.dp, end = 4.dp, bottom = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            item {
-                FilledTonalButton(onClick = onAddImages, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(Icons.Filled.FileUpload, contentDescription = Str.btn_add_images, modifier = Modifier.size(18.dp))
-                    if (!compact) {
-                        Spacer(Modifier.size(6.dp))
-                        Text(Str.btn_add_images, maxLines = 1)
-                    }
-                }
-            }
-            item {
-                FilledTonalButton(onClick = onCamera, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(Icons.Filled.PhotoCamera, contentDescription = Str.btn_take_photo, modifier = Modifier.size(18.dp))
-                    if (!compact) {
-                        Spacer(Modifier.size(6.dp))
-                        Text(Str.btn_take_photo, maxLines = 1)
-                    }
-                }
-            }
-            item {
-                FilledTonalButton(onClick = onSamples, shape = RoundedCornerShape(percent = 50)) {
-                    Icon(Icons.Filled.AutoAwesome, contentDescription = Str.btn_samples, modifier = Modifier.size(18.dp))
-                    if (!compact) {
-                        Spacer(Modifier.size(6.dp))
-                        Text(Str.btn_samples, maxLines = 1)
-                    }
-                }
-            }
-            item {
-                FilledTonalButton(onClick = onArrange, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(Icons.Filled.AutoAwesome, contentDescription = Str.btn_arrange, modifier = Modifier.size(18.dp))
-                    if (!compact) {
-                        Spacer(Modifier.size(6.dp))
-                        Text(Str.btn_arrange, maxLines = 1)
-                    }
-                }
-            }
-            item {
-                FilledTonalButton(onClick = onSortSize, enabled = state.cards.isNotEmpty(), shape = RoundedCornerShape(percent = 50)) {
-                    Icon(Icons.Filled.SwapVert, contentDescription = Str.btn_sort_size, modifier = Modifier.size(18.dp))
-                    if (!compact) {
-                        Spacer(Modifier.size(6.dp))
-                        Text(Str.btn_sort_size, maxLines = 1)
-                    }
-                }
-            }
-            item {
-                TextButton(onClick = onClear, enabled = state.cards.isNotEmpty()) {
-                    Text(Str.btn_clear_all, color = MaterialTheme.colorScheme.error, maxLines = 1)
-                }
-            }
-            if (onOpenPaperSettings != null) {
+            LazyRow(
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // primary action — the only accented item in the strip
                 item {
-                    IconButton(onClick = onOpenPaperSettings) {
-                        Icon(Icons.Filled.Menu, contentDescription = Str.paper_title)
+                    Row(
+                        modifier = Modifier
+                            .pressScale(interaction)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(scheme.primary)
+                            .clickable(
+                                interactionSource = interaction,
+                                indication = indication,
+                                onClick = onAddImages,
+                            )
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.FileUpload,
+                            contentDescription = null,
+                            tint = contrastingTextColor(scheme.primary),
+                            modifier = Modifier.size(17.dp),
+                        )
+                        Text(
+                            Str.btn_add_images,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = contrastingTextColor(scheme.primary),
+                            maxLines = 1,
+                        )
                     }
                 }
+                item { StripIcon(Icons.Filled.PhotoCamera, Str.btn_take_photo, onCamera) }
+                item { StripIcon(Icons.Filled.AutoAwesome, Str.btn_samples, onSamples) }
+                item {
+                    StripDivider()
+                }
+                item {
+                    StripIcon(
+                        icon = Icons.Filled.AutoFixHigh,
+                        label = Str.btn_arrange,
+                        onClick = onArrange,
+                        enabled = state.cards.isNotEmpty(),
+                    )
+                }
+                item {
+                    StripIcon(
+                        icon = Icons.Filled.SwapVert,
+                        label = Str.btn_sort_size,
+                        onClick = onSortSize,
+                        enabled = state.cards.isNotEmpty(),
+                    )
+                }
+                if (onOpenPaperSettings != null) {
+                    item { StripIcon(Icons.Filled.Article, Str.paper_title, onOpenPaperSettings) }
+                }
+                item {
+                    StripIcon(
+                        icon = Icons.Filled.DeleteSweep,
+                        label = Str.btn_clear_all,
+                        onClick = onClear,
+                        enabled = state.cards.isNotEmpty(),
+                        tint = scheme.error,
+                    )
+                }
+                item {
+                    // control toggle — opens the quick-controls row
+                    StripIcon(
+                        icon = Icons.Filled.Tune,
+                        label = Str.quick_controls,
+                        onClick = { controlsOpen = !controlsOpen },
+                        selected = controlsOpen,
+                    )
+                }
+            }
+            IconButton(onClick = onHide) {
+                Icon(
+                    Icons.Filled.ExpandLess,
+                    contentDescription = Str.hide_toolbar,
+                    tint = scheme.onSurfaceVariant,
+                )
             }
         }
-        IconButton(onClick = onHide) {
-            Icon(Icons.Filled.ExpandLess, contentDescription = "إخفاء شريط الأدوات", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        // quick controls — the extra row the control button opens
+        AnimatedVisibility(
+            visible = controlsOpen,
+            enter = fadeIn(Motion.effects()) + expandVertically(Motion.spatial()),
+            exit = fadeOut(Motion.effectsFast()) + shrinkVertically(Motion.effectsFast()),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                QuickToggle(
+                    label = Str.orientation,
+                    value = if (state.settings.landscape) Str.orientation_landscape else Str.orientation_portrait,
+                    onClick = { viewModel.setLandscape(!state.settings.landscape) },
+                )
+                QuickToggle(
+                    label = Str.mode,
+                    value = when (state.settings.mode) {
+                        com.appprint.studio.core.model.ArrangeMode.GRID -> Str.mode_grid
+                        com.appprint.studio.core.model.ArrangeMode.COMFORTABLE -> Str.mode_comfy
+                        com.appprint.studio.core.model.ArrangeMode.COMPACT -> Str.mode_compact
+                    },
+                    onClick = {
+                        val next = when (state.settings.mode) {
+                            com.appprint.studio.core.model.ArrangeMode.GRID -> com.appprint.studio.core.model.ArrangeMode.COMFORTABLE
+                            com.appprint.studio.core.model.ArrangeMode.COMFORTABLE -> com.appprint.studio.core.model.ArrangeMode.COMPACT
+                            com.appprint.studio.core.model.ArrangeMode.COMPACT -> com.appprint.studio.core.model.ArrangeMode.GRID
+                        }
+                        viewModel.setMode(next)
+                    },
+                )
+                QuickToggle(
+                    label = Str.showFrames,
+                    value = if (state.settings.showFrames) Str.on else Str.off,
+                    onClick = { viewModel.setShowFrames(!state.settings.showFrames) },
+                )
+                QuickToggle(
+                    label = Str.showGuides,
+                    value = if (state.settings.showGuides) Str.on else Str.off,
+                    onClick = { viewModel.setShowGuides(!state.settings.showGuides) },
+                )
+            }
         }
     }
 }
 
-/** Slim bar shown when the toolbar is hidden — one tap brings it back. */
+/** Neutral icon-only action inside the floating tool strip. */
+@Composable
+private fun StripIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    selected: Boolean = false,
+    tint: androidx.compose.ui.graphics.Color? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val indication = androidx.compose.ui.platform.LocalIndication.current
+    val color = tint ?: scheme.onSurface
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .pressScale(interaction, pressedScale = 0.9f)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(if (selected) scheme.primaryContainer else Color.Transparent)
+            .clickable(
+                interactionSource = interaction,
+                indication = indication,
+                enabled = enabled,
+                onClick = onClick,
+            )
+            .alpha(if (enabled) 1f else 0.38f),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(19.dp))
+    }
+}
+
+@Composable
+private fun StripDivider() {
+    Box(
+        modifier = Modifier
+            .height(22.dp)
+            .width(1.dp)
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+    )
+}
+
+/** Compact value chip used by the quick-controls row. */
+@Composable
+private fun QuickToggle(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val indication = androidx.compose.ui.platform.LocalIndication.current
+    Row(
+        modifier = Modifier
+            .pressScale(interaction, pressedScale = 0.94f)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(scheme.surfaceContainerHighest.copy(alpha = 0.9f))
+            .clickable(interactionSource = interaction, indication = indication, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = scheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = scheme.onSurface,
+            maxLines = 1,
+        )
+    }
+}
+
+/** Slim pill shown when the tool strip is collapsed — one tap brings the whole strip back. */
 @Composable
 private fun ToolbarHiddenBar(onShow: () -> Unit, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val indication = androidx.compose.ui.platform.LocalIndication.current
     Row(
         modifier = modifier
-            .fillMaxWidth()
             .clip(RoundedCornerShape(percent = 50))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
-            .padding(start = 8.dp, end = 4.dp),
-        horizontalArrangement = Arrangement.End,
+            .background(scheme.surfaceContainerHigh.copy(alpha = 0.92f))
+            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
+            .pressScale(interaction, pressedScale = 0.94f)
+            .clickable(interactionSource = interaction, indication = indication, onClick = onShow)
+            .padding(start = 12.dp, top = 6.dp, end = 14.dp, bottom = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onShow) {
-            Icon(Icons.Filled.ExpandMore, contentDescription = "إظهار شريط الأدوات", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        Icon(
+            Icons.Filled.ExpandMore,
+            contentDescription = Str.show_toolbar,
+            tint = scheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            Str.tools_strip,
+            style = MaterialTheme.typography.labelMedium,
+            color = scheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }
 

@@ -269,6 +269,9 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 onZoomIn = canvasView::zoomIn,
                 onZoomOut = canvasView::zoomOut,
                 onUndo = viewModel::undo,
+                onCardPanel = viewModel::requestCardPanel,
+                onDuplicate = viewModel::duplicateSelected,
+                onDeleteCard = viewModel::deleteSelected,
                 onExportPdf = viewModel::sharePdf,
                 onExportPng = { viewModel.sharePng(state.currentPage) },
                 onExportHtml = viewModel::shareHtml,
@@ -434,6 +437,9 @@ private fun FloatingTopBar(
     onZoomIn: () -> Unit,
     onZoomOut: () -> Unit,
     onUndo: () -> Unit,
+    onCardPanel: () -> Unit,
+    onDuplicate: () -> Unit,
+    onDeleteCard: () -> Unit,
     onExportPdf: () -> Unit,
     onExportPng: () -> Unit,
     onExportHtml: () -> Unit,
@@ -444,6 +450,7 @@ private fun FloatingTopBar(
     modifier: Modifier = Modifier,
 ) {
     var exportMenuOpen by remember { mutableStateOf(false) }
+    var cardMenuOpen by remember { mutableStateOf(false) }
     val scheme = MaterialTheme.colorScheme
     val container = scheme.surfaceContainerHigh.copy(alpha = 0.90f)
     val exportTurns by animateFloatAsState(
@@ -570,14 +577,47 @@ private fun FloatingTopBar(
                     ) {
                         Icon(Icons.Filled.Undo, contentDescription = null, tint = if (canUndo) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.45f), modifier = Modifier.size(20.dp))
                     }
+                    // arrow button — the selected card's actions (never file print)
                     CircularIconButton(
-                        onClick = onShare,
-                        contentDescription = Str.share_page,
+                        onClick = { cardMenuOpen = true },
+                        contentDescription = Str.card_actions,
                         enabled = !exporting,
                         container = container,
                         size = actionSize,
                     ) {
-                        Icon(Icons.Filled.Share, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(19.dp))
+                        Icon(
+                            Icons.Filled.ArrowDropDown,
+                            contentDescription = null,
+                            tint = scheme.onSurface,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = cardMenuOpen,
+                        onDismissRequest = { cardMenuOpen = false },
+                        shape = RoundedCornerShape(20.dp),
+                        containerColor = scheme.surfaceContainerHigh,
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(Str.card_tools, maxLines = 1) },
+                            onClick = { cardMenuOpen = false; onCardPanel() },
+                            leadingIcon = { Icon(Icons.Filled.Tune, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.share_page, maxLines = 1) },
+                            onClick = { cardMenuOpen = false; onShare() },
+                            leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.duplicate_card, maxLines = 1) },
+                            onClick = { cardMenuOpen = false; onDuplicate() },
+                            leadingIcon = { Icon(Icons.Filled.ContentCopy, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.delete_card, maxLines = 1) },
+                            onClick = { cardMenuOpen = false; onDeleteCard() },
+                            leadingIcon = { Icon(Icons.Filled.DeleteOutline, contentDescription = null, tint = scheme.error) },
+                        )
                     }
                 } else {
                     CircularIconButton(
@@ -825,14 +865,24 @@ private fun NavPillItem(
     val interaction = remember { MutableInteractionSource() }
     val indication = LocalIndication.current
     val pill by animateColorAsState(
-        targetValue = if (selected) scheme.secondaryContainer else Color.Transparent,
+        targetValue = if (selected) scheme.primaryContainer else Color.Transparent,
         animationSpec = Motion.effects(),
         label = "navPill",
     )
     val contentColor by animateColorAsState(
-        targetValue = if (selected) contrastingTextColor(scheme.secondaryContainer) else scheme.onSurfaceVariant,
+        targetValue = if (selected) contrastingTextColor(scheme.primaryContainer) else scheme.onSurfaceVariant,
         animationSpec = Motion.effects(),
         label = "navContent",
+    )
+    // the M3 indicator morphs: the selected capsule grows, the icon pops with it
+    val pillWidth by animateDpAsState(
+        targetValue = if (selected) {
+            if (vertical) 48.dp else 58.dp
+        } else {
+            if (vertical) 40.dp else 50.dp
+        },
+        animationSpec = Motion.spatialFast(),
+        label = "navPillWidth",
     )
     val iconScale by animateFloatAsState(
         targetValue = if (selected) 1.09f else 1f,
@@ -862,7 +912,7 @@ private fun NavPillItem(
                 .clip(RoundedCornerShape(percent = 50))
                 .background(pill)
                 .height(boxHeight)
-                .width(boxWidth),
+                .width(pillWidth),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

@@ -37,6 +37,8 @@ data class StudioUiState(
     val forcedPages: Int = 0,
     /** Showing the original (un-enhanced) image while toggled. */
     val compareBefore: Boolean = false,
+    /** Incremented when the top bar asks to open the selected card's controls. */
+    val cardPanelRequest: Int = 0,
 ) {
     val pageCount: Int get() = maxOf((cards.maxOfOrNull { it.page } ?: 0) + 1, forcedPages)
     val selectedCard: CardItem? get() = cards.firstOrNull { it.id == selectedId }
@@ -278,6 +280,9 @@ class StudioViewModel : ViewModel() {
     // ------------------------------------------------------------- selection & editing
 
     fun selectCard(id: Long?) = _state.update { it.copy(selectedId = id) }
+
+    /** Ask the studio screen to open the selected card's control surface. */
+    fun requestCardPanel() = _state.update { it.copy(cardPanelRequest = it.cardPanelRequest + 1) }
 
     fun currentPage(page: Int) = _state.update { s ->
         s.copy(currentPage = page.coerceIn(0, (s.pageCount - 1).coerceAtLeast(0)), selectedId = null)
