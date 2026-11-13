@@ -28,11 +28,12 @@ android {
 
     signingConfigs {
         create("release") {
-            // Restored from GitHub secrets on CI. No fallback passwords — a missing keystore MUST fail the build.
+            // Restored from GitHub secrets on CI. NO fallback passwords: missing keys
+            // stay null here and the *release packaging* fails loudly (CI verify doesn't).
             storeFile = file("Nightjar.keystore")
-            storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD") ?: error("KEYSTORE_PASSWORD is missing — set it in local.properties (CI restores it from secrets)")
+            storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD")
             keyAlias = "Nightjar"
-            keyPassword = keystoreProperties.getProperty("KEY_PASSWORD") ?: error("KEY_PASSWORD is missing — set it in local.properties (CI restores it from secrets)")
+            keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
         }
     }
 
