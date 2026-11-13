@@ -186,6 +186,10 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
             label = "pageContentPadding",
         )
 
+        val barHeight = Chrome.topBarHeight()
+        val canvasView = rememberCanvasViewState()
+        val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
+
         @Composable
         fun content() {
             NavDisplay(
@@ -209,9 +213,6 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val cutoutStart = WindowInsets.displayCutout.asPaddingValues().calculateStartPadding(LocalLayoutDirection.current)
-        val barHeight = Chrome.topBarHeight()
-        val canvasView = rememberCanvasViewState()
-        val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
 
         PlatformBackHandler(enabled = current != AppRoute.Studio) {
             navigateTopLevel(backStack, AppRoute.Studio)
