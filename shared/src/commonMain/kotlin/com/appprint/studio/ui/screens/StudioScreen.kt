@@ -93,8 +93,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.components.CanvasViewState
 import com.appprint.studio.ui.theme.Motion
-import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.components.SampleCardArt
 import com.appprint.studio.ui.strings.Str
 
@@ -103,7 +103,7 @@ private const val DP_PER_MM = 3.7795276f
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun StudioScreen(viewModel: StudioViewModel) {
+fun StudioScreen(viewModel: StudioViewModel, canvasView: CanvasViewState) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     var showClearConfirm by rememberSaveable { mutableStateOf(false) }
@@ -195,6 +195,7 @@ fun StudioScreen(viewModel: StudioViewModel) {
                         SheetCanvas(
                             state = state,
                             viewModel = viewModel,
+                            canvasView = canvasView,
                             modifier = Modifier.fillMaxSize(),
                         )
                         FloatingStrip(
@@ -617,17 +618,14 @@ private fun SampleCardTile(type: CardType, onClick: () -> Unit) {
 // ------------------------------------------------------------ canvas
 
 @Composable
-private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifier: Modifier = Modifier) {
+private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, canvasView: CanvasViewState, modifier: Modifier = Modifier) {
     val settings = state.settings
     val densityPx = LocalDensity.current.density
-    var zoomTarget by rememberSaveable { mutableFloatStateOf(1f) }
-    var panX by rememberSaveable { mutableFloatStateOf(0f) }
-    var panY by rememberSaveable { mutableFloatStateOf(0f) }
     // gestures live on the WHOLE canvas area -> 1:1 finger-follow
     val transformable = rememberTransformableState { zoomChange, panChange, _ ->
-        zoomTarget = (zoomTarget * zoomChange).coerceIn(1f, 4.5f)
-        panX += panChange.x
-        panY += panChange.y
+        canvasView.zoom = (canvasView.zoom * zoomChange).coerceIn(1f, 4.5f)
+        canvasView.panX += panChange.x
+        canvasView.panY += panChange.y
     }
 
     // Gestures behave identically in RTL — pin the canvas to LTR coordinates.
@@ -638,14 +636,14 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                 .clipToBounds()
                 .pointerInput(Unit) {
                     detectTapGestures(onDoubleTap = {
-                        zoomTarget = when {
-                            zoomTarget < 1.6f -> 1.75f
-                            zoomTarget < 2.4f -> 2.5f
+                        canvasView.zoom = when {
+                            canvasView.zoom < 1.6f -> 1.75f
+                            canvasView.zoom < 2.4f -> 2.5f
                             else -> 1f
                         }
-                        if (zoomTarget == 1f) {
-                            panX = 0f
-                            panY = 0f
+                        if (canvasView.zoom == 1f) {
+                            canvasView.panX = 0f
+                            canvasView.panY = 0f
                         }
                     })
                 }
@@ -657,7 +655,7 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                 (maxWidth.value - 24f) / sheetWdp,
                 (maxHeight.value - 24f) / sheetHdp,
             ).coerceIn(0.25f, 2.4f)
-            val zoom by animateFloatAsState(zoomTarget, Motion.spatialFast(), label = "zoom")
+            val zoom by animateFloatAsState(canvasView.zoom, Motion.spatialFast(), label = "zoom")
             val effective = fit * zoom
 
             // light blueprint backdrop (adapts to theme)
@@ -683,8 +681,8 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                     .graphicsLayer {
                         scaleX = effective
                         scaleY = effective
-                        translationX = panX
-                        translationY = panY
+                        translationX = canvasView.panX
+                        translationY = canvasView.panY
                     },
             ) {
                 val paperColor = when (settings.background) {
@@ -701,14 +699,14 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                         .background(paperColor)
                         .pointerInput(Unit) {
                             detectTapGestures(onDoubleTap = {
-                                zoomTarget = when {
-                                    zoom < 1.6f -> 1.75f
-                                    zoom < 2.4f -> 2.5f
+                                canvasView.zoom = when {
+                                    canvasView.zoom < 1.6f -> 1.75f
+                                    canvasView.zoom < 2.4f -> 2.5f
                                     else -> 1f
                                 }
-                                if (zoomTarget == 1f) {
-                                    panX = 0f
-                                    panY = 0f
+                                if (canvasView.zoom == 1f) {
+                                    canvasView.panX = 0f
+                                    canvasView.panY = 0f
                                 }
                             })
                         }
@@ -745,61 +743,11 @@ private fun SheetCanvas(state: StudioUiState, viewModel: StudioViewModel, modifi
                     }
                 }
             }
-            // floating zoom controls — always visible on the sheet
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 8.dp, top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                ZoomButton(icon = Icons.Filled.ZoomIn, contentDescription = Str.zoom_in) {
-                    zoomTarget = (zoomTarget * 1.33f).coerceIn(1f, 4.5f)
-                }
-                ZoomButton(icon = Icons.Filled.ZoomOut, contentDescription = Str.zoom_out) {
-                    zoomTarget = (zoomTarget / 1.33f).coerceIn(1f, 4.5f)
-                }
-                ZoomButton(icon = Icons.Filled.Restore, contentDescription = Str.reset_view) {
-                    zoomTarget = 1f
-                    panX = 0f
-                    panY = 0f
-                }
-            }
             }
         }
     }
 }
 
-@Composable
-private fun ZoomButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-) {
-    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val container by animateColorAsState(
-        targetValue = MaterialTheme.colorScheme.surfaceContainerHigh,
-        animationSpec = Motion.effects(),
-        label = "zoomContainer",
-    )
-    IconButton(
-        onClick = onClick,
-        interactionSource = interaction,
-        modifier = Modifier
-            .size(48.dp)
-            .pressScale(interaction)
-            .shadow(8.dp, CircleShape, clip = false)
-            .clip(CircleShape)
-            .background(container),
-    ) {
-        Icon(
-            icon,
-            contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(24.dp),
-        )
-    }
-}
 
 @Composable
 private fun CardOnSheet(

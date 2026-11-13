@@ -87,6 +87,8 @@ import com.appprint.studio.ui.components.AppSnackbarHost
 import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.components.CanvasViewState
+import com.appprint.studio.ui.components.rememberCanvasViewState
 import com.appprint.studio.ui.screens.GuideScreen
 import com.appprint.studio.ui.screens.SettingsScreen
 import com.appprint.studio.ui.screens.StudioScreen
@@ -191,7 +193,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 modifier = Modifier.fillMaxSize().padding(start = pageContentPadding),
                 onBack = { backStack.removeLastOrNull(); Unit },
                 entryProvider = entryProvider {
-                    entry<AppRoute.Studio> { StudioScreen(viewModel = viewModel) }
+                    entry<AppRoute.Studio> { StudioScreen(viewModel = viewModel, canvasView = canvasView) }
                     entry<AppRoute.Guide> { GuideScreen() }
                     entry<AppRoute.Settings> { SettingsScreen(viewModel = viewModel) }
                 },
@@ -207,6 +209,9 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val cutoutStart = WindowInsets.displayCutout.asPaddingValues().calculateStartPadding(LocalLayoutDirection.current)
+        val barHeight = Chrome.topBarHeight()
+        val canvasView = rememberCanvasViewState()
+        val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
 
         PlatformBackHandler(enabled = current != AppRoute.Studio) {
             navigateTopLevel(backStack, AppRoute.Studio)
@@ -228,13 +233,23 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
             content()
 
             FloatingTopBar(
-                title = routeName(current),
+                title = if (current == AppRoute.Studio && state.selectedId != null) {
+                    state.selectedCard?.name ?: Str.edit_mode
+                } else {
+                    routeName(current)
+                },
+                selectionMode = current == AppRoute.Studio && state.selectedId != null,
+                canUndo = canUndo,
+                onZoomIn = canvasView::zoomIn,
+                onZoomOut = canvasView::zoomOut,
+                onUndo = viewModel::undo,
                 onExportPdf = viewModel::sharePdf,
                 onExportPng = { viewModel.sharePng(state.currentPage) },
                 onExportHtml = viewModel::shareHtml,
                 onShare = { viewModel.sharePng(state.currentPage) },
                 onPrint = { requestNotifications(); viewModel.printPdf() },
                 exporting = state.processing,
+                barHeight = barHeight,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(start = Chrome.EdgeInset + cutoutStart, top = statusTop + Chrome.TopBarGap, end = Chrome.EdgeInset, bottom = 0.dp),
@@ -283,7 +298,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                         top = 0.dp,
                         end = pageContentPadding / 2,
                         bottom = if (isCompact) {
-                            navBottom + Chrome.BottomBarGap + Chrome.BottomBarHeight + 10.dp
+                            navBottom + Chrome.BottomBarGap + Chrome.NavBarHeight + 10.dp
                         } else {
                             24.dp
                         },
@@ -305,12 +320,18 @@ private fun navigateTopLevel(backStack: MutableList<NavKey>, route: AppRoute) {
 @Composable
 private fun FloatingTopBar(
     title: String,
+    selectionMode: Boolean,
+    canUndo: Boolean,
+    onZoomIn: () -> Unit,
+    onZoomOut: () -> Unit,
+    onUndo: () -> Unit,
     onExportPdf: () -> Unit,
     onExportPng: () -> Unit,
     onExportHtml: () -> Unit,
     onShare: () -> Unit,
     onPrint: () -> Unit,
     exporting: Boolean,
+    barHeight: Dp,
     modifier: Modifier = Modifier,
 ) {
     var exportMenuOpen by remember { mutableStateOf(false) }
@@ -321,36 +342,58 @@ private fun FloatingTopBar(
         animationSpec = Motion.effects(),
         label = "exportTurns",
     )
+    val actionSize = (barHeight - 6.dp).coerceAtLeast(40.dp)
 
     Row(
-        modifier = modifier
-            .height(Chrome.TopBarHeight),
+        modifier = modifier.height(barHeight),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        // oval brand container
+        // oval brand container — logo stays; text relaxes out of selection mode
         Surface(
             shape = RoundedCornerShape(percent = 50),
             color = container,
             shadowElevation = 10.dp,
-            modifier = Modifier.weight(1f).height(Chrome.TopBarHeight),
+            modifier = Modifier.weight(1f).height(barHeight),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 14.dp),
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                IraqiLogo(size = 34.dp)
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = Str.app_eyebrow,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, letterSpacing = 1.2.sp),
-                        color = scheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                IraqiLogo(size = (barHeight * 0.62f))
+                if (!selectionMode) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = Str.app_eyebrow,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, letterSpacing = 1.2.sp),
+                            color = scheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        AnimatedContent(
+                            targetState = title,
+                            transitionSpec = {
+                                (fadeIn(Motion.effects()) + slideInVertically(Motion.spatialFast()) { it / 3 })
+                                    .togetherWith(
+                                        fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it / 3 },
+                                    )
+                            },
+                            label = "screenTitle",
+                        ) { value ->
+                            Text(
+                                text = value,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = scheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                } else {
                     AnimatedContent(
                         targetState = title,
                         transitionSpec = {
@@ -359,7 +402,7 @@ private fun FloatingTopBar(
                                     fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it / 3 },
                                 )
                         },
-                        label = "screenTitle",
+                        label = "selectedCardTitle",
                     ) { value ->
                         Text(
                             text = value,
@@ -368,70 +411,128 @@ private fun FloatingTopBar(
                             color = scheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
             }
         }
 
-        // unified export menu — circular button opening an elegant dropdown
+        // zoom controls — always live in the top bar, not floating over the sheet
         CircularIconButton(
-            onClick = { exportMenuOpen = true },
-            contentDescription = Str.export_menu,
-            enabled = !exporting,
+            onClick = onZoomOut,
+            contentDescription = Str.zoom_out,
+            enabled = true,
             container = container,
+            size = actionSize,
         ) {
-            if (exporting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = scheme.onSurface,
-                )
-            } else {
-                Icon(
-                    Icons.Filled.FileUpload,
-                    contentDescription = null,
-                    tint = scheme.onSurface,
-                    modifier = Modifier.size(21.dp).rotate(exportTurns),
-                )
-            }
+            Icon(Icons.Filled.ZoomOut, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(20.dp))
         }
-        DropdownMenu(
-            expanded = exportMenuOpen,
-            onDismissRequest = { exportMenuOpen = false },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = scheme.surfaceContainerHigh,
+        CircularIconButton(
+            onClick = onZoomIn,
+            contentDescription = Str.zoom_in,
+            enabled = true,
+            container = container,
+            size = actionSize,
         ) {
-            DropdownMenuItem(
-                text = { Text(Str.btn_export_pdf, maxLines = 1) },
-                onClick = { exportMenuOpen = false; onExportPdf() },
-                leadingIcon = { Icon(Icons.Filled.PictureAsPdf, contentDescription = null) },
-            )
-            DropdownMenuItem(
-                text = { Text(Str.btn_save_png, maxLines = 1) },
-                onClick = { exportMenuOpen = false; onExportPng() },
-                leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
-            )
-            DropdownMenuItem(
-                text = { Text(Str.btn_export_html, maxLines = 1) },
-                onClick = { exportMenuOpen = false; onExportHtml() },
-                leadingIcon = { Icon(Icons.Filled.Code, contentDescription = null) },
-            )
-            DropdownMenuItem(
-                text = { Text(Str.share_page, maxLines = 1) },
-                onClick = { exportMenuOpen = false; onShare() },
-                leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
-            )
+            Icon(Icons.Filled.ZoomIn, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(20.dp))
         }
 
-        // direct print button — prints the current file immediately
-        CircularIconButton(
-            onClick = onPrint,
-            contentDescription = Str.btn_print,
-            enabled = !exporting,
-            container = container,
-        ) {
-            Icon(Icons.Filled.Print, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(21.dp))
+        // contextual actions — crossfade between [export + print] and [undo + share + print]
+        AnimatedContent(
+            targetState = selectionMode,
+            transitionSpec = {
+                (fadeIn(Motion.effects()) + slideInVertically(Motion.spatialFast()) { it / 2 })
+                    .togetherWith(fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it / 2 })
+            },
+            label = "topBarContext",
+        ) { editing ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (editing) {
+                    CircularIconButton(
+                        onClick = onUndo,
+                        contentDescription = Str.undo,
+                        enabled = canUndo,
+                        container = container,
+                        size = actionSize,
+                    ) {
+                        Icon(Icons.Filled.Undo, contentDescription = null, tint = if (canUndo) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.45f), modifier = Modifier.size(20.dp))
+                    }
+                    CircularIconButton(
+                        onClick = onShare,
+                        contentDescription = Str.share_page,
+                        enabled = !exporting,
+                        container = container,
+                        size = actionSize,
+                    ) {
+                        Icon(Icons.Filled.Share, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(19.dp))
+                    }
+                } else {
+                    CircularIconButton(
+                        onClick = { exportMenuOpen = true },
+                        contentDescription = Str.export_menu,
+                        enabled = !exporting,
+                        container = container,
+                        size = actionSize,
+                    ) {
+                        if (exporting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(17.dp),
+                                strokeWidth = 2.dp,
+                                color = scheme.onSurface,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.FileUpload,
+                                contentDescription = null,
+                                tint = scheme.onSurface,
+                                modifier = Modifier.size(20.dp).rotate(exportTurns),
+                            )
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = exportMenuOpen,
+                        onDismissRequest = { exportMenuOpen = false },
+                        shape = RoundedCornerShape(20.dp),
+                        containerColor = scheme.surfaceContainerHigh,
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(Str.btn_export_pdf, maxLines = 1) },
+                            onClick = { exportMenuOpen = false; onExportPdf() },
+                            leadingIcon = { Icon(Icons.Filled.PictureAsPdf, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.btn_save_png, maxLines = 1) },
+                            onClick = { exportMenuOpen = false; onExportPng() },
+                            leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.btn_export_html, maxLines = 1) },
+                            onClick = { exportMenuOpen = false; onExportHtml() },
+                            leadingIcon = { Icon(Icons.Filled.Code, contentDescription = null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(Str.share_page, maxLines = 1) },
+                            onClick = { exportMenuOpen = false; onShare() },
+                            leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                        )
+                    }
+                }
+
+                // direct print button — the official print of the current file
+                CircularIconButton(
+                    onClick = onPrint,
+                    contentDescription = Str.btn_print,
+                    enabled = !exporting,
+                    container = container,
+                    size = actionSize,
+                ) {
+                    Icon(Icons.Filled.Print, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(19.dp))
+                }
+            }
         }
     }
 }
@@ -442,6 +543,7 @@ private fun CircularIconButton(
     contentDescription: String,
     enabled: Boolean,
     container: Color,
+    size: Dp = 48.dp,
     content: @Composable () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -453,9 +555,9 @@ private fun CircularIconButton(
     )
     Box(
         modifier = Modifier
-            .size(48.dp)
+            .size(size)
             .pressScale(interaction)
-            .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
+            .shadow(7.dp, RoundedCornerShape(percent = 50), clip = false)
             .clip(RoundedCornerShape(percent = 50))
             .background(containerColor)
             .clickable(
@@ -484,7 +586,7 @@ private fun FloatingNavPill(
         color = container,
         shadowElevation = 12.dp,
         shape = RoundedCornerShape(percent = 50),
-        modifier = modifier.height(Chrome.BottomBarHeight).widthIn(max = 336.dp),
+        modifier = modifier.height(Chrome.NavBarHeight).widthIn(max = 336.dp),
     ) {
         Row(
             modifier = Modifier.padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 0.dp),

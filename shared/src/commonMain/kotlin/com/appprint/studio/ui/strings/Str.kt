@@ -124,6 +124,8 @@ object Str {
     const val delete_as_page = "حذف صفحة"
     const val zoom_in = "تكبير"
     const val zoom_out = "تصغير"
+    const val undo = "تراجع خطوة"
+    const val edit_mode = "وضع التعديل"
     const val reset_view = "إعادة العرض"
     const val delete_page_title = "حذف هذه الورقة؟"
     const val delete_page_body = "اختر ما تريده — لن تُحذف أي بطاقة إلا إذا اخترت ذلك صراحةً."
