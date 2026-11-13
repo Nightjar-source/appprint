@@ -289,6 +289,8 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
             )
 
+            SectionHeader(Str.card_measure)
+
             // size — sliders (mm)
             LabeledSlider(
                 label = Str.size_w,
@@ -325,6 +327,8 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
                 }
             }
 
+            SectionHeader(Str.card_frame)
+
             // per-card art toggles
             Row(
                 Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
@@ -341,6 +345,8 @@ fun InspectorPanel(state: StudioUiState, viewModel: StudioViewModel, modifier: M
                     label = { Text(Str.guides_chip) },
                 )
             }
+
+            SectionHeader(Str.card_quick)
 
             // quick actions
             Row(

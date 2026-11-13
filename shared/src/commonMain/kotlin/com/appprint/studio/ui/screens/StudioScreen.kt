@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -76,7 +77,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalIndication
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -449,7 +450,7 @@ private fun EditorToolbar(
     val scheme = MaterialTheme.colorScheme
     var controlsOpen by rememberSaveable { mutableStateOf(false) }
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val indication = androidx.compose.ui.platform.LocalIndication.current
+    val indication = LocalIndication.current
 
     Column(
         modifier = modifier
@@ -614,7 +615,7 @@ private fun StripIcon(
 ) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val indication = androidx.compose.ui.platform.LocalIndication.current
+    val indication = LocalIndication.current
     val color = tint ?: scheme.onSurface
     Box(
         modifier = Modifier
@@ -654,7 +655,7 @@ private fun QuickToggle(
 ) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val indication = androidx.compose.ui.platform.LocalIndication.current
+    val indication = LocalIndication.current
     Row(
         modifier = Modifier
             .pressScale(interaction, pressedScale = 0.94f)
@@ -686,7 +687,7 @@ private fun QuickToggle(
 private fun ToolbarHiddenBar(onShow: () -> Unit, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val indication = androidx.compose.ui.platform.LocalIndication.current
+    val indication = LocalIndication.current
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(percent = 50))
