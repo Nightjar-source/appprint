@@ -3,7 +3,9 @@ package com.appprint.studio.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
@@ -86,7 +88,7 @@ fun LiquidNavGroup(
     val bounds = remember { mutableStateMapOf<Int, NavBounds>() }
 
     val target = bounds[activeIndex]
-    val dropletSpec = spring(dampingRatio = 0.55f, stiffness = 420f)
+    val dropletSpec: FiniteAnimationSpec<Dp> = spring(dampingRatio = 0.55f, stiffness = 420f)
 
     val targetOffset: Offset = target?.position ?: Offset.Zero
     val targetSize: IntSize = target?.size ?: IntSize.Zero
@@ -111,7 +113,7 @@ fun LiquidNavGroup(
         animationSpec = dropletSpec,
         label = "dropletH",
     )
-    val dropletAlpha by animateDpAsState(
+    val dropletAlpha by animateFloatAsState(
         targetValue = if (target != null) 1f else 0f,
         animationSpec = tween(durationMillis = 220),
         label = "dropletAlpha",
