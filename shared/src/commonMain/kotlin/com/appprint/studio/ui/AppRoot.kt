@@ -57,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -92,6 +93,15 @@ import com.appprint.studio.ui.components.rememberCanvasViewState
 import com.appprint.studio.ui.screens.GuideScreen
 import com.appprint.studio.ui.screens.SettingsScreen
 import com.appprint.studio.ui.screens.StudioScreen
+import com.appprint.studio.ui.screens.PaperSettingsPanel
+import com.appprint.studio.core.platform.rememberCameraCaptureLauncher
+import com.appprint.studio.core.platform.rememberImagePickerLauncher
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.AlertDialog
 import com.appprint.studio.ui.theme.AppPrintTheme
 import com.appprint.studio.ui.theme.Motion
 import com.appprint.studio.ui.theme.contrastingTextColor
@@ -136,7 +146,7 @@ private fun routeName(route: AppRoute): String = when (route) {
  *  - One unified export menu button + direct print button in the top bar.
  *  - System Back wired step-by-step through panels/dialogs/selection.
  */
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun AppRoot(viewModel: StudioViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -165,6 +175,12 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
         val backStack = rememberNavBackStack(savedStateConfig, AppRoute.Studio)
         val current = backStack.lastOrNull() as? AppRoute ?: AppRoute.Studio
         val requestNotifications = rememberNotificationPermissionRequester()
+        val pickImages = rememberImagePickerLauncher(maxItems = 100) { uris -> viewModel.importImages(uris) }
+        val onCamera = rememberCameraCaptureLauncher { path ->
+            if (path != null) viewModel.importCapture(path) else viewModel.notifyCameraUnavailable()
+        }
+        var showClearConfirm by remember { mutableStateOf(false) }
+        var showPaperSheet by remember { mutableStateOf(false) }
 
         val adaptiveInfo = currentWindowAdaptiveInfoV2()
         val sizeClass = adaptiveInfo.windowSizeClass
@@ -197,7 +213,15 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 modifier = Modifier.fillMaxSize().padding(start = pageContentPadding),
                 onBack = { backStack.removeLastOrNull(); Unit },
                 entryProvider = entryProvider {
-                    entry<AppRoute.Studio> { StudioScreen(viewModel = viewModel, canvasView = canvasView) }
+                    entry<AppRoute.Studio> {
+                        StudioScreen(
+                            viewModel = viewModel,
+                            canvasView = canvasView,
+                            onAddImages = pickImages,
+                            onCamera = onCamera,
+                            onClearRequest = { showClearConfirm = true },
+                        )
+                    }
                     entry<AppRoute.Guide> { GuideScreen() }
                     entry<AppRoute.Settings> { SettingsScreen(viewModel = viewModel) }
                 },
@@ -281,13 +305,95 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 exit = fadeOut(Motion.effectsFast()) + slideOutHorizontally(Motion.effectsFast()) { -it / 3 },
                 modifier = Modifier.align(Alignment.CenterStart),
             ) {
-                FloatingRail(
+                val hasCards = state.cards.isNotEmpty()
+                FloatingDock(
                     items = items,
                     current = current,
                     onSelect = { route -> navigateTopLevel(backStack, route) },
+                    tools = listOf(
+                        DockTool(pickImages, Icons.Filled.FileUpload, "رفع صور", true),
+                        DockTool(onCamera, Icons.Filled.PhotoCamera, "كاميرا", true),
+                        DockTool({ viewModel.addSamples() }, Icons.Filled.AutoAwesome, "أمثلة تعليمية", true),
+                        DockTool({ viewModel.arrangeSmart() }, Icons.Filled.AutoFixHigh, "ترتيب ذكي", hasCards),
+                        DockTool({ viewModel.sortBySize() }, Icons.Filled.SwapVert, "ترتيب بالحجم", hasCards),
+                        DockTool({ showPaperSheet = true }, Icons.Filled.Article, "إعدادات الورق", true),
+                        DockTool({ showClearConfirm = true }, Icons.Filled.DeleteSweep, "مسح الكل", hasCards),
+                    ),
+                    onAddSheet = viewModel::addSheet,
                     railWidth = animatedRailWidth,
                     modifier = Modifier.padding(start = cutoutStart + Chrome.EdgeInset, top = 0.dp, end = 0.dp, bottom = 0.dp),
                 )
+            }
+
+
+            if (showClearConfirm) {
+                val scheme = MaterialTheme.colorScheme
+                AlertDialog(
+                    onDismissRequest = { showClearConfirm = false },
+                    shape = RoundedCornerShape(28.dp),
+                    icon = {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(percent = 50))
+                                .background(scheme.errorContainer),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Filled.DeleteSweep,
+                                contentDescription = null,
+                                tint = scheme.onErrorContainer,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                    },
+                    title = {
+                        Text(
+                            Str.clear_confirm_title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                        )
+                    },
+                    text = {
+                        Text(
+                            Str.clear_confirm_body,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = scheme.onSurfaceVariant,
+                        )
+                    },
+                    confirmButton = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextButton(onClick = { showClearConfirm = false }) { Text(Str.cancel) }
+                            FilledTonalButton(
+                                onClick = {
+                                    viewModel.clearAll()
+                                    showClearConfirm = false
+                                },
+                                shape = RoundedCornerShape(percent = 50),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = scheme.errorContainer,
+                                    contentColor = scheme.onErrorContainer,
+                                ),
+                            ) { Text(Str.btn_clear_all, maxLines = 1) }
+                        }
+                    },
+                    dismissButton = null,
+                )
+            }
+
+            if (showPaperSheet) {
+                ModalBottomSheet(onDismissRequest = { showPaperSheet = false }) {
+                    PaperSettingsPanel(
+                        state = state,
+                        viewModel = viewModel,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 560.dp),
+                    )
+                }
             }
 
             AppSnackbarHost(
@@ -601,11 +707,20 @@ private fun FloatingNavPill(
     }
 }
 
+private data class DockTool(
+    val action: () -> Unit,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val label: String,
+    val enabled: Boolean,
+)
+
 @Composable
-private fun FloatingRail(
+private fun FloatingDock(
     items: List<TopLevelItem>,
     current: AppRoute,
     onSelect: (AppRoute) -> Unit,
+    tools: List<DockTool>,
+    onAddSheet: () -> Unit,
     railWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
@@ -618,16 +733,83 @@ private fun FloatingRail(
         modifier = modifier.width(railWidth),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 12.dp).verticalScroll(rememberScrollState()),
+            modifier = Modifier
+                .padding(horizontal = 4.dp, vertical = 10.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             items.forEach { item ->
                 NavPillItem(item = item, selected = current == item.route, onClick = { onSelect(item.route) }, vertical = true)
             }
+            Box(modifier = Modifier.height(1.dp).width(30.dp).background(scheme.outlineVariant.copy(alpha = 0.6f)))
+            tools.forEach { tool ->
+                DockToolItem(tool = tool)
+            }
+            Box(modifier = Modifier.height(1.dp).width(30.dp).background(scheme.outlineVariant.copy(alpha = 0.6f)))
+            // solo + handled by its own elevated container — the one accented action
+            val interaction = remember { MutableInteractionSource() }
+            val indication = LocalIndication.current
+            val accent = scheme.primaryContainer
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .pressScale(interaction)
+                    .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(accent)
+                    .clickable(interactionSource = interaction, indication = indication, onClick = onAddSheet)
+                    .semantics { role = Role.Button },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = Str.add_sheet,
+                    tint = contrastingTextColor(accent),
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
     }
 }
+
+@Composable
+private fun DockToolItem(tool: DockTool) {
+    val scheme = MaterialTheme.colorScheme
+    val interaction = remember { MutableInteractionSource() }
+    val indication = LocalIndication.current
+    val enabledAlpha = if (tool.enabled) 1f else 0.38f
+    Column(
+        modifier = Modifier
+            .pressScale(interaction, pressedScale = 0.92f)
+            .clip(RoundedCornerShape(percent = 50))
+            .clickable(interactionSource = interaction, indication = indication, enabled = tool.enabled, onClick = tool.action)
+            .semantics { role = Role.Button }
+            .padding(horizontal = 2.dp, vertical = 6.dp)
+            .alpha(enabledAlpha),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .background(Color.Transparent)
+                .height(32.dp)
+                .width(40.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(tool.icon, contentDescription = tool.label, tint = scheme.onSurface, modifier = Modifier.size(19.dp))
+        }
+        Text(
+            text = tool.label,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+            fontWeight = FontWeight.Medium,
+            color = scheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
+}
+
 
 @Composable
 private fun NavPillItem(

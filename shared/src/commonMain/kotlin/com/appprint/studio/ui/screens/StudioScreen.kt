@@ -41,6 +41,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -85,8 +86,6 @@ import com.appprint.studio.core.model.CardType
 import com.appprint.studio.core.model.FrameStyle
 import com.appprint.studio.core.model.SheetBackground
 import com.appprint.studio.core.platform.rememberCardBitmap
-import com.appprint.studio.core.platform.rememberCameraCaptureLauncher
-import com.appprint.studio.core.platform.rememberImagePickerLauncher
 import com.appprint.studio.ui.StudioUiState
 import com.appprint.studio.ui.StudioViewModel
 import androidx.compose.material.icons.Icons
@@ -95,6 +94,7 @@ import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.CanvasViewState
 import com.appprint.studio.ui.theme.Motion
+import com.appprint.studio.ui.theme.contrastingTextColor
 import com.appprint.studio.ui.components.SampleCardArt
 import com.appprint.studio.ui.strings.Str
 
@@ -103,7 +103,13 @@ private const val DP_PER_MM = 3.7795276f
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun StudioScreen(viewModel: StudioViewModel, canvasView: CanvasViewState) {
+fun StudioScreen(
+    viewModel: StudioViewModel,
+    canvasView: CanvasViewState,
+    onAddImages: () -> Unit,
+    onCamera: () -> Unit,
+    onClearRequest: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     var showClearConfirm by rememberSaveable { mutableStateOf(false) }
@@ -111,11 +117,6 @@ fun StudioScreen(viewModel: StudioViewModel, canvasView: CanvasViewState) {
     var showInspectorSheet by rememberSaveable { mutableStateOf(false) }
     var toolbarHidden by rememberSaveable { mutableStateOf(false) }
     var showDeletePage by rememberSaveable { mutableStateOf<Int?>(null) }
-
-    val pickImages = rememberImagePickerLauncher(maxItems = 100) { uris -> viewModel.importImages(uris) }
-    val onCamera = rememberCameraCaptureLauncher { path ->
-        if (path != null) viewModel.importCapture(path) else viewModel.notifyCameraUnavailable()
-    }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 1000.dp
@@ -157,32 +158,32 @@ fun StudioScreen(viewModel: StudioViewModel, canvasView: CanvasViewState) {
                 if (state.cards.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         EmptyState(
-                            onUpload = pickImages,
+                            onUpload = onAddImages,
                             onSamples = viewModel::addSamples,
                             onAddSample = viewModel::addSampleOfType,
                             modifier = Modifier.fillMaxSize(),
                         )
                         FloatingStrip(
-                            visible = !toolbarHidden,
+                            visible = phone && !toolbarHidden,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
                         ) {
                             EditorToolbar(
                                 state = state,
-                                onAddImages = pickImages,
+                                onAddImages = onAddImages,
                                 onCamera = onCamera,
                                 onSamples = viewModel::addSamples,
                                 onArrange = viewModel::arrangeSmart,
                                 onSortSize = viewModel::sortBySize,
-                                onClear = { showClearConfirm = true },
+                                onClear = onClearRequest,
                                 onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
                                 onHide = { toolbarHidden = true },
                                 compact = phone,
                             )
                         }
                         FloatingStrip(
-                            visible = toolbarHidden,
+                            visible = phone && toolbarHidden,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -199,26 +200,26 @@ fun StudioScreen(viewModel: StudioViewModel, canvasView: CanvasViewState) {
                             modifier = Modifier.fillMaxSize(),
                         )
                         FloatingStrip(
-                            visible = !toolbarHidden,
+                            visible = phone && !toolbarHidden,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
                         ) {
                             EditorToolbar(
                                 state = state,
-                                onAddImages = pickImages,
+                                onAddImages = onAddImages,
                                 onCamera = onCamera,
                                 onSamples = viewModel::addSamples,
                                 onArrange = viewModel::arrangeSmart,
                                 onSortSize = viewModel::sortBySize,
-                                onClear = { showClearConfirm = true },
+                                onClear = onClearRequest,
                                 onOpenPaperSettings = if (wide) null else ({ showPaperSheet = true }),
                                 onHide = { toolbarHidden = true },
                                 compact = phone,
                             )
                         }
                         FloatingStrip(
-                            visible = toolbarHidden,
+                            visible = phone && toolbarHidden,
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(start = 10.dp, end = 10.dp, top = 8.dp),
@@ -271,48 +272,122 @@ fun StudioScreen(viewModel: StudioViewModel, canvasView: CanvasViewState) {
     }
 
     if (showClearConfirm) {
+        val scheme = MaterialTheme.colorScheme
         AlertDialog(
             onDismissRequest = { showClearConfirm = false },
-            title = { Text(Str.clear_confirm_title) },
-            text = { Text(Str.clear_confirm_body) },
+            shape = RoundedCornerShape(28.dp),
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.errorContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.DeleteSweep,
+                        contentDescription = null,
+                        tint = scheme.onErrorContainer,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+            },
+            title = {
+                Text(
+                    Str.clear_confirm_title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+            },
+            text = {
+                Text(
+                    Str.clear_confirm_body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
+                )
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.clearAll()
-                    showClearConfirm = false
-                }) { Text(Str.delete, color = MaterialTheme.colorScheme.error) }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = { showClearConfirm = false }) { Text(Str.cancel) }
+                    FilledTonalButton(
+                        onClick = {
+                            viewModel.clearAll()
+                            showClearConfirm = false
+                        },
+                        shape = RoundedCornerShape(percent = 50),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = scheme.errorContainer,
+                            contentColor = scheme.onErrorContainer,
+                        ),
+                    ) { Text(Str.btn_clear_all, maxLines = 1) }
+                }
             },
-            dismissButton = {
-                TextButton(onClick = { showClearConfirm = false }) { Text(Str.cancel) }
-            },
+            dismissButton = null,
         )
     }
     if (showDeletePage != null) {
         val page = showDeletePage!!
         val count = state.cards.count { it.page == page }
+        val scheme = MaterialTheme.colorScheme
         AlertDialog(
             onDismissRequest = { showDeletePage = null },
-            title = { Text(Str.delete_page_title) },
+            shape = RoundedCornerShape(28.dp),
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.errorContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.DeleteOutline,
+                        contentDescription = null,
+                        tint = scheme.onErrorContainer,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+            },
+            title = {
+                Text(
+                    Str.delete_page_title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+            },
             text = {
                 Text(
                     "هذه الورقة رقم ${page + 1} فيها $count بطاقة.\n${Str.delete_page_body}",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
                 )
             },
             confirmButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     TextButton(onClick = {
                         viewModel.deleteSheet(page, deleteCards = false)
                         showDeletePage = null
-                    }) { Text(Str.delete_page_keep) }
-                    TextButton(onClick = {
-                        viewModel.deleteSheet(page, deleteCards = true)
-                        showDeletePage = null
-                    }) { Text(Str.delete_page_all, color = MaterialTheme.colorScheme.error) }
+                    }) { Text(Str.delete_page_keep, maxLines = 1) }
+                    FilledTonalButton(
+                        onClick = {
+                            viewModel.deleteSheet(page, deleteCards = true)
+                            showDeletePage = null
+                        },
+                        shape = RoundedCornerShape(percent = 50),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = scheme.errorContainer,
+                            contentColor = scheme.onErrorContainer,
+                        ),
+                    ) { Text(Str.delete_page_all, maxLines = 1) }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showDeletePage = null }) { Text(Str.cancel) }
-            },
+            dismissButton = { TextButton(onClick = { showDeletePage = null }) { Text(Str.cancel) } },
         )
     }
 }
@@ -464,34 +539,81 @@ private fun SheetPageBar(
     onRequestDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, top = 2.dp, end = 4.dp, bottom = 0.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (state.pageCount > 1) {
+        // floating page labels — plain text, no chip chrome; the active page gets a thin underline + bold weight
+        LazyRow(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             items((0 until state.pageCount).toList(), key = { it }) { page ->
-                AssistChip(
-                    onClick = { onSelectPage(page) },
-                    label = { Text("ورقة ${page + 1} (${state.cards.count { it.page == page }})") },
-                    leadingIcon = if (state.currentPage == page) {
-                        { Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                    } else {
-                        null
-                    },
+                val selected = state.currentPage == page
+                val onSurface = scheme.onSurface
+                val variant = scheme.onSurfaceVariant
+                val backdrop by animateColorAsState(
+                    targetValue = if (selected) scheme.surfaceContainerHighest.copy(alpha = 0.85f) else Color.Transparent,
+                    animationSpec = Motion.effects(),
+                    label = "pageBackdrop",
                 )
-            }
-            item {
-                IconButton(onClick = onRequestDelete) {
-                    Icon(Icons.Filled.DeleteOutline, contentDescription = Str.delete_sheet, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(21.dp))
+                val textColor by animateColorAsState(
+                    targetValue = if (selected) onSurface else variant,
+                    animationSpec = Motion.effects(),
+                    label = "pageText",
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(backdrop)
+                        .clickable { onSelectPage(page) }
+                        .padding(horizontal = 14.dp, vertical = 9.dp),
+                ) {
+                    Text(
+                        text = "ورقة ${page + 1} · ${state.cards.count { it.page == page }}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
+                        color = textColor,
+                        maxLines = 1,
+                    )
                 }
             }
         }
-        item {
-            IconButton(onClick = onAddSheet) {
-                Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+        if (state.pageCount > 1) {
+            IconButton(onClick = onRequestDelete) {
+                Icon(
+                    Icons.Filled.DeleteOutline,
+                    contentDescription = Str.delete_sheet,
+                    tint = scheme.error,
+                    modifier = Modifier.size(21.dp),
+                )
             }
+        }
+
+        Box(modifier = Modifier.height(28.dp).width(1.dp).background(scheme.outlineVariant.copy(alpha = 0.6f)))
+
+        // big, separated alone — the only accented control on the row
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .shadow(6.dp, RoundedCornerShape(percent = 50), clip = false)
+                .clip(RoundedCornerShape(percent = 50))
+                .background(scheme.primary)
+                .clickable(onClick = onAddSheet)
+                .semantics { role = androidx.compose.ui.semantics.Role.Button },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = Str.add_sheet,
+                tint = contrastingTextColor(scheme.primary),
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }
