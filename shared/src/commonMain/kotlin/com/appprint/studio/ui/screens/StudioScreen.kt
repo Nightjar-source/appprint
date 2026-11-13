@@ -100,6 +100,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import com.appprint.studio.ui.components.IraqiLogo
 import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.components.AppConfirmDialog
 import com.appprint.studio.ui.components.CanvasViewState
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.theme.Motion
@@ -288,122 +289,40 @@ fun StudioScreen(
     }
 
     if (showClearConfirm) {
-        val scheme = MaterialTheme.colorScheme
-        AlertDialog(
-            onDismissRequest = { showClearConfirm = false },
-            shape = RoundedCornerShape(28.dp),
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.errorContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Filled.DeleteSweep,
-                        contentDescription = null,
-                        tint = scheme.onErrorContainer,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
+        AppConfirmDialog(
+            icon = Icons.Filled.DeleteSweep,
+            title = Str.clear_confirm_title,
+            body = Str.clear_confirm_body,
+            primaryLabel = Str.btn_clear_all,
+            onPrimary = {
+                viewModel.clearAll()
+                showClearConfirm = false
             },
-            title = {
-                Text(
-                    Str.clear_confirm_title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                )
-            },
-            text = {
-                Text(
-                    Str.clear_confirm_body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant,
-                )
-            },
-            confirmButton = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TextButton(onClick = { showClearConfirm = false }) { Text(Str.cancel) }
-                    FilledTonalButton(
-                        onClick = {
-                            viewModel.clearAll()
-                            showClearConfirm = false
-                        },
-                        shape = RoundedCornerShape(percent = 50),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = scheme.errorContainer,
-                            contentColor = scheme.onErrorContainer,
-                        ),
-                    ) { Text(Str.btn_clear_all, maxLines = 1) }
-                }
-            },
-            dismissButton = null,
+            cancelLabel = Str.cancel,
+            onCancel = { showClearConfirm = false },
+            onDismiss = { showClearConfirm = false },
         )
     }
     if (showDeletePage != null) {
         val page = showDeletePage!!
         val count = state.cards.count { it.page == page }
-        val scheme = MaterialTheme.colorScheme
-        AlertDialog(
-            onDismissRequest = { showDeletePage = null },
-            shape = RoundedCornerShape(28.dp),
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.errorContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Filled.DeleteOutline,
-                        contentDescription = null,
-                        tint = scheme.onErrorContainer,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
+        AppConfirmDialog(
+            icon = Icons.Filled.DeleteOutline,
+            title = Str.delete_page_title,
+            body = "الورقة رقم ${page + 1} تحوي $count بطاقة. احذف الورقة فقط وستُوزَّع البطاقات على باقي الأوراق، أو احذفها مع بطاقاتها.",
+            primaryLabel = Str.delete_page_all,
+            onPrimary = {
+                viewModel.deleteSheet(page, deleteCards = true)
+                showDeletePage = null
             },
-            title = {
-                Text(
-                    Str.delete_page_title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                )
+            secondaryLabel = Str.delete_page_keep,
+            onSecondary = {
+                viewModel.deleteSheet(page, deleteCards = false)
+                showDeletePage = null
             },
-            text = {
-                Text(
-                    "هذه الورقة رقم ${page + 1} فيها $count بطاقة.\n${Str.delete_page_body}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant,
-                )
-            },
-            confirmButton = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TextButton(onClick = {
-                        viewModel.deleteSheet(page, deleteCards = false)
-                        showDeletePage = null
-                    }) { Text(Str.delete_page_keep, maxLines = 1) }
-                    FilledTonalButton(
-                        onClick = {
-                            viewModel.deleteSheet(page, deleteCards = true)
-                            showDeletePage = null
-                        },
-                        shape = RoundedCornerShape(percent = 50),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = scheme.errorContainer,
-                            contentColor = scheme.onErrorContainer,
-                        ),
-                    ) { Text(Str.delete_page_all, maxLines = 1) }
-                }
-            },
-            dismissButton = { TextButton(onClick = { showDeletePage = null }) { Text(Str.cancel) } },
+            cancelLabel = Str.cancel,
+            onCancel = { showDeletePage = null },
+            onDismiss = { showDeletePage = null },
         )
     }
 }

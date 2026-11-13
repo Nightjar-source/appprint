@@ -51,16 +51,16 @@ private fun AppSnackbar(data: SnackbarData) {
     val content = scheme.inverseOnSurface
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(percent = 50),
         color = container,
         contentColor = content,
-        shadowElevation = 10.dp,
+        shadowElevation = 12.dp,
         modifier = Modifier
-            .widthIn(max = 320.dp)
+            .widthIn(max = 420.dp)
             .animateContentSize(Motion.spatial()),
     ) {
         Row(
-            modifier = Modifier.padding(start = 12.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = 16.dp, top = 10.dp, end = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -68,13 +68,13 @@ private fun AppSnackbar(data: SnackbarData) {
                 imageVector = Icons.Filled.Info,
                 contentDescription = null,
                 tint = content,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(18.dp),
             )
             Text(
                 text = data.visuals.message,
                 style = MaterialTheme.typography.labelLarge,
                 color = content,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
             )

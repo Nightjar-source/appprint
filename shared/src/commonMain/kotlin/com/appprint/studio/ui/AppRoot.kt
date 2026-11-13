@@ -86,8 +86,11 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.rememberNotificationPermissionRequester
 import com.appprint.studio.ui.components.AppSnackbarHost
 import com.appprint.studio.ui.components.IraqiLogo
+import com.appprint.studio.ui.components.LiquidNavGroup
+import com.appprint.studio.ui.components.NavItemModel
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.components.AppConfirmDialog
 import com.appprint.studio.ui.components.CanvasViewState
 import com.appprint.studio.ui.components.rememberCanvasViewState
 import com.appprint.studio.ui.screens.GuideScreen
@@ -331,60 +334,18 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
 
 
             if (showClearConfirm) {
-                val scheme = MaterialTheme.colorScheme
-                AlertDialog(
-                    onDismissRequest = { showClearConfirm = false },
-                    shape = RoundedCornerShape(28.dp),
-                    icon = {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(percent = 50))
-                                .background(scheme.errorContainer),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Filled.DeleteSweep,
-                                contentDescription = null,
-                                tint = scheme.onErrorContainer,
-                                modifier = Modifier.size(26.dp),
-                            )
-                        }
+                AppConfirmDialog(
+                    icon = Icons.Filled.DeleteSweep,
+                    title = Str.clear_confirm_title,
+                    body = Str.clear_confirm_body,
+                    primaryLabel = Str.btn_clear_all,
+                    onPrimary = {
+                        viewModel.clearAll()
+                        showClearConfirm = false
                     },
-                    title = {
-                        Text(
-                            Str.clear_confirm_title,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                        )
-                    },
-                    text = {
-                        Text(
-                            Str.clear_confirm_body,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = scheme.onSurfaceVariant,
-                        )
-                    },
-                    confirmButton = {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            TextButton(onClick = { showClearConfirm = false }) { Text(Str.cancel) }
-                            FilledTonalButton(
-                                onClick = {
-                                    viewModel.clearAll()
-                                    showClearConfirm = false
-                                },
-                                shape = RoundedCornerShape(percent = 50),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = scheme.errorContainer,
-                                    contentColor = scheme.onErrorContainer,
-                                ),
-                            ) { Text(Str.btn_clear_all, maxLines = 1) }
-                        }
-                    },
-                    dismissButton = null,
+                    cancelLabel = Str.cancel,
+                    onCancel = { showClearConfirm = false },
+                    onDismiss = { showClearConfirm = false },
                 )
             }
 
@@ -400,19 +361,16 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 }
             }
 
+            // the alert bar floats at the TOP, right under the top bar — oval, never blocking the canvas
             AppSnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.TopCenter)
                     .padding(
-                        start = pageContentPadding / 2,
-                        top = 0.dp,
-                        end = pageContentPadding / 2,
-                        bottom = if (isCompact) {
-                            navBottom + Chrome.BottomBarGap + Chrome.NavBarHeight + 10.dp
-                        } else {
-                            24.dp
-                        },
+                        start = Chrome.EdgeInset + cutoutStart,
+                        top = statusTop + barHeight + Chrome.TopBarGap,
+                        end = Chrome.EdgeInset,
+                        bottom = 0.dp,
                     ),
             )
         }
@@ -737,15 +695,15 @@ private fun FloatingNavPill(
         shape = RoundedCornerShape(percent = 50),
         modifier = modifier.height(Chrome.NavBarHeight).widthIn(max = 336.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items.forEach { item ->
-                NavPillItem(item = item, selected = current == item.route, onClick = { onSelect(item.route) })
-            }
-        }
+        LiquidNavGroup(
+            items = items.map { NavItemModel(key = it.route.name, label = it.label, icon = it.icon) },
+            selectedKey = current.name,
+            onSelect = { model ->
+                items.firstOrNull { it.route.name == model.key }?.let { onSelect(it.route) }
+            },
+            vertical = false,
+            modifier = Modifier.padding(start = 8.dp, top = 0.dp, end = 8.dp, bottom = 0.dp),
+        )
     }
 }
 
@@ -781,9 +739,14 @@ private fun FloatingDock(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            items.forEach { item ->
-                NavPillItem(item = item, selected = current == item.route, onClick = { onSelect(item.route) }, vertical = true)
-            }
+            LiquidNavGroup(
+                items = items.map { NavItemModel(key = it.route.name, label = it.label, icon = it.icon) },
+                selectedKey = current.name,
+                onSelect = { model ->
+                    items.firstOrNull { it.route.name == model.key }?.let { onSelect(it.route) }
+                },
+                vertical = true,
+            )
             Box(modifier = Modifier.height(1.dp).width(30.dp).background(scheme.outlineVariant.copy(alpha = 0.6f)))
             tools.forEach { tool ->
                 DockToolItem(tool = tool)
@@ -853,86 +816,3 @@ private fun DockToolItem(tool: DockTool) {
 }
 
 
-@Composable
-private fun NavPillItem(
-    item: TopLevelItem,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    vertical: Boolean = false,
-) {
-    val scheme = MaterialTheme.colorScheme
-    val interaction = remember { MutableInteractionSource() }
-    val indication = LocalIndication.current
-    val pill by animateColorAsState(
-        targetValue = if (selected) scheme.primaryContainer else Color.Transparent,
-        animationSpec = Motion.effects(),
-        label = "navPill",
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (selected) contrastingTextColor(scheme.primaryContainer) else scheme.onSurfaceVariant,
-        animationSpec = Motion.effects(),
-        label = "navContent",
-    )
-    // the M3 indicator morphs: the selected capsule grows, the icon pops with it
-    val pillWidth by animateDpAsState(
-        targetValue = if (selected) {
-            if (vertical) 48.dp else 58.dp
-        } else {
-            if (vertical) 40.dp else 50.dp
-        },
-        animationSpec = Motion.spatialFast(),
-        label = "navPillWidth",
-    )
-    val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.09f else 1f,
-        animationSpec = Motion.spatial(),
-        label = "navIconScale",
-    )
-    val boxWidth = if (vertical) 44.dp else 52.dp
-    val boxHeight = if (vertical) 34.dp else 30.dp
-    val iconSize = if (vertical) 21.dp else 20.dp
-
-    Column(
-        modifier = modifier
-            .pressScale(interaction, pressedScale = 0.92f)
-            .clip(RoundedCornerShape(percent = 50))
-            .clickable(
-                interactionSource = interaction,
-                indication = indication,
-                onClick = onClick,
-            )
-            .semantics { role = Role.Tab }
-            .padding(horizontal = 2.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(percent = 50))
-                .background(pill)
-                .height(boxHeight)
-                .width(pillWidth),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.label,
-                tint = contentColor,
-                modifier = Modifier
-                    .size(iconSize)
-                    .graphicsLayer {
-                        scaleX = iconScale
-                        scaleY = iconScale
-                    },
-            )
-        }
-        Text(
-            text = item.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-            color = contentColor,
-            maxLines = 1,
-        )
-    }
-}
