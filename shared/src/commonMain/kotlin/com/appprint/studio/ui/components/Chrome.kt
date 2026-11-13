@@ -28,9 +28,9 @@ object Chrome {
     val TopBarGap = 8.dp
     val BottomBarGap = 8.dp
     val EdgeInset = 12.dp
-    val NavBarHeight = 64.dp
+    val NavBarHeight = 56.dp
 
-    /** Official adaptive top-bar heights — compact portrait 52dp, phone landscape ≤46dp, medium/expanded 48dp. */
+    /** Official adaptive top-bar heights — compact portrait 48dp, phone landscape ≤42dp, medium/expanded 44dp. */
     @Composable
     fun topBarHeight(): Dp {
         val info = currentWindowAdaptiveInfoV2()
@@ -40,10 +40,10 @@ object Chrome {
         val heightMediumUp = w.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
         return animateDpAsState(
             targetValue = when {
-                isExpanded -> 48.dp
-                isCompact && !heightMediumUp -> 44.dp
-                isCompact -> 52.dp
-                else -> 46.dp
+                isExpanded -> 46.dp
+                isCompact && !heightMediumUp -> 42.dp
+                isCompact -> 48.dp
+                else -> 44.dp
             },
             animationSpec = Motion.effects(),
             label = "topBarHeight",
@@ -65,5 +65,5 @@ object Chrome {
         WindowInsets.navigationBars
             .union(WindowInsets.displayCutout)
             .asPaddingValues()
-            .calculateBottomPadding() + BottomBarGap + 64.dp + 12.dp
+            .calculateBottomPadding() + BottomBarGap + NavBarHeight + 8.dp
 }

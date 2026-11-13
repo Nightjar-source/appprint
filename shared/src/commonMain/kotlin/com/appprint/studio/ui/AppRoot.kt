@@ -64,7 +64,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -246,7 +248,10 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
             navigateTopLevel(backStack, AppRoute.Studio)
         }
 
-        Surface(color = Color.Transparent, modifier = Modifier.fillMaxSize()) {
+        // contentColor = onSurface is what stops Compose's default (Color.Black) from
+        // leaking into every Text/Icon that doesn't pass an explicit color — the fix for
+        // the "black text on dark theme" report.
+        Surface(color = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface, modifier = Modifier.fillMaxSize()) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -262,6 +267,8 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 // screens fill edge-to-edge, behind the floating chrome
                 content()
 
+            // when not compact, the side rail lives on the start edge — push the bar past it
+            val railInset = if (isCompact) 0.dp else animatedRailWidth + Chrome.EdgeInset
             FloatingTopBar(
                 title = if (current == AppRoute.Studio && state.selectedId != null) {
                     state.selectedCard?.name ?: Str.edit_mode
@@ -285,7 +292,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 barHeight = barHeight,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(start = Chrome.EdgeInset + cutoutStart, top = statusTop + Chrome.TopBarGap, end = Chrome.EdgeInset, bottom = 0.dp),
+                    .padding(start = Chrome.EdgeInset + cutoutStart + railInset, top = statusTop + Chrome.TopBarGap, end = Chrome.EdgeInset, bottom = 0.dp),
             )
 
             AnimatedVisibility(
@@ -368,7 +375,7 @@ fun AppRoot(viewModel: StudioViewModel = viewModel()) {
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(
-                        start = Chrome.EdgeInset + cutoutStart,
+                        start = Chrome.EdgeInset + cutoutStart + railInset,
                         top = statusTop + barHeight + Chrome.TopBarGap,
                         end = Chrome.EdgeInset,
                         bottom = 0.dp,
@@ -417,7 +424,7 @@ private fun FloatingTopBar(
         animationSpec = Motion.effects(),
         label = "exportTurns",
     )
-    val actionSize = (barHeight - 6.dp).coerceAtLeast(40.dp)
+    val actionSize = (barHeight - 4.dp).coerceAtLeast(38.dp).coerceAtMost(44.dp)
 
     Row(
         modifier = modifier.height(barHeight),
@@ -439,56 +446,26 @@ private fun FloatingTopBar(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 IraqiLogo(size = (barHeight * 0.62f))
-                if (!selectionMode) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = Str.app_eyebrow,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, letterSpacing = 1.2.sp),
-                            color = scheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        AnimatedContent(
-                            targetState = title,
-                            transitionSpec = {
-                                (fadeIn(Motion.effects()) + slideInVertically(Motion.spatialFast()) { it / 3 })
-                                    .togetherWith(
-                                        fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it / 3 },
-                                    )
-                            },
-                            label = "screenTitle",
-                        ) { value ->
-                            Text(
-                                text = value,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = scheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                // single-line brand/screen name — no truncated eyebrow, no two-line pile-up
+                AnimatedContent(
+                    targetState = title,
+                    transitionSpec = {
+                        (fadeIn(Motion.effects()) + slideInVertically(Motion.spatialFast()) { it / 3 })
+                            .togetherWith(
+                                fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it / 3 },
                             )
-                        }
-                    }
-                } else {
-                    AnimatedContent(
-                        targetState = title,
-                        transitionSpec = {
-                            (fadeIn(Motion.effects()) + slideInVertically(Motion.spatialFast()) { it / 3 })
-                                .togetherWith(
-                                    fadeOut(Motion.effectsFast()) + slideOutVertically(Motion.effectsFast()) { -it / 3 },
-                                )
-                        },
-                        label = "selectedCardTitle",
-                    ) { value ->
-                        Text(
-                            text = value,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = scheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                    },
+                    label = "screenTitle",
+                ) { value ->
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = scheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -727,15 +704,19 @@ private fun FloatingDock(
 ) {
     val scheme = MaterialTheme.colorScheme
     val container = scheme.surfaceContainerHigh.copy(alpha = 0.90f)
+    val windowInfo = LocalWindowInfo.current
+    val maxDockHeight = with(LocalDensity.current) { windowInfo.containerSize.height.toDp() } - 12.dp
     Surface(
         color = container,
         shadowElevation = 12.dp,
         shape = RoundedCornerShape(percent = 50),
-        modifier = modifier.width(railWidth),
+        modifier = modifier
+            .width(railWidth)
+            .heightIn(max = maxDockHeight),
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 4.dp, vertical = 10.dp)
+                .padding(horizontal = 2.dp, vertical = 8.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -748,20 +729,20 @@ private fun FloatingDock(
                 },
                 vertical = true,
             )
-            Box(modifier = Modifier.height(1.dp).width(30.dp).background(scheme.outlineVariant.copy(alpha = 0.6f)))
+            Box(modifier = Modifier.height(1.dp).width(28.dp).background(scheme.outlineVariant.copy(alpha = 0.55f)))
             tools.forEach { tool ->
                 DockToolItem(tool = tool)
             }
-            Box(modifier = Modifier.height(1.dp).width(30.dp).background(scheme.outlineVariant.copy(alpha = 0.6f)))
+            Box(modifier = Modifier.height(1.dp).width(28.dp).background(scheme.outlineVariant.copy(alpha = 0.55f)))
             // solo + handled by its own elevated container — the one accented action
             val interaction = remember { MutableInteractionSource() }
             val indication = LocalIndication.current
             val accent = scheme.primaryContainer
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(44.dp)
                     .pressScale(interaction)
-                    .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
+                    .shadow(6.dp, RoundedCornerShape(percent = 50), clip = false)
                     .clip(RoundedCornerShape(percent = 50))
                     .background(accent)
                     .clickable(interactionSource = interaction, indication = indication, onClick = onAddSheet)
@@ -772,7 +753,7 @@ private fun FloatingDock(
                     Icons.Filled.Add,
                     contentDescription = Str.add_sheet,
                     tint = contrastingTextColor(accent),
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(22.dp),
                 )
             }
         }
@@ -804,7 +785,7 @@ private fun DockToolItem(tool: DockTool) {
                 .width(40.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(tool.icon, contentDescription = tool.label, tint = scheme.onSurface, modifier = Modifier.size(19.dp))
+            Icon(tool.icon, contentDescription = tool.label, tint = scheme.onSurface, modifier = Modifier.size(18.dp))
         }
         Text(
             text = tool.label,

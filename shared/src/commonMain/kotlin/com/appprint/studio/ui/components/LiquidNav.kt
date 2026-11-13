@@ -42,14 +42,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -57,7 +57,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appprint.studio.ui.theme.Motion
@@ -73,6 +72,10 @@ import com.appprint.studio.ui.theme.contrastingTextColor
  *  - the selected item expands (icon + full label) while the others keep a
  *    tiny sub-label, so the bar grows around the selection without shifting;
  *  - the active icon pops (0.86 → 1) like a water drop settling.
+ *
+ * The droplet is placed from window-absolute coordinates, which are physical
+ * (x always increases to the right) in BOTH layout directions — so RTL and LTR
+ * both behave identically.
  */
 @Composable
 fun LiquidNavGroup(
@@ -84,58 +87,31 @@ fun LiquidNavGroup(
 ) {
     val scheme = MaterialTheme.colorScheme
     val density = LocalDensity.current
-    val layoutDirection = LocalLayoutDirection.current
     val activeIndex = items.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
 
-    var hostOrigin by remember { mutableStateOf(Offset.Zero) }
+    var containerOrigin by remember { mutableStateOf(Offset.Zero) }
     val bounds = remember { mutableStateMapOf<Int, NavBounds>() }
 
     val target = bounds[activeIndex]
     val dropletSpec: FiniteAnimationSpec<Dp> = spring(dampingRatio = 0.55f, stiffness = 420f)
 
-    val targetOffset: Offset = target?.position ?: Offset.Zero
-    val targetSize: IntSize = target?.size ?: IntSize.Zero
+    // window-absolute coordinates — direction independent, correct in RTL and LTR
+    val offsetDpX = target?.let { with(density) { (it.position.x - containerOrigin.x).toDp() } } ?: 0.dp
+    val offsetDpY = target?.let { with(density) { (it.position.y - containerOrigin.y).toDp() } } ?: 0.dp
+    val widthDp = target?.let { with(density) { it.size.width.toDp() } } ?: 0.dp
+    val heightDp = target?.let { with(density) { it.size.height.toDp() } } ?: 0.dp
 
-    // positionInParent() is direction-aware: in RTL the x is measured from the
-    // parent's RIGHT edge, so the delta has to be mirrored back to physical
-    // (left-to-right) space before it can drive Modifier.offset.
-    val rawDx = targetOffset.x - hostOrigin.x
-    val physicalDx = if (layoutDirection == LayoutDirection.Rtl) -rawDx else rawDx
-
-    val offsetX by animateDpAsState(
-        targetValue = with(density) { physicalDx.toDp() },
-        animationSpec = dropletSpec,
-        label = "dropletX",
-    )
-    
-    val offsetYFloat by animateFloatAsState(
-        targetValue = if (target != null) targetOffset.y - hostOrigin.y else 0f,
-        animationSpec = dropletSpec,
-        label = "dropletYFloat",
-    )
-    
-    val offsetY by animateDpAsState(
-        targetValue = with(density) { offsetYFloat.toDp() },
-        animationSpec = dropletSpec,
-        label = "dropletY",
-    )
-    val dropletW by animateDpAsState(
-        targetValue = with(density) { targetSize.width.toDp() },
-        animationSpec = dropletSpec,
-        label = "dropletW",
-    )
-    val dropletH by animateDpAsState(
-        targetValue = with(density) { targetSize.height.toDp() },
-        animationSpec = dropletSpec,
-        label = "dropletH",
-    )
+    val offsetX by animateDpAsState(targetValue = offsetDpX, animationSpec = dropletSpec, label = "dropletX")
+    val offsetY by animateDpAsState(targetValue = offsetDpY, animationSpec = dropletSpec, label = "dropletY")
+    val dropletW by animateDpAsState(targetValue = widthDp, animationSpec = dropletSpec, label = "dropletW")
+    val dropletH by animateDpAsState(targetValue = heightDp, animationSpec = dropletSpec, label = "dropletH")
     val dropletAlpha by animateFloatAsState(
         targetValue = if (target != null) 1f else 0f,
         animationSpec = tween(durationMillis = 220),
         label = "dropletAlpha",
     )
 
-    Box(modifier = modifier) {
+    Box(modifier = modifier.onGloballyPositioned { containerOrigin = it.positionInWindow() }) {
         // the gliding droplet
         if (target != null) {
             Box(
@@ -143,19 +119,20 @@ fun LiquidNavGroup(
                     .offset(x = offsetX, y = offsetY)
                     .size(dropletW, dropletH)
                     .graphicsLayer { alpha = dropletAlpha }
+                    .shadow(5.dp, RoundedCornerShape(percent = 50), clip = false)
                     .clip(RoundedCornerShape(percent = 50))
                     .background(
                         Brush.linearGradient(
                             listOf(
-                                scheme.primaryContainer.copy(alpha = 0.95f),
-                                scheme.primaryContainer.copy(alpha = 0.60f),
-                                scheme.primaryContainer.copy(alpha = 0.88f),
+                                scheme.primaryContainer.copy(alpha = 0.98f),
+                                scheme.primaryContainer.copy(alpha = 0.72f),
+                                scheme.primaryContainer.copy(alpha = 0.92f),
                             ),
                         ),
                     )
                     .border(
                         width = 1.dp,
-                        color = scheme.onPrimaryContainer.copy(alpha = 0.22f),
+                        color = scheme.onPrimaryContainer.copy(alpha = 0.35f),
                         shape = RoundedCornerShape(percent = 50),
                     ),
             )
@@ -166,7 +143,7 @@ fun LiquidNavGroup(
             Box(
                 modifier = Modifier.onGloballyPositioned { coordinates ->
                     bounds[index] = NavBounds(
-                        position = coordinates.positionInParent(),
+                        position = coordinates.positionInWindow(),
                         size = coordinates.size,
                     )
                 },
@@ -182,18 +159,15 @@ fun LiquidNavGroup(
 
         if (vertical) {
             Column(
-                modifier = Modifier.onGloballyPositioned { hostOrigin = it.positionInParent() },
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 items.forEachIndexed { index, item -> ItemSlot(index, item) }
             }
         } else {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { hostOrigin = it.positionInParent() },
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 items.forEachIndexed { index, item -> ItemSlot(index, item) }
@@ -251,17 +225,17 @@ private fun LiquidNavItem(
                 .clip(RoundedCornerShape(percent = 50))
                 .clickable(interactionSource = interaction, indication = indication, onClick = onClick)
                 .semantics { role = Role.Tab }
-                .padding(horizontal = 8.dp, vertical = 8.dp)
-                .widthIn(min = 48.dp),
+                .padding(horizontal = 6.dp, vertical = 5.dp)
+                .widthIn(min = 52.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(3.dp),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             Icon(
                 imageVector = item.icon,
                 contentDescription = item.label,
                 tint = iconColor,
                 modifier = Modifier
-                    .size(21.dp)
+                    .size(20.dp)
                     .graphicsLayer {
                         scaleX = pop.value
                         scaleY = pop.value
@@ -283,20 +257,20 @@ private fun LiquidNavItem(
                 .clip(RoundedCornerShape(percent = 50))
                 .clickable(interactionSource = interaction, indication = indication, onClick = onClick)
                 .semantics { role = Role.Tab }
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .padding(horizontal = 10.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Icon(
                     imageVector = item.icon,
                     contentDescription = item.label,
                     tint = iconColor,
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(18.dp)
                         .graphicsLayer {
                             scaleX = pop.value
                             scaleY = pop.value
@@ -309,7 +283,7 @@ private fun LiquidNavItem(
                 ) {
                     Text(
                         text = item.label,
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = labelColor,
                         maxLines = 1,
@@ -319,13 +293,13 @@ private fun LiquidNavItem(
             if (!selected) {
                 Text(
                     text = item.label,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
                     color = labelColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             } else {
-                Spacer(Modifier.height(11.dp))
+                Spacer(Modifier.height(9.dp))
             }
         }
     }

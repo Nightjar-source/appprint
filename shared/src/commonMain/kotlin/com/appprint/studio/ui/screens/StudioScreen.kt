@@ -2,7 +2,6 @@
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -647,65 +646,62 @@ private fun SheetPageBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, top = 2.dp, end = 4.dp, bottom = 0.dp),
+            .padding(start = 14.dp, top = 2.dp, end = 14.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // floating page labels — plain text, no chip chrome; the active page gets a thin underline + bold weight
+        // floating plain sheet labels — no color-block chips; the active sheet gets a hairline underline
         LazyRow(
             modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             items((0 until state.pageCount).toList(), key = { it }) { page ->
                 val selected = state.currentPage == page
-                val onSurface = scheme.onSurface
-                val variant = scheme.onSurfaceVariant
-                val backdrop by animateColorAsState(
-                    targetValue = if (selected) scheme.surfaceContainerHighest.copy(alpha = 0.85f) else Color.Transparent,
-                    animationSpec = Motion.effects(),
-                    label = "pageBackdrop",
-                )
-                val textColor by animateColorAsState(
-                    targetValue = if (selected) onSurface else variant,
-                    animationSpec = Motion.effects(),
-                    label = "pageText",
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(backdrop)
-                        .clickable { onSelectPage(page) }
-                        .padding(horizontal = 14.dp, vertical = 9.dp),
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Text(
-                        text = "ورقة ${page + 1} · ${state.cards.count { it.page == page }}",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-                        color = textColor,
-                        maxLines = 1,
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(percent = 50))
+                            .clickable { onSelectPage(page) }
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = "ورقة ${page + 1} · ${state.cards.count { it.page == page }}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                            color = if (selected) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.72f),
+                            maxLines = 1,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(width = 26.dp, height = 2.dp)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(if (selected) scheme.primary else Color.Transparent),
                     )
                 }
             }
         }
+
         if (state.pageCount > 1) {
-            IconButton(onClick = onRequestDelete) {
+            IconButton(onClick = onRequestDelete, modifier = Modifier.size(40.dp)) {
                 Icon(
                     Icons.Filled.DeleteOutline,
                     contentDescription = Str.delete_sheet,
                     tint = scheme.error,
-                    modifier = Modifier.size(21.dp),
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
 
-        Box(modifier = Modifier.height(28.dp).width(1.dp).background(scheme.outlineVariant.copy(alpha = 0.6f)))
-
-        // big, separated alone — the only accented control on the row
+        // solo + — the only accented control, elevated and standalone at the side
         Box(
             modifier = Modifier
-                .size(44.dp)
-                .shadow(6.dp, RoundedCornerShape(percent = 50), clip = false)
+                .size(56.dp)
+                .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(scheme.primary)
                 .clickable(onClick = onAddSheet)
@@ -716,7 +712,7 @@ private fun SheetPageBar(
                 Icons.Filled.Add,
                 contentDescription = Str.add_sheet,
                 tint = contrastingTextColor(scheme.primary),
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(24.dp),
             )
         }
     }
