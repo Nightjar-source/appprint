@@ -420,9 +420,16 @@ class TabatiViewModel : ViewModel() {
         _state.update { s ->
             val src = s.cards.firstOrNull { it.id == id } ?: return@update s
             val copy = src.copy(id = nextId(), manualPlacement = false)
-            val combined = s.cards + copy
-            val arranged = if (s.settings.autoArrangeOnAdd) SheetArranger.arrange(combined, s.settings, "smart", preserveManual = true).cards else combined
-            s.copy(cards = arranged, selectedCardId = copy.id)
+            if (s.settings.autoArrangeOnAdd) {
+                val arranged = SheetArranger.arrange(s.cards + copy, s.settings, "smart", preserveManual = true).cards
+                s.copy(cards = arranged, selectedCardId = copy.id, toast = TabatiToast("تم نسخ البطاقة وإعادة الترتيب تلقائياً"))
+            } else {
+                val placed = copy.copy(
+                    xMm = minOf(src.xMm + 8f, (s.settings.sheetWidthMm - src.widthMm).coerceAtLeast(0f)),
+                    yMm = minOf(src.yMm + 8f, (s.settings.sheetHeightMm - src.heightMm).coerceAtLeast(0f)),
+                )
+                s.copy(cards = s.cards + placed, selectedCardId = placed.id, toast = TabatiToast("تم نسخ البطاقة"))
+            }
         }
     }
 
@@ -442,6 +449,7 @@ class TabatiViewModel : ViewModel() {
                 },
                 activePage = b.page,
                 longPressSheetCardId = null,
+                toast = TabatiToast(Str.swapped.format(b.name, (b.page) + 1)),
             )
         }
     }
@@ -458,6 +466,7 @@ class TabatiViewModel : ViewModel() {
                 cards = s.cards.map { if (it.id == id) it.copy(page = target, xMm = s.settings.marginMm, yMm = nextY, manualPlacement = true) else it },
                 activePage = target,
                 longPressSheetCardId = null,
+                toast = TabatiToast(Str.moved_page.format(target + 1)),
             )
         }
     }
@@ -470,6 +479,7 @@ class TabatiViewModel : ViewModel() {
                     if (it.id == id) it.copy(imageUri = uri, enhancedImageUri = uri, enhance = EnhanceSettings.IDENTITY) else it
                 },
                 longPressSheetCardId = null,
+                toast = TabatiToast(Str.replaced_image),
             )
         }
     }

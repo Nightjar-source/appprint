@@ -374,16 +374,18 @@ private fun SheetPageBar(
                 }
             }
 
-            // add sheet
+            // add sheet — secondary-container circle with outline, like the design
             Box(
                 modifier = Modifier
-                    .size(26.dp)
+                    .size(28.dp)
                     .clip(RoundedCornerShape(percent = 50))
+                    .background(scheme.secondaryContainer.copy(alpha = 0.92f))
+                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
                     .clickable(onClick = onAddSheet)
                     .semantics { role = Role.Button },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, tint = scheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, tint = scheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
             }
 
             // ترتيب ذكي — smart arrange (primary-container accent)

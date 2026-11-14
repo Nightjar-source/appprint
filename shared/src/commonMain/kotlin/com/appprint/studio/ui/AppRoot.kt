@@ -201,6 +201,7 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                 toast?.let { t ->
                     AppSnackbar(
                         message = t.message,
+                        busy = state.processing,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(top = Chrome.topReserve()),
@@ -316,7 +317,13 @@ private fun FloatingTopBar(
                 CircleActionButton(onClick = onZoomOut, contentDescription = Str.zoom_out, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
                     Icon(Icons.Filled.ZoomOut, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
-                CircleActionButton(onClick = onZoomFit, contentDescription = Str.zoom_fit, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
+                CircleActionButton(
+                    onClick = onZoomFit,
+                    contentDescription = Str.zoom_fit,
+                    size = 40.dp,
+                    container = if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) scheme.primary else scheme.surfaceContainerLow,
+                    tint = if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) scheme.onPrimary else scheme.onSurface,
+                ) {
                     Icon(Icons.Filled.FitScreen, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
                 CircleActionButton(onClick = onZoomIn, contentDescription = Str.zoom_in, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {

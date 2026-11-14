@@ -157,7 +157,7 @@ internal fun CardOnSheet(
                 drawRoundRect(
                     color = Color(frame.colorHex),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx(), 6.dp.toPx()),
-                    style = Stroke(width = frame.thickness, pathEffect = dash),
+                    style = Stroke(width = (frame.thickness * 1.9f).coerceAtLeast(1.4f), pathEffect = dash),
                 )
             }
         }
