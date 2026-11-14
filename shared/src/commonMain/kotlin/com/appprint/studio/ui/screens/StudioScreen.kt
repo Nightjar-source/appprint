@@ -11,6 +11,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -30,16 +31,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.AutoFixHigh
-import androidx.compose.material.icons.filled.Crop
-import androidx.compose.material.icons.filled.Rotate90DegreesCw
 import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,7 +61,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.ui.StudioSection
 import com.appprint.studio.ui.TabatiViewModel
-import com.appprint.studio.ui.components.AppConfirmDialog
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.platform.PlatformBackHandler
 import com.appprint.studio.ui.strings.Str
@@ -81,6 +74,8 @@ fun StudioScreen(
     viewModel: TabatiViewModel,
     onImportMenu: () -> Unit,
     onReplaceImage: (Long) -> Unit,
+    onPickGallery: () -> Unit = onImportMenu,
+    onCaptureCamera: () -> Unit = onImportMenu,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isCompact = Chrome.isCompact()
@@ -111,17 +106,23 @@ fun StudioScreen(
             // -------------------------------------------------- workspace
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
-                    SheetCanvas(state = state, viewModel = viewModel, modifier = Modifier.fillMaxSize())
+                    SheetCanvas(
+                        state = state,
+                        viewModel = viewModel,
+                        modifier = Modifier.fillMaxSize(),
+                        onPickGallery = onPickGallery,
+                        onCaptureCamera = onCaptureCamera,
+                        onAddDemoCards = viewModel::addSamples,
+                    )
                 }
                 if (state.cards.isNotEmpty()) {
                     SheetPageBar(
                         state = state,
                         onSelectPage = viewModel::currentPage,
                         onAddSheet = viewModel::addSheet,
-                        onRequestDelete = { deletePageIdx = state.activePage },
+                        onRequestDelete = { page -> deletePageIdx = page },
                         onArrange = viewModel::arrangeSmart,
                         onResetAll = { clearAllOpen = true },
-                        onImportMenu = onImportMenu,
                     )
                 }
             }
@@ -143,6 +144,7 @@ fun StudioScreen(
                         viewModel = viewModel,
                         onReplaceImage = onReplaceImage,
                         onClearAllRequest = { clearAllOpen = true },
+                        onRequestSwap = { id -> swapFromId = id },
                     )
                 }
             }
@@ -160,6 +162,7 @@ fun StudioScreen(
                 viewModel = viewModel,
                 onReplaceImage = onReplaceImage,
                 onClearAllRequest = { clearAllOpen = true },
+                onRequestSwap = { id -> swapFromId = id },
             )
         }
 
@@ -192,43 +195,58 @@ fun StudioScreen(
         // ------------------------------------------ delete page dialog
         deletePageIdx?.let { idx ->
             val count = state.cards.count { it.page == idx }
-            AppConfirmDialog(
-                icon = Icons.Filled.DeleteOutline,
-                title = Str.delete_page_title,
-                body = "الورقة رقم ${idx + 1} تحوي $count بطاقة. احذفها مع بطاقاتها، أو انقل البطاقات إلى الأوراق الباقية.",
-                primaryLabel = Str.delete_page_cards,
-                onPrimary = { viewModel.deletePageWithCards(idx); deletePageIdx = null },
-                secondaryLabel = Str.delete_page_keep,
-                onSecondary = { viewModel.deletePageKeepCards(idx); deletePageIdx = null },
-                onCancel = { deletePageIdx = null },
+            HtmlStyleDialog(
+                title = Str.delete_page_title.format(idx + 1),
                 onDismiss = { deletePageIdx = null },
-            )
+            ) {
+                Text(
+                    text = Str.delete_page_body.format(count),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                HtmlDialogButton(
+                    container = MaterialTheme.colorScheme.primary,
+                    content = MaterialTheme.colorScheme.onPrimary,
+                    label = Str.delete_page_keep,
+                    onClick = { viewModel.deletePageKeepCards(idx); deletePageIdx = null },
+                )
+                HtmlDialogButton(
+                    container = MaterialTheme.colorScheme.tertiary,
+                    content = MaterialTheme.colorScheme.onTertiary,
+                    label = Str.delete_page_cards,
+                    onClick = { viewModel.deletePageWithCards(idx); deletePageIdx = null },
+                )
+            }
         }
 
         // ------------------------------------------ clear all dialog
         if (clearAllOpen) {
-            AppConfirmDialog(
-                icon = Icons.Filled.DeleteOutline,
+            HtmlStyleDialog(
                 title = Str.clear_all_title,
-                body = Str.clear_all_body,
-                primaryLabel = Str.clear_all,
-                onPrimary = { viewModel.clearAll(); clearAllOpen = false },
-                onCancel = { clearAllOpen = false },
                 onDismiss = { clearAllOpen = false },
-            )
-        }
-
-        // ---------------------------- bulk enhance confirmation dialog
-        if (state.pendingBulkPatch != null) {
-            AppConfirmDialog(
-                icon = Icons.Filled.AutoFixHigh,
-                title = "تطبيق التحسين على كل البطاقات؟",
-                body = "سيُطبَّق هذا التحسين على كل البطاقات التي تحتوي صورة — لا يمكن التراجع.",
-                primaryLabel = "تطبيق على الكل",
-                onPrimary = viewModel::confirmPendingBulkEnhance,
-                onCancel = viewModel::dismissPendingBulk,
-                onDismiss = viewModel::dismissPendingBulk,
-            )
+            ) {
+                Text(
+                    text = Str.clear_all_body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HtmlDialogButton(
+                        container = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        content = MaterialTheme.colorScheme.onSurface,
+                        label = Str.clear_all_cancel,
+                        onClick = { clearAllOpen = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                    HtmlDialogButton(
+                        container = MaterialTheme.colorScheme.tertiary,
+                        content = MaterialTheme.colorScheme.onTertiary,
+                        label = Str.clear_all_confirm,
+                        onClick = { viewModel.clearAll(); clearAllOpen = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
     }
 }
@@ -240,10 +258,11 @@ private fun SectionPanel(
     viewModel: TabatiViewModel,
     onReplaceImage: (Long) -> Unit,
     onClearAllRequest: () -> Unit,
+    onRequestSwap: (Long) -> Unit,
 ) {
     when (state.section) {
         StudioSection.PAPER -> PaperPanel(state = state, viewModel = viewModel)
-        StudioSection.CARDS -> CardsPanel(state = state, viewModel = viewModel, onReplaceImage = onReplaceImage, onClearAllRequest = onClearAllRequest)
+        StudioSection.CARDS -> CardsPanel(state = state, viewModel = viewModel, onReplaceImage = onReplaceImage, onClearAllRequest = onClearAllRequest, onRequestSwap = onRequestSwap)
         StudioSection.ENHANCE -> EnhancePanel(state = state, viewModel = viewModel)
         StudioSection.BORDERS -> BordersPanel(state = state, viewModel = viewModel)
         StudioSection.GUIDE -> GuidePanel(state = state, viewModel = viewModel)
@@ -258,6 +277,7 @@ private fun SurfaceDrawer(
     viewModel: TabatiViewModel,
     onReplaceImage: (Long) -> Unit,
     onClearAllRequest: () -> Unit,
+    onRequestSwap: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -277,21 +297,26 @@ private fun SurfaceDrawer(
                 .background(scheme.outlineVariant),
         )
         Box(Modifier.fillMaxWidth().fillMaxHeight()) {
-            SectionPanel(state = state, viewModel = viewModel, onReplaceImage = onReplaceImage, onClearAllRequest = onClearAllRequest)
+            SectionPanel(
+                state = state,
+                viewModel = viewModel,
+                onReplaceImage = onReplaceImage,
+                onClearAllRequest = onClearAllRequest,
+                onRequestSwap = onRequestSwap,
+            )
         }
     }
 }
 
-/** Floating page tabs + quick actions — exactly the design's glass pill row under the top bar. */
+/** Floating page tabs + quick actions — glass pill row above the canvas, exactly the design. */
 @Composable
 private fun SheetPageBar(
     state: com.appprint.studio.ui.TabatiUiState,
     onSelectPage: (Int) -> Unit,
     onAddSheet: () -> Unit,
-    onRequestDelete: () -> Unit,
+    onRequestDelete: (Int) -> Unit,
     onArrange: () -> Unit,
     onResetAll: () -> Unit,
-    onImportMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -306,7 +331,8 @@ private fun SheetPageBar(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(percent = 50))
-                .background(scheme.surfaceContainerHigh.copy(alpha = 0.86f))
+                .background(scheme.surfaceContainerLow.copy(alpha = 0.92f))
+                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
                 .padding(horizontal = 6.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -338,7 +364,7 @@ private fun SheetPageBar(
                         )
                         if (state.pageCount > 1) {
                             IconButton(
-                                onClick = { onRequestDelete() },
+                                onClick = { onRequestDelete(page) },
                                 modifier = Modifier.size(16.dp),
                             ) {
                                 Icon(Icons.Filled.Close, contentDescription = null, tint = if (selected) scheme.onPrimary else scheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
@@ -417,12 +443,12 @@ private fun SwapPickerSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .clickable { onSwap(card.id) }
+                        .clickable(onClick = { onSwap(card.id) })
                         .padding(horizontal = 10.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "${card.name} — ورقة ${card.page + 1}",
+                        text = "${card.name} — ورقة ${card.page + 1} • ${card.widthMm}×${card.heightMm}",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f),
                     )
@@ -430,6 +456,85 @@ private fun SwapPickerSheet(
                 }
             }
         }
+    }
+}
+
+/** Design-style modal dialog: dimmed scrim + rounded high-surface panel + close X + title. */
+@Composable
+private fun HtmlStyleDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val scrim = remember { MutableInteractionSource() }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f))
+            .clickable(interactionSource = scrim, indication = null, onClick = onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 44.dp)
+                .widthIn(max = 340.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
+                .background(scheme.surfaceContainerHigh)
+                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(28.dp))
+                .padding(16.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { /* consume taps — scrim stays closed */ },
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(Icons.Filled.Close, contentDescription = "إغلاق")
+                }
+            }
+            content()
+        }
+    }
+}
+
+/** Full-width rounded-full dialog button in the design's colors. */
+@Composable
+private fun HtmlDialogButton(
+    container: androidx.compose.ui.graphics.Color,
+    content: androidx.compose.ui.graphics.Color,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(percent = 50))
+            .background(container)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Black,
+            color = content,
+            maxLines = 1,
+        )
     }
 }
 

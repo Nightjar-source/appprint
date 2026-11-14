@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.BorderOuter
 import androidx.compose.material.icons.filled.Dashboard
@@ -164,6 +165,8 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                     viewModel = viewModel,
                     onImportMenu = { importMenuOpen = true },
                     onReplaceImage = onReplaceImage,
+                    onPickGallery = pickImages,
+                    onCaptureCamera = onCamera,
                 )
                 FloatingTopBar(
                     state = state,
@@ -272,7 +275,7 @@ private fun FloatingTopBar(
                 container = scheme.secondaryContainer,
                 tint = scheme.onSecondaryContainer,
             ) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(19.dp))
             }
         }
 
@@ -282,7 +285,8 @@ private fun FloatingTopBar(
                 modifier = Modifier
                     .height(40.dp)
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.surfaceContainerHigh.copy(alpha = 0.92f))
+                    .background(scheme.surfaceContainerLow.copy(alpha = 0.9f))
+                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
                     .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -297,7 +301,7 @@ private fun FloatingTopBar(
                 )
                 Spacer(Modifier.width(2.dp))
                 SurfaceChip(
-                    text = "${state.settings.presetKey} · ${state.cards.size}",
+                    text = "${state.settings.presetKey} (${state.cards.size})",
                 )
             }
         } else {
@@ -309,13 +313,13 @@ private fun FloatingTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                CircleActionButton(onClick = onZoomOut, contentDescription = Str.zoom_out, size = 40.dp, container = scheme.surfaceContainerHigh, tint = scheme.onSurface) {
+                CircleActionButton(onClick = onZoomOut, contentDescription = Str.zoom_out, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
                     Icon(Icons.Filled.ZoomOut, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
-                CircleActionButton(onClick = onZoomFit, contentDescription = Str.zoom_fit, size = 40.dp, container = scheme.surfaceContainerHigh, tint = scheme.onSurface) {
+                CircleActionButton(onClick = onZoomFit, contentDescription = Str.zoom_fit, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
                     Icon(Icons.Filled.FitScreen, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
-                CircleActionButton(onClick = onZoomIn, contentDescription = Str.zoom_in, size = 40.dp, container = scheme.surfaceContainerHigh, tint = scheme.onSurface) {
+                CircleActionButton(onClick = onZoomIn, contentDescription = Str.zoom_in, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
                     Icon(Icons.Filled.ZoomIn, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
             }
@@ -328,7 +332,7 @@ private fun FloatingTopBar(
             onClick = onCycleTheme,
             contentDescription = themeDescription(state.theme),
             size = 40.dp,
-            container = scheme.surfaceContainerHigh,
+            container = scheme.surfaceContainerLow,
             tint = scheme.onSurface,
         ) {
             Icon(
@@ -419,7 +423,12 @@ private fun CircleActionButton(
                 if (elevated) Modifier.shadow(6.dp, RoundedCornerShape(percent = 50), clip = false) else Modifier,
             )
             .clip(RoundedCornerShape(percent = 50))
-            .background(container.copy(alpha = if (container == MaterialTheme.colorScheme.primary) 1f else 0.92f))
+            .background(container.copy(alpha = if (container == MaterialTheme.colorScheme.primary) 1f else 0.9f))
+            .border(
+                if (container == MaterialTheme.colorScheme.primary) 0.dp else 1.dp,
+                if (container == MaterialTheme.colorScheme.primary) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.outlineVariant,
+                RoundedCornerShape(percent = 50),
+            )
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .semantics { role = Role.Button },
         contentAlignment = Alignment.Center,
@@ -487,10 +496,13 @@ private fun FloatingNavPill(
         }
         Surface(
             shape = RoundedCornerShape(percent = 50),
-            color = scheme.surfaceContainerHigh.copy(alpha = 0.92f),
+            color = scheme.surfaceContainerLow.copy(alpha = 0.9f),
             shadowElevation = 10.dp,
             tonalElevation = 2.dp,
-            modifier = Modifier.height(Chrome.NavBarDp).widthIn(max = 380.dp),
+            modifier = Modifier
+                .height(Chrome.NavBarDp)
+                .widthIn(max = 380.dp)
+                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50)),
         ) {
             Row(
                 modifier = Modifier
@@ -599,10 +611,12 @@ private fun FloatingRail(
             .padding(start = Chrome.EdgeInset + cutoutStartPadding(), top = 0.dp, end = 0.dp, bottom = 0.dp),
     ) {
         Surface(
-            shape = RoundedCornerShape(percent = 50),
-            color = scheme.surfaceContainerHigh.copy(alpha = 0.92f),
+            shape = RoundedCornerShape(32.dp),
+            color = scheme.surfaceContainerLow.copy(alpha = 0.9f),
             shadowElevation = 12.dp,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(32.dp)),
         ) {
             Column(
                 modifier = Modifier

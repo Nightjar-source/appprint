@@ -25,9 +25,10 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Rotate90DegreesCw
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -161,10 +162,12 @@ fun CardBadges(
 ) {
     val totalDeg = SheetArranger.totalRotation(card).toInt()
     val isEnhanced = card.enhance != com.appprint.studio.core.model.EnhanceSettings.IDENTITY
+    val w = formatDim(card.widthMm)
+    val h = formatDim(card.heightMm)
     Box(modifier = modifier) {
         // top-start badge — size (and angle)
         BadgeLabel(
-            text = "%.1f×%.1f مم%s".format(card.widthMm, card.heightMm, if (totalDeg > 0) " • ${totalDeg}°" else ""),
+            text = "$w×$h مم${if (totalDeg > 0) " • ${totalDeg}°" else ""}",
             background = Color.Black.copy(alpha = 0.75f),
             foreground = Color.White,
             modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
@@ -189,6 +192,9 @@ fun CardBadges(
         }
     }
 }
+
+private fun formatDim(v: Float): String =
+    "%.1f".format(v).trimEnd('0').trimEnd('.')
 
 @Composable
 private fun BadgeLabel(
@@ -254,7 +260,7 @@ fun QuickActionsSheet(
             // 0–360° rotation block
             Surface2 {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.Rotate90DegreesCw, contentDescription = null, modifier = Modifier.size(18.dp), tint = scheme.primary)
+                    Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(18.dp), tint = scheme.primary)
                     Spacer(Modifier.size(8.dp))
                     Text("دوران حر 360°", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
                     Text(
@@ -306,7 +312,7 @@ fun QuickActionsSheet(
                             container = scheme.primary,
                             onContainer = scheme.onPrimary,
                             modifier = Modifier.weight(1f),
-                        ) { viewModel.autoEnhanceSelected(); onDismiss() }
+                        ) { viewModel.autoEnhanceSelectedDirect(card.id); onDismiss() }
                         QuickActionButton(
                             icon = Icons.Filled.Crop,
                             label = "قص الأطراف",
@@ -318,7 +324,7 @@ fun QuickActionsSheet(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     QuickActionButton(
-                        icon = Icons.Filled.AutoAwesome,
+                        icon = Icons.Filled.AutoFixHigh,
                         label = "لوحة التحسين",
                         modifier = Modifier.weight(1f),
                     ) { viewModel.setSection(com.appprint.studio.ui.StudioSection.ENHANCE); onDismiss() }
@@ -349,7 +355,7 @@ fun QuickActionsSheet(
                         modifier = Modifier.weight(1f),
                     ) { viewModel.duplicateCard(card.id); onDismiss() }
                     QuickActionButton(
-                        icon = Icons.Filled.DeleteForever,
+                        icon = Icons.Filled.Delete,
                         label = "حذف البطاقة",
                         container = scheme.tertiaryContainer,
                         onContainer = scheme.onTertiaryContainer,

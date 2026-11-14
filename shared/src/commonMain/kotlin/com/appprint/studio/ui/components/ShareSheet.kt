@@ -9,16 +9,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,8 +36,8 @@ import androidx.compose.ui.unit.dp
 import com.appprint.studio.ui.strings.Str
 
 /**
- * Share sheet — the design's exact order:
- *  طباعة مباشرة (primary) → PNG الحالية → كل الأوراق PNG → ملف HTML → مشاركة للتطبيقات.
+ * Share sheet — the design's exact structure:
+ *  طباعة مباشرة (primary full row) → شبكة PNG الحالية / كل الأوراق → شبكة ملف HTML / مشاركة للتطبيقات.
  */
 @Composable
 fun ShareSheet(
@@ -46,70 +50,126 @@ fun ShareSheet(
     onSharePdf: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val items = listOf(
-        ShareRow(Icons.Filled.Print, Str.share_direct_print, Str.share_direct_print_sub, primary = true) to onDirectPrint,
-        ShareRow(Icons.Filled.Image, Str.share_png_one, Str.share_png_one_sub.format(currentPage + 1, pageCount)) to onSavePngCurrent,
-        ShareRow(Icons.Filled.Collections, Str.share_png_all, Str.share_png_all_sub.format(pageCount)) to onSaveAllPngs,
-        ShareRow(Icons.Filled.Code, Str.share_html, Str.share_html_sub) to onSaveHtml,
-        ShareRow(Icons.Filled.PictureAsPdf, Str.share_apps, Str.share_apps_sub) to onSharePdf,
-    )
+    val scheme = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
             .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = Str.share_title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        items.forEach { (row, onClick) ->
-            ShareRowItem(row = row, onClick = { onClick(); onDismiss() })
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        ) {
+            Text(
+                text = Str.share_title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onDismiss, modifier = Modifier.size(34.dp)) {
+                Icon(Icons.Filled.Close, contentDescription = "إغلاق")
+            }
         }
-        Spacer(Modifier.size(4.dp))
+
+        // ── طباعة مباشرة عبر الطابعة — the one full-width primary row ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(scheme.primary)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                    onDismiss(); onDirectPrint()
+                }
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(Icons.Filled.Print, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(22.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    Str.share_direct_print,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Black,
+                    color = scheme.onPrimary,
+                )
+                Text(
+                    Str.share_direct_print_sub,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.onPrimary.copy(alpha = 0.85f),
+                )
+            }
+        }
+
+        // ── PNG الحالية / كل الأوراق ──
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GridAction(
+                icon = Icons.Filled.Image,
+                title = Str.share_png_one,
+                sub = Str.share_png_one_sub.format(currentPage + 1),
+                onClick = { onDismiss(); onSavePngCurrent() },
+                modifier = Modifier.weight(1f),
+            )
+            GridAction(
+                icon = Icons.Filled.Collections,
+                title = Str.share_png_all,
+                sub = Str.share_png_all_sub.format(pageCount),
+                onClick = { onDismiss(); onSaveAllPngs() },
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        // ── ملف HTML / مشاركة للتطبيقات ──
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GridAction(
+                icon = Icons.Filled.Code,
+                title = Str.share_html,
+                sub = Str.share_html_sub,
+                onClick = { onDismiss(); onSaveHtml() },
+                modifier = Modifier.weight(1f),
+            )
+            GridAction(
+                icon = Icons.Filled.IosShare,
+                title = Str.share_apps,
+                sub = Str.share_apps_sub,
+                onClick = { onDismiss(); onSharePdf() },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Spacer(Modifier.height(4.dp))
     }
 }
 
-private data class ShareRow(
-    val icon: ImageVector,
-    val title: String,
-    val subtitle: String,
-    val primary: Boolean = false,
-)
-
+/** The design's 2×2 export cards — surfaceContainer, icon on top, title + tiny sub. */
 @Composable
-private fun ShareRowItem(row: ShareRow, onClick: () -> Unit) {
+private fun GridAction(
+    icon: ImageVector,
+    title: String,
+    sub: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(scheme.surfaceContainer)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(if (row.primary) scheme.primaryContainer else scheme.surfaceContainerHigh),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                row.icon,
-                contentDescription = null,
-                tint = if (row.primary) scheme.onPrimaryContainer else scheme.onSurface,
-                modifier = Modifier.size(22.dp),
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(row.title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, color = scheme.onSurface)
-            Text(row.subtitle, style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
-        }
+        Icon(icon, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(20.dp))
+        Text(
+            title,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = scheme.onSurface,
+        )
+        Text(
+            sub,
+            style = MaterialTheme.typography.labelSmall,
+            color = scheme.onSurfaceVariant,
+        )
     }
 }

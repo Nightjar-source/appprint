@@ -59,7 +59,7 @@ object SheetRenderer {
         }
 
         // sheet frame (border of the whole page)
-        if (frame.sheet && frame.thickness > 0f) {
+        if (frame.sheet && frame.thickness > 0f && frame.colorHex != 0L) {
             val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 color = frame.colorHex.toInt()
@@ -103,7 +103,7 @@ object SheetRenderer {
             canvas.restore()
 
             // card frame
-            if (frame.card && card.border && frame.thickness > 0f) {
+            if (frame.card && card.border && frame.thickness > 0f && frame.colorHex != 0L) {
                 val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     style = Paint.Style.STROKE
                     color = frame.colorHex.toInt()

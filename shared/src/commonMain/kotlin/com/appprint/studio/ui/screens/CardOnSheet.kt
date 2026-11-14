@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,8 +22,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Rotate90DegreesCw
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -133,7 +136,7 @@ internal fun CardOnSheet(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .border(2.5.dp, Color(0xFF006C47), RoundedCornerShape(6.dp))
+                    .border(2.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
                     .shadow(16.dp, RoundedCornerShape(6.dp)),
             )
         }
@@ -142,7 +145,7 @@ internal fun CardOnSheet(
         com.appprint.studio.ui.components.CardBadges(card = card, modifier = Modifier.fillMaxSize())
 
         // card frame (the printed border on the physical card)
-        if (state.settings.frame.card && card.border) {
+        if (state.settings.frame.card && card.border && state.settings.frame.colorHex != 0L) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val frame = state.settings.frame
                 val dash = when (frame.style) {
@@ -204,11 +207,12 @@ private fun RotateHandle(
 ) {
     val density = LocalDensity.current
     val currentCard by rememberUpdatedState(card)
+    val scheme = MaterialTheme.colorScheme
     Box(
         modifier = modifier
             .size(36.dp)
             .clip(CircleShape)
-            .background(Color(0xFF006C47))
+            .background(scheme.secondary)
             .pointerInput(card.id) {
                 detectDragGestures(onDrag = { change, _ ->
                     change.consume()
@@ -227,10 +231,10 @@ private fun RotateHandle(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            Icons.Filled.Rotate90DegreesCw,
+            Icons.Filled.Autorenew,
             contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(19.dp),
+            tint = scheme.onSecondary,
+            modifier = Modifier.size(17.dp),
         )
     }
 }
@@ -245,12 +249,12 @@ private fun ResizeHandle(
 ) {
     val density = LocalDensity.current
     val currentCard by rememberUpdatedState(card)
+    val scheme = MaterialTheme.colorScheme
     Box(
         modifier = modifier
-            .size(24.dp)
-            .padding(end = 2.dp, bottom = 2.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(Color(0xFF006C47))
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(scheme.primary)
             .pointerInput(card.id) {
                 detectDragGestures(onDrag = { change, dragAmount ->
                     change.consume()
@@ -262,7 +266,17 @@ private fun ResizeHandle(
                     )
                 })
             },
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Filled.SwapHoriz,
+            contentDescription = null,
+            tint = scheme.onPrimary,
+            modifier = Modifier
+                .size(16.dp)
+                .graphicsLayer(rotationZ = 45f),
+        )
+    }
 }
 
 /** ColorMatrix approximation of the scanner pipeline — fast preview only (export does the real pass). */
@@ -275,46 +289,71 @@ private fun enhanceColorFilterOrNull(
     return ColorFilter.colorMatrix(ColorMatrix(m))
 }
 
-/** Sample-art card — Iraqi flag colors (national style) or navy passport, exactly like the design. */
+/** Sample-art card — exactly the design's placeholder: green top bar, name, OFFICIAL caption, photo box + 1:1 tag. */
 @Composable
 private fun SampleCardArt(card: CardItem) {
     val isPassport = card.typeKey == "passport"
-    Box(
+    val bg = if (isPassport) Color(0xFF17365A) else Color(0xFFFDFAF1)
+    val fg = if (isPassport) Color.White else Color(0xFF1C1C1C)
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (isPassport) Color(0xFF17365A) else Color(0xFFFDFAF1)),
+            .background(bg),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .height(10.dp)
+                .height(4.dp)
                 .background(Color(0xFF006C47)),
         )
-        if (!isPassport) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Bottom,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(9.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column {
+                Text(
+                    text = card.name,
+                    color = fg,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Black,
+                    fontSize = 11.sp,
+                    maxLines = 2,
+                    lineHeight = 13.sp,
+                )
+                Text(
+                    text = "OFFICIAL ID DOCUMENT • وثيقة رسمية",
+                    color = fg.copy(alpha = 0.75f),
+                    fontSize = 6.sp,
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Box(modifier = Modifier.fillMaxWidth().weight(1f).background(Color(0xFFCE1126)))
-                Box(modifier = Modifier.fillMaxWidth().weight(1f).background(Color.White))
-                Box(modifier = Modifier.fillMaxWidth().weight(1f).background(Color(0xFF007A3D)))
+                Box(
+                    modifier = Modifier
+                        .size(width = 30.dp, height = 22.dp)
+                        .border(1.dp, fg.copy(alpha = 0.4f), RoundedCornerShape(3.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "صورة",
+                        color = fg.copy(alpha = 0.6f),
+                        fontSize = 6.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Text(
+                    text = "1:1",
+                    color = fg,
+                    fontSize = 7.sp,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
-        Text(
-            text = card.name,
-            color = if (isPassport) Color.White else Color(0xFF1C1C1C),
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Black,
-            fontSize = 12.sp,
-            maxLines = 1,
-            modifier = Modifier.align(Alignment.Center).padding(horizontal = 8.dp),
-        )
-        Text(
-            text = "وثيقة رسمية • OFFICIAL",
-            color = if (isPassport) Color.White.copy(alpha = 0.75f) else Color(0xFF1C1C1C).copy(alpha = 0.7f),
-            fontSize = 6.sp,
-            maxLines = 1,
-            modifier = Modifier.align(Alignment.Center).padding(top = 18.dp, start = 8.dp, end = 8.dp),
-        )
     }
 }

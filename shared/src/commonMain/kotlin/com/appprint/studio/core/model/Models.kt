@@ -143,8 +143,8 @@ data class EnhanceSettings(
 
     companion object {
         val IDENTITY = EnhanceSettings()
-        /** «تحسين تلقائي» scanner preset from the design. */
-        val AUTO = EnhanceSettings(brightness = 108f, contrast = 118f, saturation = 106f, sharpness = 110f)
+        /** «تحسين تلقائي» scanner preset from the design (brightness 108 / contrast 118 / saturation 105 / sharpness 135 / shadow-lift). */
+        val AUTO = EnhanceSettings(brightness = 108f, contrast = 118f, saturation = 105f, sharpness = 135f, mode = EnhanceMode.COLOR, shadowLift = true)
     }
 }
 
@@ -155,8 +155,9 @@ data class SheetFrame(
     val guides: Boolean = true,
     val ruler: Boolean = true,
     val background: SheetBackground = SheetBackground.WHITE,
-    /** Border thickness multiplier (strike is `thickness * 4` px at 300 DPI). */
+    /** Border thickness (strike width is `thickness * 4` px at 300 DPI, `0` draws nothing). */
     val thickness: Float = 1f,
+    /** ARGB border color; the sentinel `0L` means «بدون» — no frame at all. */
     val colorHex: Long = 0xFF111111L,
     val style: FrameStyle = FrameStyle.SOLID,
 ) {
@@ -217,6 +218,8 @@ data class SheetSettings(
     val groupSmart: Boolean = true,
     val autoArrangeOnAdd: Boolean = true,
     val allowMultiPage: Boolean = true,
+    /** «شبكة المعاينة المليمترية» — 10 mm grid on the on-screen sheet. */
+    val showGrid: Boolean = true,
     val frame: SheetFrame = SheetFrame(),
 ) {
     private val base: PaperPreset get() = PaperPreset.fromKey(presetKey)

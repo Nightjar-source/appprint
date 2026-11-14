@@ -96,11 +96,14 @@ fun PanelToggleRow(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val interaction = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .padding(horizontal = 4.dp, vertical = 6.dp),
+            .background(scheme.surfaceContainer)
+            .clickable(interactionSource = interaction, indication = null, onClick = { onCheckedChange(!checked) })
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
@@ -137,7 +140,7 @@ fun PanelChoiceChip(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(percent = 50))
-            .background(if (selected) scheme.secondaryContainer else scheme.surfaceContainerHigh)
+            .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -149,8 +152,8 @@ fun PanelChoiceChip(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-            color = if (selected) scheme.onSecondaryContainer else scheme.onSurface,
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
+            color = if (selected) scheme.onPrimary else scheme.onSurface,
             maxLines = 1,
         )
     }

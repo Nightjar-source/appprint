@@ -2,6 +2,8 @@
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
@@ -45,6 +47,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
@@ -62,6 +65,9 @@ fun SheetCanvas(
     state: TabatiUiState,
     viewModel: TabatiViewModel,
     modifier: Modifier = Modifier,
+    onPickGallery: () -> Unit = {},
+    onCaptureCamera: () -> Unit = {},
+    onAddDemoCards: () -> Unit = {},
 ) {
     val settings = state.settings
     val density = LocalDensity.current
@@ -105,7 +111,9 @@ fun SheetCanvas(
                 .background(canvasColor)
                 .clipToBounds()
                 .pointerInput(Unit) {
-                    detectTapGestures(onDoubleTap = {
+                    detectTapGestures(
+                        onTap = { viewModel.selectCard(null) },
+                        onDoubleTap = {
                         when {
                             state.zoomMode == ZoomMode.FIT -> {
                                 viewModel.setZoomMode(ZoomMode.MANUAL)
@@ -166,6 +174,16 @@ fun SheetCanvas(
                                 .align(Alignment.TopStart)
                                 .offset(x = rulerDp.dp),
                         )
+                        // design: "صفحة n / m" on the ruler's right end
+                        Text(
+                            text = "صفحة ${state.activePage + 1} / ${state.pageCount}",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = (-4).dp, y = 4.dp),
+                        )
                         RulerBar(
                             vertical = true,
                             lengthMm = settings.sheetHeightMm,
@@ -183,9 +201,6 @@ fun SheetCanvas(
                             .clip(RoundedCornerShape(3.dp))
                             .background(sheetBackgroundColor(settings)),
                     ) {
-                        if (state.cards.isEmpty()) {
-                            EmptyPaperMessage(modifier = Modifier.fillMaxSize())
-                        }
                         if (settings.frame.guides) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 val m = settings.marginMm * DP_PER_MM * density.density
@@ -199,6 +214,51 @@ fun SheetCanvas(
                                     ),
                                 )
                             }
+                        }
+                        if (settings.showGrid) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val step = 10f * DP_PER_MM * density.density
+                                var pos = step
+                                while (pos < size.width) {
+                                    drawLine(Color(0x0D000000), Offset(pos, 0f), Offset(pos, size.height), 1f)
+                                    pos += step
+                                }
+                                pos = step
+                                while (pos < size.height) {
+                                    drawLine(Color(0x0D000000), Offset(0f, pos), Offset(size.width, pos), 1f)
+                                    pos += step
+                                }
+                            }
+                        }
+                        if (settings.frame.sheet && settings.frame.colorHex != 0L && settings.frame.thickness > 0f) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val dash = when (settings.frame.style) {
+                                    com.appprint.studio.core.model.FrameStyle.SOLID -> null
+                                    com.appprint.studio.core.model.FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(16f, 12f), 0f)
+                                    com.appprint.studio.core.model.FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5f, 8f), 0f)
+                                }
+                                drawRoundRect(
+                                    color = Color(settings.frame.colorHex),
+                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx()),
+                                    style = Stroke(width = (settings.frame.thickness * 1.6f).coerceAtLeast(1.6f), pathEffect = dash),
+                                )
+                            }
+                        }
+                        // design: "A4 • 210 × 297 mm" caption on the paper
+                        Text(
+                            text = "${settings.presetKey} • ${settings.sheetWidthMm.toInt()} × ${settings.sheetHeightMm.toInt()} mm",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black.copy(alpha = 0.4f),
+                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 6.dp),
+                        )
+                        if (state.cards.isEmpty()) {
+                            EmptyPaperMessage(
+                                modifier = Modifier.fillMaxSize(),
+                                onPickGallery = onPickGallery,
+                                onCaptureCamera = onCaptureCamera,
+                                onAddDemoCards = onAddDemoCards,
+                            )
                         }
                         state.cardsOnPage.forEach { card ->
                             CardOnSheet(
@@ -262,9 +322,15 @@ private fun sheetBackgroundColor(settings: com.appprint.studio.core.model.SheetS
         com.appprint.studio.core.model.SheetBackground.TRANSPARENT -> Color(0x66FFFFFF)
     }
 
-/** Design: empty paper state lives inside the sheet — mint icon + caption. */
+/** Design: empty paper state lives inside the sheet — mint icon + caption + action buttons + demo link. */
 @Composable
-private fun EmptyPaperMessage(modifier: Modifier = Modifier) {
+private fun EmptyPaperMessage(
+    modifier: Modifier = Modifier,
+    onPickGallery: () -> Unit,
+    onCaptureCamera: () -> Unit,
+    onAddDemoCards: () -> Unit,
+) {
+    val sheetGreen = Color(0xFF006C47)
     Box(
         modifier = modifier.padding(24.dp),
         contentAlignment = Alignment.Center,
@@ -281,9 +347,9 @@ private fun EmptyPaperMessage(modifier: Modifier = Modifier) {
                 contentAlignment = Alignment.Center,
             ) {
                 androidx.compose.material3.Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Filled.Image,
+                    imageVector = androidx.compose.material.icons.Icons.Filled.AddPhotoAlternate,
                     contentDescription = null,
-                    tint = Color(0xFF006C47),
+                    tint = sheetGreen,
                     modifier = Modifier.size(32.dp),
                 )
             }
@@ -291,14 +357,71 @@ private fun EmptyPaperMessage(modifier: Modifier = Modifier) {
                 text = "الورقة فارغة — ارفع صور بطاقاتك للبدء",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFF111111),
+                color = Color(0xFF262626),
             )
             Text(
-                text = "افتح الاستوديو لاختيار الصور أو التقطها بالكاميرا وسيتم التعرف على الأبعاد الحقيقية وترتيبها تلقائياً",
+                text = "افتح الاستوديو لاختيار الصور أو التقطها بالكاميرا وسيتم التعرف على أبعادها الحقيقية وترتيبها تلقائياً",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF777777),
+                color = Color(0xFF737373),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier.widthIn(max = 240.dp),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // رفع صور البطاقات — the design's primary green pill
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(sheetGreen)
+                        .clickable(onClick = onPickGallery)
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                ) {
+                    androidx.compose.material3.Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Filled.Collections,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "رفع صور البطاقات",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                    )
+                }
+                // الكاميرا — white pill with border
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(Color.White)
+                        .border(1.dp, Color(0xFFD4D4D4), RoundedCornerShape(percent = 50))
+                        .clickable(onClick = onCaptureCamera)
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                ) {
+                    androidx.compose.material3.Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Filled.CameraAlt,
+                        contentDescription = null,
+                        tint = Color(0xFF262626),
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "الكاميرا",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF262626),
+                    )
+                }
+            }
+            Text(
+                text = "أو جرب بأمثلة تعليمية",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = sheetGreen,
+                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                modifier = Modifier.clickable(onClick = onAddDemoCards).padding(4.dp),
             )
         }
     }

@@ -139,8 +139,8 @@ class TabatiViewModel : ViewModel() {
         updateSettings { it.copy(presetKey = PaperPreset.CUSTOM.key, customWidthMm = widthMm, customHeightMm = heightMm) }
 
     fun setOrientation(orientation: Orientation) = updateSettings { it.copy(orientation = orientation) }
-    fun setMargin(value: Float) = updateSettings { it.copy(marginMm = value.coerceIn(0f, 60f)) }
-    fun setGap(value: Float) = updateSettings { it.copy(gapMm = value.coerceIn(0f, 30f)) }
+    fun setMargin(value: Float) = updateSettings { it.copy(marginMm = value.coerceIn(0f, 25f)) }
+    fun setGap(value: Float) = updateSettings { it.copy(gapMm = value.coerceIn(2f, 10f)) }
     fun setMode(mode: ArrangeMode) = updateSettings { it.copy(mode = mode) }
     fun setGroupSmart(enabled: Boolean) = updateSettings { it.copy(groupSmart = enabled) }
     fun setAutoArrange(enabled: Boolean) = _state.update { it.copy(settings = it.settings.copy(autoArrangeOnAdd = enabled)) }
@@ -150,7 +150,8 @@ class TabatiViewModel : ViewModel() {
         _state.update { it.copy(settings = it.settings.copy(frame = transform(it.settings.frame))) }
 
     fun setFrameBackground(background: SheetBackground) = setFrame { it.copy(background = background) }
-    fun setFrameThickness(value: Float) = setFrame { it.copy(thickness = value.coerceIn(0.5f, 5f)) }
+    fun setFrameThickness(value: Float) = setFrame { it.copy(thickness = value.coerceIn(0f, 3f)) }
+    fun setShowGrid(enabled: Boolean) = _state.update { it.copy(settings = it.settings.copy(showGrid = enabled)) }
     fun setFrameColor(hex: Long) = setFrame { it.copy(colorHex = hex) }
     fun setFrameStyle(style: FrameStyle) = setFrame { it.copy(style = style) }
     fun toggleAllFrames() = setFrame { frame -> if (frame.allFramesOff) frame.copy(sheet = true, card = true, guides = true, ruler = true) else frame.copy(sheet = false, card = false, guides = false, ruler = false) }
@@ -314,6 +315,11 @@ class TabatiViewModel : ViewModel() {
     // ------------------------------------------------------------------ selection & editing
 
     fun selectCard(id: Long?) = _state.update { it.copy(selectedCardId = id, longPressSheetCardId = null) }
+    /** Direct card patch by id (border / guides toggles — no undo per tap). */
+    fun updateCard(id: Long, transform: (CardItem) -> CardItem) = _state.update { s ->
+        s.copy(cards = s.cards.map { if (it.id == id) transform(it) else it })
+    }
+
     /** Patch the selected card directly (e.g. border/guides toggles). */
     fun updateSelectedCard(transform: (CardItem) -> CardItem) = _state.update { s ->
         val id = s.selectedCardId ?: return@update s
@@ -391,8 +397,7 @@ class TabatiViewModel : ViewModel() {
     }
 
     fun renameCard(id: Long, name: String) {
-        pushUndo()
-        _state.update { s -> s.copy(cards = s.cards.map { if (it.id == id) it.copy(name = name.trim().ifEmpty { it.name }.take(80)) else it }) }
+        _state.update { s -> s.copy(cards = s.cards.map { if (it.id == id) it.copy(name = name.trimStart().take(80)) else it }) }
     }
 
     fun deleteCard(id: Long) {
@@ -501,17 +506,50 @@ class TabatiViewModel : ViewModel() {
 
     fun dismissPendingBulk() = _state.update { it.copy(pendingBulkPatch = null) }
 
-    /** «تحسين تلقائي» — scanner preset on top of the selected card. */
-    fun autoEnhanceSelected() = updateSelectedEnhance { current ->
-        current.copy(
-            brightness = EnhanceSettings.AUTO.brightness,
-            contrast = EnhanceSettings.AUTO.contrast,
-            saturation = EnhanceSettings.AUTO.saturation,
-            sharpness = EnhanceSettings.AUTO.sharpness,
-        )
+    /** «تحسين تلقائي» — scanner preset on top of the selected card (bypasses bulk confirm). */
+    fun autoEnhanceSelected() {
+        val imageCards = _state.value.cards.count { it.imageUri != null }
+        if (_state.value.enhanceScope == EnhanceScope.ALL && imageCards > 1) {
+            _state.update { it.copy(pendingBulkPatch = EnhanceSettings.AUTO) }
+            return
+        }
+        _state.update { s ->
+            val id = s.selectedCardId
+            val cards = if (id == null) s.cards else s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.AUTO) else it }
+            s.copy(cards = cards, toast = TabatiToast(Str.enhance_auto_done))
+        }
+    }
+
+    /** Quick-action «تحسين تلقائي» from the long-press sheet — applies to THIS card only. */
+    fun autoEnhanceSelectedDirect(id: Long) {
+        _state.update { s ->
+            s.copy(
+                cards = s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.AUTO) else it },
+                toast = TabatiToast("تم التحسين التلقائي للبطاقة"),
+            )
+        }
     }
 
     fun resetSelectedEnhance() = updateSelectedEnhance { EnhanceSettings.IDENTITY }
+
+    /** «↺ إعادة تعيين هذه البطاقة للأصل» — identity enhance, before/after off, toast. */
+    fun resetSelectedEnhanceOriginal() {
+        _state.update { s ->
+            val id = s.selectedCardId
+            val cards = if (id == null) s.cards else s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.IDENTITY) else it }
+            s.copy(cards = cards, compareBefore = false, toast = TabatiToast(Str.enhance_reset_one))
+        }
+    }
+
+    /** Queue an absolute enhance patch for confirmation (bulk scope or «نسخ التحسين للكل»). */
+    fun requestPendingBulkEnhance(patch: EnhanceSettings) =
+        _state.update { it.copy(pendingBulkPatch = patch) }
+
+    /** «الميلان الدقيق» — tilt applies to the selected card only, never through bulk confirm. */
+    fun setTiltSelected(value: Float) = _state.update { s ->
+        val id = s.selectedCardId ?: return@update s
+        s.copy(cards = s.cards.map { if (it.id == id) it.copy(enhance = it.enhance.copy(tilt = value.coerceIn(-15f, 15f))) else it })
+    }
 
     fun resetAllEnhance() {
         _state.update { s -> s.copy(cards = s.cards.map { it.copy(enhance = EnhanceSettings.IDENTITY) }, toast = TabatiToast(Str.enhance_reset_all)) }
@@ -597,11 +635,11 @@ class TabatiViewModel : ViewModel() {
                 PlatformActions.exportPng(page, s.cards, s.settings)
             }
             setProcessing(false)
-            if (bytes == null) { toast(Str.png_saved.format(0)); return@launch }
+            if (bytes == null) { toast(Str.png_saved); return@launch }
             val ok = withContext(Dispatchers.IO) {
                 PlatformActions.downloadToDownloads("طبعتي-ورقة-${page + 1}.png", bytes)
             }
-            toast(if (ok) Str.png_saved.format(page + 1) else Str.empty_for_export)
+            toast(if (ok) Str.png_saved else Str.empty_for_export)
         }
     }
 
@@ -717,6 +755,27 @@ class TabatiViewModel : ViewModel() {
             else {
                 val arranged = SheetArranger.arrange(s.cards, s.settings, "smart", preserveManual = false).cards
                 s.copy(cards = arranged, toast = TabatiToast(Str.arrange_done.format(arranged.maxOf { it.page } + 1)))
+            }
+        }
+    }
+
+    /** «إعادة تجميع ذكي» — group like-sized neighbours again, manual placements released. */
+    fun regroupSmart() {
+        pushUndo()
+        _state.update { s ->
+            if (s.cards.isEmpty()) s.copy(toast = TabatiToast(Str.empty_for_export))
+            else {
+                val arranged = SheetArranger.arrange(
+                    s.cards.map { it.copy(manualPlacement = false) },
+                    s.settings.copy(groupSmart = true),
+                    "smart",
+                    preserveManual = false,
+                ).cards
+                s.copy(
+                    cards = arranged,
+                    settings = s.settings.copy(groupSmart = true),
+                    toast = TabatiToast(Str.regroup_done),
+                )
             }
         }
     }

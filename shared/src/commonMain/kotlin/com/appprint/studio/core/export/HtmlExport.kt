@@ -25,7 +25,7 @@ object HtmlExport {
     }
 
     private fun frameBorderCss(frame: SheetFrame): String {
-        if (!frame.sheet || frame.thickness <= 0f) return ""
+        if (!frame.sheet || frame.thickness <= 0f || frame.colorHex == 0L) return ""
         val styleName = when (frame.style) {
             FrameStyle.SOLID -> "solid"
             FrameStyle.DASHED -> "dashed"
@@ -69,7 +69,7 @@ object HtmlExport {
         val innerH = if (isRot90) card.widthMm else card.heightMm
         val totalAngle = card.freeRotation + card.enhance.tilt
         val src = imageSource(card)
-        val border = if (frame.card && card.border && frame.thickness > 0f) {
+        val border = if (frame.card && card.border && frame.thickness > 0f && frame.colorHex != 0L) {
             val styleName = when (frame.style) {
                 FrameStyle.SOLID -> "solid"
                 FrameStyle.DASHED -> "dashed"
