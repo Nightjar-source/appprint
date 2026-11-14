@@ -21,6 +21,16 @@ actual fun rememberImagePickerLauncher(
     maxItems: Int,
     onPicked: (List<String>) -> Unit,
 ): () -> Unit {
+    // PickMultipleVisualMedia throws "Max items must be higher than 1" for a single item,
+    // so single-image replacement uses the dedicated single-pick contract instead.
+    if (maxItems <= 1) {
+        val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            onPicked(listOfNotNull(uri?.toString()))
+        }
+        return remember(launcher) {
+            { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+        }
+    }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(maxItems),
     ) { uris -> onPicked(uris.map(Uri::toString)) }
