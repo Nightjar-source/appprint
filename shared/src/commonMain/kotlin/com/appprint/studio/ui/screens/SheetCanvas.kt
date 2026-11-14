@@ -279,7 +279,7 @@ private fun EmptyPaperMessage(modifier: Modifier = Modifier) {
                 contentAlignment = Alignment.Center,
             ) {
                 androidx.compose.material3.Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Filled.AddPhotoAlternate,
+                    imageVector = androidx.compose.material.icons.Icons.Filled.Image,
                     contentDescription = null,
                     tint = Color(0xFF006C47),
                     modifier = Modifier.size(32.dp),
