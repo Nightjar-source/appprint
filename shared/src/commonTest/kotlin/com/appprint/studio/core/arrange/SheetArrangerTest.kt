@@ -55,17 +55,18 @@ class SheetArrangerTest {
             "smart",
             false,
         )
-        for (c in result.cards) {
-            assertTrue(c.xMm >= 0f && c.yMm >= 0f, "card ${c.id} starts before origin")
-            assertTrue(
-                c.xMm + c.widthMm <= settings.sheetWidthMm + 0.01f,
-                "card ${c.id} overflows width ${c.xMm + c.widthMm} > ${settings.sheetWidthMm}",
-            )
-            assertTrue(
-                c.yMm + c.heightMm <= settings.sheetHeightMm + 0.01f,
-                "card ${c.id} overflows height ${c.yMm + c.heightMm} > ${settings.sheetHeightMm}",
-            )
+        val problems = result.cards.mapNotNull { c ->
+            when {
+                c.xMm < 0f || c.yMm < 0f ->
+                    "card ${c.id} starts before origin x=${c.xMm} y=${c.yMm}"
+                c.xMm + c.widthMm > settings.sheetWidthMm + 0.01f ->
+                    "card ${c.id} right=${c.xMm + c.widthMm} > ${settings.sheetWidthMm} (x=${c.xMm} w=${c.widthMm})"
+                c.yMm + c.heightMm > settings.sheetHeightMm + 0.01f ->
+                    "card ${c.id} bottom=${c.yMm + c.heightMm} > ${settings.sheetHeightMm} (y=${c.yMm} h=${c.heightMm})"
+                else -> null
+            }
         }
+        assertTrue(problems.isEmpty(), problems.joinToString(" | "))
     }
 
     @Test
