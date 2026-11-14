@@ -90,11 +90,11 @@ object SheetArranger {
             kotlin.math.abs(ratio - 1.42857f) < 0.12f ->
                 Detection("residence", "بطاقة السكن", 100f, 70f, "تم التعرف: بطاقة سكن • $orient")
             ratio >= 1f -> {
-                val h = (90f / ratio * 10f).round(1).coerceAtLeast(30f)
+                val h = (90f / ratio).round(1).coerceAtLeast(30f)
                 Detection("custom", "قياس مخصص", 90f, h, "تم التعرف: مخصص • $orient")
             }
             else -> {
-                val w = (120f * ratio * 10f).round(1).coerceAtLeast(30f)
+                val w = (120f * ratio).round(1).coerceAtLeast(30f)
                 Detection("custom", "قياس مخصص", w, 120f, "تم التعرف: مخصص • $orient")
             }
         }
@@ -167,8 +167,8 @@ object SheetArranger {
                 }
             }
             c.copy(
-                widthMm = (w * 10f).round(1),
-                heightMm = (h * 10f).round(1),
+                widthMm = w.round(1),
+                heightMm = h.round(1),
                 rotation = rot,
                 freeRotation = 0f,
                 autoRotated = autoRotated,
