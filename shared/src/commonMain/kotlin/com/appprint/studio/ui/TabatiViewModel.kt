@@ -598,7 +598,7 @@ class TabatiViewModel : ViewModel() {
                 if (ok) saved++
             }
             setProcessing(false)
-            toast(if (ok) Str.png_all_saved.format(saved) else Str.empty_for_export)
+            toast(if (saved > 0) Str.png_all_saved.format(saved) else Str.empty_for_export)
         }
     }
 

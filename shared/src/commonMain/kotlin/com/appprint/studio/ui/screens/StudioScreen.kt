@@ -65,7 +65,6 @@ import com.appprint.studio.ui.components.AppConfirmDialog
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.platform.PlatformBackHandler
 import com.appprint.studio.ui.strings.Str
-import com.appprint.studio.ui.theme.Motion
 
 /**
  * The Studio — the canvas fills the screen; sections open as a side panel on
@@ -131,8 +130,8 @@ fun StudioScreen(
             // ----------------------------------------- side panel (medium+)
             AnimatedVisibility(
                 visible = !isCompact && state.section != StudioSection.SHEET,
-                enter = fadeIn(tween(220)) + expandHorizontally(expandFrom = Alignment.End, animationSpec = Motion.fastDp()),
-                exit = fadeOut(tween(160)) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = Motion.fastDp()),
+                enter = fadeIn(tween(220)) + expandHorizontally(expandFrom = Alignment.End, animationSpec = tween(220)),
+                exit = fadeOut(tween(160)) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = tween(160)),
                 modifier = Modifier.fillMaxHeight(),
             ) {
                 Box(
@@ -153,8 +152,8 @@ fun StudioScreen(
         // --------------------------------------- bottom drawer (compact)
         AnimatedVisibility(
             visible = isCompact && state.section != StudioSection.SHEET,
-            enter = fadeIn(tween(180)) + expandVertically(expandFrom = Alignment.Bottom, animationSpec = Motion.fastDp()),
-            exit = fadeOut(tween(120)) + shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = Motion.fastDp()),
+            enter = fadeIn(tween(180)) + expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(220)),
+            exit = fadeOut(tween(120)) + shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(160)),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             SurfaceDrawer(
