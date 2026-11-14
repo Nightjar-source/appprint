@@ -1,6 +1,8 @@
 ﻿// Shared UI-free core + Compose Multiplatform UI shared by Android (shipping),
 // Desktop JVM (verification target) and iOS (targets declared; wire on macOS).
 // Follows the Compose Multiplatform 1.12 conventions (AGP 9 built-in Kotlin).
+import org.gradle.api.tasks.testing.Test
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -94,6 +96,15 @@ kotlin {
         iosMain.dependencies {
             // iOS actuals are placeholders — enable the iosApp on macOS
         }
+    }
+}
+
+// Full diagnostics for unit tests — assertion messages and stack traces are always printed.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("failed", "passed")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
 }
 
