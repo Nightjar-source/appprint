@@ -1,25 +1,23 @@
 package com.appprint.studio
 
-import android.app.Activity
-import android.graphics.Color
 import android.os.Bundle
-import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.appprint.studio.core.platform.AndroidPlatform
+import com.appprint.studio.ui.AppRoot
+import com.appprint.studio.ui.strings.Str
 
-/**
- * Temporary placeholder — the app is being rebuilt from scratch from the new
- * design (HTML → Compose Multiplatform). Replace with the real
- * ComponentActivity + setContent entry once the new UI lands in :shared.
- */
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        AndroidPlatform.set(applicationContext)
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContentView(TextView(this).apply {
-            text = getString(R.string.app_name)
-            textSize = 22f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#151816"))
-            textAlignment = TextView.TEXT_ALIGNMENT_CENTER
-            gravity = android.view.Gravity.CENTER
-        })
+
+        setContent {
+            AppRoot()
+        }
     }
 }

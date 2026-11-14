@@ -1,11 +1,12 @@
 ﻿// Android application — thin launcher over :shared (KMP + Compose Multiplatform).
 // No org.jetbrains.kotlin.android plugin: AGP 9+ ships built-in Kotlin.
-// Clean slate: the app is being rebuilt from scratch from the new design (HTML → Compose).
 import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
     id("com.android.application")
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -16,8 +17,9 @@ android {
         applicationId = "com.appprint.studio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 17
+        versionName = "2.0.0"
+        resourceConfigurations += listOf("ar", "en")
     }
 
     val keystoreProperties = Properties()
@@ -39,8 +41,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
         debug {
             isMinifyEnabled = false
@@ -51,11 +58,19 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 }
 
-// No Compose in this module yet — the UI lives in :shared once the new design lands.
-// core-splashscreen keeps the brand Splash theme working; :shared stays on the classpath.
+// Compose Lives in :shared — this module wires the launcher, edge-to-edge and the splash.
 dependencies {
     implementation(project(":shared"))
+    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.activity.ktx)
 }

@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Clean slate — the app is being rebuilt from scratch from the new design (HTML → Compose).
-     Add permissions back per feature (camera / notifications) as they are implemented. -->
+<!-- «طبعتي» — fully offline: no INTERNET, no ads, no analytics.
+     Permissions: camera (فقط لالتقاط صور البطاقات) + إشعارات التصدير. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Fully offline: no INTERNET permission, no ads, no analytics, no trackers. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/pdf" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -14,18 +25,30 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppPrint.Splash"
-        android:enableOnBackInvokedCallback="true">
+        android:enableOnBackInvokedCallback="true"
+        android:largeHeap="false">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AppPrint"
             android:resizeableActivity="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|uiMode|keyboardHidden|navigation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>
