@@ -30,6 +30,8 @@ actual object PlatformActions {
 
     actual fun imageAsDataUri(path: String): String = ""
 
+    actual fun downloadToDownloads(fileName: String, bytes: ByteArray): Boolean = false // iOS actuals are placeholders — wire on macOS
+
     actual fun exportPdf(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray? = null
 
     actual fun exportPng(page: Int, cards: List<CardItem>, settings: SheetSettings): ByteArray? = null

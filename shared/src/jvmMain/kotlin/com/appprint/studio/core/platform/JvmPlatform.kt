@@ -59,6 +59,17 @@ actual object PlatformActions {
         }.getOrElse { "" }
     }
 
+    actual fun downloadToDownloads(fileName: String, bytes: ByteArray): Boolean {
+        // Desktop verification build — save next to the user's real Downloads folder.
+        return runCatching {
+            val downloads = File(System.getProperty("user.home"), "Downloads")
+            val dir = if (downloads.exists() && downloads.isDirectory) downloads else File(privateDir("downloads"))
+            val file = File(dir, fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
+            file.writeBytes(bytes)
+            true
+        }.getOrDefault(false)
+    }
+
     actual fun exportPdf(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray? {
         // Verification-target renderer: simple but functional — enough for local PDF smoke checks.
         return runCatching {

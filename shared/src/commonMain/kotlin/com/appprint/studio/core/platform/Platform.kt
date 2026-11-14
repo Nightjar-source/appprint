@@ -51,6 +51,13 @@ expect object PlatformActions {
     /** Shares a file from private storage via the platform share flow (FileProvider on Android). */
     fun shareFile(path: String, mimeType: String, subject: String?): Boolean
 
+    /**
+     * Writes [bytes] directly to the user's public Downloads collection (scoped storage,
+     * no storage permission needed on Android 10+). True on success.
+     * This is what the «زر PDF» does — the file lands in التنزيلات, not in a share sheet.
+     */
+    fun downloadToDownloads(fileName: String, bytes: ByteArray): Boolean
+
     /** Writes bytes to the private exports directory; absolute path or null. */
     fun writeExport(fileName: String, bytes: ByteArray): String?
 

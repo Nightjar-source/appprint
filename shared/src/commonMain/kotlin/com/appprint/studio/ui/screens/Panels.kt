@@ -238,7 +238,7 @@ private fun PaperSizeChip(label: String, sub: String, selected: Boolean, onClick
 // ---------------------------------------------------------------- cards
 
 @Composable
-fun CardsPanel(state: TabatiUiState, viewModel: TabatiViewModel, onReplaceImage: (Long) -> Unit) {
+fun CardsPanel(state: TabatiUiState, viewModel: TabatiViewModel, onReplaceImage: (Long) -> Unit, onClearAllRequest: () -> Unit = {}) {
     val selected = state.selectedCard
     PanelScaffold(title = Str.section_cards, state = state, viewModel = viewModel) {
         if (selected == null) {
@@ -290,7 +290,27 @@ fun CardsPanel(state: TabatiUiState, viewModel: TabatiViewModel, onReplaceImage:
             }
         }
 
-        PanelSectionHeader("البطاقات في الورقة (${state.cardsOnPage.size})")
+        PanelSectionHeader("بطاقاتك على الورقة (${state.cardsOnPage.size})", trailing = {
+            if (state.cards.isNotEmpty()) {
+                TextButton(
+                    onClick = onClearAllRequest,
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ),
+                    shape = RoundedCornerShape(percent = 50),
+                    modifier = Modifier.height(30.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                ) {
+                    Text(
+                        Str.clear_all,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+        })
         state.cardsOnPage.forEach { card ->
             CardListRow(card = card, selected = card.id == state.selectedCardId, onClick = { viewModel.selectCard(card.id) })
         }

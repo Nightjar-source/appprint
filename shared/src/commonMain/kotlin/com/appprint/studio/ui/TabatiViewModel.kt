@@ -493,9 +493,10 @@ class TabatiViewModel : ViewModel() {
         _state.update { s -> s.copy(cards = s.cards.map { it.copy(enhance = EnhanceSettings.IDENTITY) }, toast = TabatiToast(Str.enhance_reset_all)) }
     }
 
-    // ------------------------------------------------------------------ export
+    // ------------------------------------------------------------------ export / print / share
 
-    fun exportPdf() {
+    /** «زر PDF» — builds the 300 DPI PDF and saves it straight to the user's Downloads folder. */
+    fun downloadPdf() {
         viewModelScope.launch {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
@@ -504,18 +505,66 @@ class TabatiViewModel : ViewModel() {
                 PlatformActions.exportPdf(s.cards, s.settings, s.pageCount)
             }
             setProcessing(false)
-            if (bytes == null) { toast(Str.empty_for_export); return@launch }
-            val path = withContext(Dispatchers.IO) {
-                PlatformActions.writeExport("tabati-print.pdf", bytes)
-            } ?: run { toast(Str.empty_for_export); return@launch }
-            val shared = withContext(Dispatchers.IO) {
-                PlatformActions.shareFile(path, "application/pdf", subject = "طبعتي — ملف جاهز للطباعة")
+            if (bytes == null || !PlatformActions.downloadToDownloads("طبعتي-${s.settings.presetKey}.pdf", bytes)) {
+                toast(Str.empty_for_export)
+                return@launch
             }
-            if (shared) toast(Str.pdf_saved.format(s.pageCount, s.settings.sheetWidthMm.toInt(), s.settings.sheetHeightMm.toInt()))
+            toast(Str.pdf_saved.format(s.pageCount, s.settings.sheetWidthMm.toInt(), s.settings.sheetHeightMm.toInt()))
         }
     }
 
-    fun exportPng(page: Int) {
+    /** «طباعة مباشرة» — hands the PDF straight to the system print service. */
+    fun printPdf() {
+        viewModelScope.launch {
+            val s = _state.value
+            if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
+            setProcessing(true)
+            val bytes = withContext(Dispatchers.IO) {
+                PlatformActions.exportPdf(s.cards, s.settings, s.pageCount)
+            }
+            if (bytes == null) { setProcessing(false); toast(Str.empty_for_export); return@launch }
+            val accepted = PlatformActions.printPdf(
+                pdfBytes = bytes,
+                pageCount = s.pageCount,
+                sheetWidthMm = s.settings.sheetWidthMm,
+                sheetHeightMm = s.settings.sheetHeightMm,
+                jobName = "طبعتي-${s.settings.presetKey}",
+            )
+            setProcessing(false)
+            if (accepted) {
+                toast(Str.print_accepted)
+            } else {
+                // print service unavailable — save instead so the user still gets the file
+                withContext(Dispatchers.IO) {
+                    PlatformActions.downloadToDownloads("طبعتي-${s.settings.presetKey}.pdf", bytes)
+                }
+                toast(Str.print_fallback)
+            }
+        }
+    }
+
+    /** «مشاركة للتطبيقات» — the PDF as a file through the system share sheet. */
+    fun sharePdf() {
+        viewModelScope.launch {
+            val s = _state.value
+            if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
+            setProcessing(true)
+            val bytes = withContext(Dispatchers.IO) {
+                PlatformActions.exportPdf(s.cards, s.settings, s.pageCount)
+            }
+            if (bytes == null) { setProcessing(false); toast(Str.empty_for_export); return@launch }
+            val path = withContext(Dispatchers.IO) {
+                PlatformActions.writeExport("طبعتي-${s.settings.presetKey}.pdf", bytes)
+            } ?: run { setProcessing(false); toast(Str.empty_for_export); return@launch }
+            setProcessing(false)
+            withContext(Dispatchers.IO) {
+                PlatformActions.shareFile(path, "application/pdf", subject = "طبعتي — ملف جاهز للطباعة")
+            }
+        }
+    }
+
+    /** Save one page as PNG into Downloads. */
+    fun downloadPng(page: Int) {
         viewModelScope.launch {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
@@ -525,17 +574,36 @@ class TabatiViewModel : ViewModel() {
             }
             setProcessing(false)
             if (bytes == null) { toast(Str.png_saved.format(0)); return@launch }
-            val path = withContext(Dispatchers.IO) {
-                PlatformActions.writeExport("tabati-page-${page + 1}.png", bytes)
-            } ?: return@launch
-            val shared = withContext(Dispatchers.IO) {
-                PlatformActions.shareFile(path, "image/png", subject = "طبعتي — ورقة ${page + 1}")
+            val ok = withContext(Dispatchers.IO) {
+                PlatformActions.downloadToDownloads("طبعتي-ورقة-${page + 1}.png", bytes)
             }
-            if (shared) toast(Str.png_saved.format(page + 1))
+            toast(if (ok) Str.png_saved.format(page + 1) else Str.empty_for_export)
         }
     }
 
-    fun exportHtml() {
+    /** Save every page as PNG into Downloads (one toast, no chooser spam). */
+    fun downloadAllPngs() {
+        viewModelScope.launch {
+            val s = _state.value
+            if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
+            setProcessing(true)
+            var saved = 0
+            for (page in 0 until s.pageCount) {
+                val bytes = withContext(Dispatchers.IO) {
+                    PlatformActions.exportPng(page, s.cards, s.settings)
+                } ?: continue
+                val ok = withContext(Dispatchers.IO) {
+                    PlatformActions.downloadToDownloads("طبعتي-ورقة-${page + 1}.png", bytes)
+                }
+                if (ok) saved++
+            }
+            setProcessing(false)
+            toast(if (ok) Str.png_all_saved.format(saved) else Str.empty_for_export)
+        }
+    }
+
+    /** Write the standalone HTML print file into Downloads. */
+    fun downloadHtml() {
         viewModelScope.launch {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
@@ -545,12 +613,10 @@ class TabatiViewModel : ViewModel() {
                     card.imageUri?.let { PlatformActions.imageAsDataUri(it) } ?: ""
                 }
             }
-            val path = withContext(Dispatchers.IO) {
-                PlatformActions.writeExport("tabati-print.html", html)
-            } ?: return@launch
-            withContext(Dispatchers.IO) {
-                PlatformActions.shareFile(path, "text/html", subject = "طبعتي — ملف الطباعة")
+            val ok = withContext(Dispatchers.IO) {
+                PlatformActions.downloadToDownloads("طبعتي-للطباعة.html", html)
             }
+            toast(if (ok) Str.html_saved else Str.empty_for_export)
         }
     }
 

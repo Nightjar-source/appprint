@@ -224,6 +224,54 @@ actual object PlatformActions {
         }.getOrDefault(false)
     }
 
+    actual fun downloadToDownloads(fileName: String, bytes: ByteArray): Boolean {
+        val context = AndroidPlatform.appContext
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            // Scoped storage — no permission needed, Downloads via MediaStore
+            return runCatching {
+                val displayName = fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+                val values = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.Downloads.DISPLAY_NAME, displayName)
+                    put(android.provider.MediaStore.Downloads.MIME_TYPE, mimeFor(displayName))
+                    put(android.provider.MediaStore.Downloads.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+                    put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val collection = android.provider.MediaStore.Downloads.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                val uri = context.contentResolver.insert(collection, values) ?: return@runCatching false
+                context.contentResolver.openOutputStream(uri)?.use { out ->
+                    out.write(bytes)
+                } ?: return@runCatching false
+                values.clear()
+                values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0)
+                context.contentResolver.update(uri, values, null, null)
+                true
+            }.getOrDefault(false)
+        }
+        // API 26–28: legacy public Downloads directory (needs WRITE_EXTERNAL_STORAGE maxSdk 28)
+        return runCatching {
+            val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            if (!dir.exists()) dir.mkdirs()
+            val file = File(dir, fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
+            FileOutputStream(file).use { it.write(bytes) }
+            // ask the media scanner to surface it in Files/Downloads apps
+            context.sendBroadcast(
+                Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE).apply {
+                    data = Uri.fromFile(file)
+                },
+            )
+            true
+        }.getOrDefault(false)
+    }
+
+    private fun mimeFor(fileName: String): String = when {
+        fileName.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
+        fileName.endsWith(".png", ignoreCase = true) -> "image/png"
+        fileName.endsWith(".jpg", ignoreCase = true) || fileName.endsWith(".jpeg", ignoreCase = true) -> "image/jpeg"
+        fileName.endsWith(".html", ignoreCase = true) -> "text/html"
+        fileName.endsWith(".txt", ignoreCase = true) -> "text/plain"
+        else -> "application/octet-stream"
+    }
+
     actual fun autoCropImage(path: String, id: Long): String? = runCatching {
         val file = File(path.removePrefix("file://"))
         if (!file.exists()) return null

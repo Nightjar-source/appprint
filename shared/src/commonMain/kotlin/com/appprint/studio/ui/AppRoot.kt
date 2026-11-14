@@ -111,9 +111,20 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
             replaceRequest.value = id
             replaceLauncher()
         }
-        val requestNotifications = com.appprint.studio.core.platform.rememberNotificationPermissionRequester()
+        // (notification permission reserved for export toast on Android 13+ — used by the print path)
 
         var shareSheetOpen by remember { mutableStateOf(false) }
+
+        // edge-to-edge: status + navigation bar icons always contrast the current surface
+        val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+        val barDark = when (state.theme) {
+            AppTheme.DARK -> true
+            AppTheme.LIGHT -> false
+            AppTheme.SYSTEM -> systemDark
+        }
+        LaunchedEffect(barDark) {
+            com.appprint.studio.core.platform.PlatformUi.syncSystemBars(barDark)
+        }
 
         // one-shot toast → global snackbar, auto-expires
         val toast = state.toast
@@ -156,7 +167,7 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                     onBackToSheet = { viewModel.setSection(StudioSection.SHEET) },
                     onCycleTheme = viewModel::cycleTheme,
                     onShare = { shareSheetOpen = true },
-                    onExportPdf = { requestNotifications(); viewModel.exportPdf() },
+                    onExportPdf = viewModel::downloadPdf,
                     onZoomIn = { viewModel.zoomStep(+15f) },
                     onZoomOut = { viewModel.zoomStep(-15f) },
                     onZoomFit = viewModel::zoomFit,
@@ -197,11 +208,13 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
                 ShareSheet(
-                    onExportPdf = { requestNotifications(); viewModel.exportPdf() },
-                    onExportPngCurrent = { viewModel.exportPng(state.activePage) },
-                    onExportAllPngs = { repeat(state.pageCount) { page -> viewModel.exportPng(page) } },
-                    onExportHtml = viewModel::exportHtml,
                     pageCount = state.pageCount,
+                    currentPage = state.activePage,
+                    onDirectPrint = viewModel::printPdf,
+                    onSavePngCurrent = { viewModel.downloadPng(state.activePage) },
+                    onSaveAllPngs = viewModel::downloadAllPngs,
+                    onSaveHtml = viewModel::downloadHtml,
+                    onSharePdf = viewModel::sharePdf,
                     onDismiss = { shareSheetOpen = false },
                 )
             }
@@ -483,7 +496,8 @@ private fun NavPillItem(
             .clip(RoundedCornerShape(percent = 50))
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+        .widthIn(min = 52.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -504,7 +518,7 @@ private fun NavPillItem(
         }
         Text(
             text = destination.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.5.sp),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             color = contentColor,
             maxLines = 1,
         )
@@ -618,7 +632,7 @@ private fun RailItem(
         )
         Text(
             text = destination.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             color = contentColor,
             maxLines = 1,
         )

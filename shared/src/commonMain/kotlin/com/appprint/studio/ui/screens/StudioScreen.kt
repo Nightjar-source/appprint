@@ -2,6 +2,14 @@
 
 package com.appprint.studio.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -57,6 +65,7 @@ import com.appprint.studio.ui.components.AppConfirmDialog
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.platform.PlatformBackHandler
 import com.appprint.studio.ui.strings.Str
+import com.appprint.studio.ui.theme.Motion
 
 /**
  * The Studio — the canvas fills the screen; sections open as a side panel on
@@ -75,9 +84,10 @@ fun StudioScreen(
 
     var deletePageIdx by remember { mutableStateOf<Int?>(null) }
     var swapFromId by remember { mutableStateOf<Long?>(null) }
+    var clearAllOpen by remember { mutableStateOf(false) }
 
     // Back: close overlays → editing section → deselect. Never exits directly.
-    val overlayOpen = state.longPressSheetCardId != null || swapFromId != null || deletePageIdx != null
+    val overlayOpen = state.longPressSheetCardId != null || swapFromId != null || deletePageIdx != null || clearAllOpen
     PlatformBackHandler(
         enabled = overlayOpen || state.section != StudioSection.SHEET || state.selectedCardId != null,
     ) {
@@ -119,24 +129,39 @@ fun StudioScreen(
             }
 
             // ----------------------------------------- side panel (medium+)
-            if (!isCompact && state.section != StudioSection.SHEET) {
+            AnimatedVisibility(
+                visible = !isCompact && state.section != StudioSection.SHEET,
+                enter = fadeIn(tween(220)) + expandHorizontally(expandFrom = Alignment.End, animationSpec = Motion.fastDp()),
+                exit = fadeOut(tween(160)) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = Motion.fastDp()),
+                modifier = Modifier.fillMaxHeight(),
+            ) {
                 Box(
                     modifier = Modifier
                         .width((if (isExpanded) 400 else 360).dp)
                         .fillMaxHeight(),
                 ) {
-                    SectionPanel(state = state, viewModel = viewModel, onReplaceImage = onReplaceImage)
+                    SectionPanel(
+                        state = state,
+                        viewModel = viewModel,
+                        onReplaceImage = onReplaceImage,
+                        onClearAllRequest = { clearAllOpen = true },
+                    )
                 }
             }
         }
 
         // --------------------------------------- bottom drawer (compact)
-        if (isCompact && state.section != StudioSection.SHEET) {
+        AnimatedVisibility(
+            visible = isCompact && state.section != StudioSection.SHEET,
+            enter = fadeIn(tween(180)) + expandVertically(expandFrom = Alignment.Bottom, animationSpec = Motion.fastDp()),
+            exit = fadeOut(tween(120)) + shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = Motion.fastDp()),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
             SurfaceDrawer(
                 state = state,
                 viewModel = viewModel,
                 onReplaceImage = onReplaceImage,
-                modifier = Modifier.align(Alignment.BottomCenter),
+                onClearAllRequest = { clearAllOpen = true },
             )
         }
 
@@ -182,6 +207,19 @@ fun StudioScreen(
             )
         }
 
+        // ------------------------------------------ clear all dialog
+        if (clearAllOpen) {
+            AppConfirmDialog(
+                icon = Icons.Filled.DeleteOutline,
+                title = Str.clear_all_title,
+                body = Str.clear_all_body,
+                primaryLabel = Str.clear_all,
+                onPrimary = { viewModel.clearAll(); clearAllOpen = false },
+                onCancel = { clearAllOpen = false },
+                onDismiss = { clearAllOpen = false },
+            )
+        }
+
         // ---------------------------- bulk enhance confirmation dialog
         if (state.pendingBulkPatch != null) {
             AppConfirmDialog(
@@ -203,10 +241,11 @@ private fun SectionPanel(
     state: com.appprint.studio.ui.TabatiUiState,
     viewModel: TabatiViewModel,
     onReplaceImage: (Long) -> Unit,
+    onClearAllRequest: () -> Unit,
 ) {
     when (state.section) {
         StudioSection.PAPER -> PaperPanel(state = state, viewModel = viewModel)
-        StudioSection.CARDS -> CardsPanel(state = state, viewModel = viewModel, onReplaceImage = onReplaceImage)
+        StudioSection.CARDS -> CardsPanel(state = state, viewModel = viewModel, onReplaceImage = onReplaceImage, onClearAllRequest = onClearAllRequest)
         StudioSection.ENHANCE -> EnhancePanel(state = state, viewModel = viewModel)
         StudioSection.BORDERS -> BordersPanel(state = state, viewModel = viewModel)
         StudioSection.GUIDE -> GuidePanel(state = state, viewModel = viewModel)
@@ -220,6 +259,7 @@ private fun SurfaceDrawer(
     state: com.appprint.studio.ui.TabatiUiState,
     viewModel: TabatiViewModel,
     onReplaceImage: (Long) -> Unit,
+    onClearAllRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -239,7 +279,7 @@ private fun SurfaceDrawer(
                 .background(scheme.outlineVariant),
         )
         Box(Modifier.fillMaxWidth().fillMaxHeight()) {
-            SectionPanel(state = state, viewModel = viewModel, onReplaceImage = onReplaceImage)
+            SectionPanel(state = state, viewModel = viewModel, onReplaceImage = onReplaceImage, onClearAllRequest = onClearAllRequest)
         }
     }
 }

@@ -7,11 +7,18 @@ object AndroidPlatform {
     lateinit var appContext: Context
         private set
 
+    @Volatile
+    private var window: android.view.Window? = null
+
     fun set(context: Context) {
         if (!::appContext.isInitialized) {
             appContext = context.applicationContext
         }
     }
 
-    val isSet: Boolean get() = ::appContext.isInitialized
+    fun setWindow(window: android.view.Window?) {
+        this.window = window
+    }
+
+    fun currentWindow(): android.view.Window? = window
 }
