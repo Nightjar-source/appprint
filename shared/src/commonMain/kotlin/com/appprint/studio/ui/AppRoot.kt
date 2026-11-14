@@ -1,4 +1,4 @@
-package com.appprint.studio.ui
+﻿package com.appprint.studio.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -22,9 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.calculateBottomPadding
-import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -92,6 +89,7 @@ import kotlinx.coroutines.delay
  * edge-to-edge screens + floating chrome (Reem Kufi wordmark top bar, nav pill/rail),
  * Navigation-free section switching per the approved HTML design.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -341,6 +339,7 @@ private fun FloatingTopBar(
     }
 }
 
+@Composable
 private fun statusTopSafe(): androidx.compose.ui.unit.Dp =
     androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
@@ -572,6 +571,7 @@ private fun FloatingRail(
 private fun Modifier.heightInRail(max: androidx.compose.ui.unit.Dp): Modifier =
     this.then(androidx.compose.foundation.layout.heightIn(max = max))
 
+@Composable
 private fun cutoutStartPadding(): androidx.compose.ui.unit.Dp =
     androidx.compose.foundation.layout.WindowInsets.displayCutout.asPaddingValues()
         .calculateStartPadding(LocalLayoutDirection.current)

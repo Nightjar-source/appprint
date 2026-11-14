@@ -1,4 +1,4 @@
-package com.appprint.studio.core.export
+﻿package com.appprint.studio.core.export
 
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.model.FrameStyle

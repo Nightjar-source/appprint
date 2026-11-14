@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.components
+﻿package com.appprint.studio.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

@@ -1,4 +1,4 @@
-package com.appprint.studio.core.platform
+﻿package com.appprint.studio.core.platform
 
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.model.CardItem

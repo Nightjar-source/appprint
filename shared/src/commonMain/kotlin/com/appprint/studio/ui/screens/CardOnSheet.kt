@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.screens
+﻿package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.appprint.studio.core.image.EnhanceMath
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.platform.rememberCardBitmap
-import com.appprint.studio.ui.StudioViewModel
+import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
 import kotlin.math.atan2
 import kotlin.math.roundToInt
@@ -60,7 +60,7 @@ import kotlin.math.roundToInt
 internal fun CardOnSheet(
     card: CardItem,
     state: TabatiUiState,
-    viewModel: StudioViewModel,
+    viewModel: TabatiViewModel,
     dpPerMm: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -193,7 +193,7 @@ internal fun CardOnSheet(
 @Composable
 private fun RotateHandle(
     card: CardItem,
-    viewModel: StudioViewModel,
+    viewModel: TabatiViewModel,
     dpPerMm: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -234,7 +234,7 @@ private fun RotateHandle(
 @Composable
 private fun ResizeHandle(
     card: CardItem,
-    viewModel: StudioViewModel,
+    viewModel: TabatiViewModel,
     dpPerMm: Float,
     modifier: Modifier = Modifier,
 ) {

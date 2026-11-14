@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.platform
+﻿package com.appprint.studio.ui.platform
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable

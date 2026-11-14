@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.strings
+﻿package com.appprint.studio.ui.strings
 
 /**
  * كل نصوص واجهة «طبعتي — استوديو الطباعة الذكي 1:1» في مكان واحد (لغة «طبعتي» العربية).

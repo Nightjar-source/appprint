@@ -1,4 +1,4 @@
-package com.appprint.studio.core.arrange
+﻿package com.appprint.studio.core.arrange
 
 import com.appprint.studio.core.model.ArrangeMode
 import com.appprint.studio.core.model.CardItem
@@ -227,7 +227,7 @@ object SheetArranger {
                 cx = margin
                 cy = margin
             }
-            placed.push(
+            placed.add(
                 c.copy(
                     xMm = (cx + (cellW - c.widthMm) / 2f).round(1),
                     yMm = (cy + (cellH - c.heightMm) / 2f).round(1),
@@ -266,7 +266,7 @@ object SheetArranger {
                 cy = margin
                 rowH = 0f
             }
-            placed.push(c.copy(xMm = cx.round(1), yMm = cy.round(1), page = page, manualPlacement = false))
+            placed.add(c.copy(xMm = cx.round(1), yMm = cy.round(1), page = page, manualPlacement = false))
             cx += c.widthMm + minGap
             rowH = maxOf(rowH, c.heightMm)
         }

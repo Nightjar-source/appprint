@@ -1,4 +1,4 @@
-package com.appprint.studio.core.image
+﻿package com.appprint.studio.core.image
 
 import com.appprint.studio.core.model.EnhanceMode
 import com.appprint.studio.core.model.EnhanceSettings

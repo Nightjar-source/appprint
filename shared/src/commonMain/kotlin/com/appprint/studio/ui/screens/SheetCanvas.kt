@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.screens
+﻿package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -36,7 +36,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.appprint.studio.core.model.AppTheme
-import com.appprint.studio.ui.StudioViewModel
+import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
 import com.appprint.studio.ui.ZoomMode
 
@@ -50,7 +50,7 @@ private const val DP_PER_MM = 3.7795276f
 @Composable
 fun SheetCanvas(
     state: TabatiUiState,
-    viewModel: StudioViewModel,
+    viewModel: TabatiViewModel,
     modifier: Modifier = Modifier,
 ) {
     val settings = state.settings

@@ -1,4 +1,4 @@
-package com.appprint.studio.core.model
+﻿package com.appprint.studio.core.model
 
 /**
  * Core models for «طبعتي — استوديو الطباعة الذكي» — UI-free, pure Kotlin,

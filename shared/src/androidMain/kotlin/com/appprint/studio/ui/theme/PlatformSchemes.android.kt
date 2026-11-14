@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.theme
+﻿package com.appprint.studio.ui.theme
 
 import android.os.Build
 import androidx.compose.material3.ColorScheme

@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.components
+﻿package com.appprint.studio.ui.components
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues

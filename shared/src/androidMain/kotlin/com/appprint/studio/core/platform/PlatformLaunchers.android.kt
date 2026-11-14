@@ -1,4 +1,4 @@
-package com.appprint.studio.core.platform
+﻿package com.appprint.studio.core.platform
 
 import android.Manifest
 import android.content.pm.PackageManager

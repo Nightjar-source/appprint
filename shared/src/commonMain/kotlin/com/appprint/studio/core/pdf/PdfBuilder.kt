@@ -1,4 +1,4 @@
-package com.appprint.studio.core.pdf
+﻿package com.appprint.studio.core.pdf
 
 /**
  * Minimal, dependency-free PDF writer — one JPEG image per page, exactly the

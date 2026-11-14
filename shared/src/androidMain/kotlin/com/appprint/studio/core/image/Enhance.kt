@@ -1,4 +1,4 @@
-package com.appprint.studio.core.image
+﻿package com.appprint.studio.core.image
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

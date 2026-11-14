@@ -1,4 +1,4 @@
-package com.appprint.studio.core.platform
+﻿package com.appprint.studio.core.platform
 
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable

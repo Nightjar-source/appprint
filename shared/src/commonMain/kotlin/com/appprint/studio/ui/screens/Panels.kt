@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+﻿@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package com.appprint.studio.ui.screens
 
@@ -59,7 +59,7 @@ import com.appprint.studio.core.model.FrameStyle
 import com.appprint.studio.core.model.Orientation
 import com.appprint.studio.core.model.PaperPreset
 import com.appprint.studio.core.model.SheetBackground
-import com.appprint.studio.ui.StudioViewModel
+import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
 import com.appprint.studio.ui.components.PanelChoiceChip
 import com.appprint.studio.ui.components.PanelSectionHeader
@@ -78,7 +78,7 @@ private const val PANEL_TITLE_PAD = 12
 private fun PanelScaffold(
     title: String,
     state: TabatiUiState,
-    viewModel: StudioViewModel,
+    viewModel: TabatiViewModel,
     trailing: @Composable (() -> Unit)? = null,
     content: @Composable Column.() -> Unit,
 ) {
@@ -142,7 +142,7 @@ private fun Spacer6() {
 // ---------------------------------------------------------------- paper
 
 @Composable
-fun PaperPanel(state: TabatiUiState, viewModel: StudioViewModel) {
+fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
     val settings = state.settings
     PanelScaffold(title = Str.section_paper, state = state, viewModel = viewModel) {
         PanelSectionHeader(Str.paper_size)
@@ -237,7 +237,7 @@ private fun PaperSizeChip(label: String, sub: String, selected: Boolean, onClick
 // ---------------------------------------------------------------- cards
 
 @Composable
-fun CardsPanel(state: TabatiUiState, viewModel: StudioViewModel, onReplaceImage: (Long) -> Unit) {
+fun CardsPanel(state: TabatiUiState, viewModel: TabatiViewModel, onReplaceImage: (Long) -> Unit) {
     val selected = state.selectedCard
     PanelScaffold(title = Str.section_cards, state = state, viewModel = viewModel) {
         if (selected == null) {
@@ -359,7 +359,7 @@ private fun PanelActionButton(
 // ---------------------------------------------------------------- enhance
 
 @Composable
-fun EnhancePanel(state: TabatiUiState, viewModel: StudioViewModel) {
+fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
     val scheme = MaterialTheme.colorScheme
     val selected = state.selectedCard
     PanelScaffold(
@@ -431,7 +431,7 @@ fun EnhancePanel(state: TabatiUiState, viewModel: StudioViewModel) {
 // ---------------------------------------------------------------- borders
 
 @Composable
-fun BordersPanel(state: TabatiUiState, viewModel: StudioViewModel) {
+fun BordersPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
     val frame = state.settings.frame
     PanelScaffold(title = Str.section_borders, state = state, viewModel = viewModel) {
         PanelSectionHeader(Str.frame_selection)
@@ -500,7 +500,7 @@ private fun ColorDot(hex: Long, selected: Boolean, onClick: () -> Unit) {
 // ---------------------------------------------------------------- guide
 
 @Composable
-fun GuidePanel(state: TabatiUiState, viewModel: StudioViewModel) {
+fun GuidePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
     val scheme = MaterialTheme.colorScheme
     var selectedType by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(CardType.NATIONAL) }
     val guide = CardGuides[selectedType]

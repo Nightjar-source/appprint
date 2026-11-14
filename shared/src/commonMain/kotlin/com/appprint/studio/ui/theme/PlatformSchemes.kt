@@ -1,4 +1,4 @@
-package com.appprint.studio.ui.theme
+﻿package com.appprint.studio.ui.theme
 
 import androidx.compose.runtime.Composable
 

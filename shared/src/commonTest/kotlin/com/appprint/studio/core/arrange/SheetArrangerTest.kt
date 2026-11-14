@@ -1,4 +1,4 @@
-package com.appprint.studio.core.arrange
+﻿package com.appprint.studio.core.arrange
 
 import com.appprint.studio.core.model.ArrangeMode
 import com.appprint.studio.core.model.CardItem

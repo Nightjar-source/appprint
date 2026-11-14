@@ -1,4 +1,4 @@
-package com.appprint.studio.ui
+﻿package com.appprint.studio.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
