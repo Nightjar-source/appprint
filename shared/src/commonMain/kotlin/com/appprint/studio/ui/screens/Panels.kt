@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -402,6 +403,7 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
             Text(Str.enhance_auto, fontWeight = FontWeight.ExtraBold)
         }
 
+        @Composable
         fun slider(label: String, value: Float, onChange: (Float) -> Unit) =
             PanelSliderRow(label, value, 50f..160f, onChange, "${value.toInt()}%", steps = 110)
 

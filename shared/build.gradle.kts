@@ -51,6 +51,8 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.ui)
+            // Bundled fonts (Cairo · Reem Kufi) via official Compose resources for library modules
+            implementation(compose.components.resources)
             // Material 3 Expressive theming (official Compose Multiplatform guidance:
             // "Decoupled Material3 versioning" — the expressive APIs live in the alpha
             // Material3 artifact and need to be requested explicitly).

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -569,7 +570,7 @@ private fun FloatingRail(
 }
 
 private fun Modifier.heightInRail(max: androidx.compose.ui.unit.Dp): Modifier =
-    this.then(androidx.compose.foundation.layout.heightIn(max = max))
+    this.heightIn(max = max)
 
 @Composable
 private fun cutoutStartPadding(): androidx.compose.ui.unit.Dp =
