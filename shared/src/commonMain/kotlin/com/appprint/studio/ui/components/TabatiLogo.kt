@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
-import com.appprint.studio.ui.theme.ReemKufiFamily
+import com.appprint.studio.ui.theme.rememberReemKufiFamily
 
 /**
  * «طبعتي» wordmark — the design's logo: a star glyph in a green circle + Reem Kufi Bold
@@ -52,7 +52,7 @@ fun TabatiLogoMark(size: Dp, modifier: Modifier = Modifier) {
 fun TabatiWordmark(fontSize: TextUnit, modifier: Modifier = Modifier) {
     Text(
         text = "طبعتي",
-        fontFamily = ReemKufiFamily,
+        fontFamily = rememberReemKufiFamily(),
         fontWeight = FontWeight.Bold,
         fontSize = fontSize,
         color = MaterialTheme.colorScheme.onSurface,

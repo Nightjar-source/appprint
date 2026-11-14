@@ -119,24 +119,20 @@ val TabatiCanvasDark = androidx.compose.ui.graphics.Color(0xFF070B09)
  * Fonts are constructed inside composable scope (Font() is a @Composable call).
  */
 @Composable
-fun rememberCairoFamily(): FontFamily = androidx.compose.runtime.remember {
-    FontFamily(
-        ResFont(Res.font.cairo_regular, FontWeight.Normal),
-        ResFont(Res.font.cairo_semibold, FontWeight.SemiBold),
-        ResFont(Res.font.cairo_bold, FontWeight.Bold),
-        ResFont(Res.font.cairo_extrabold, FontWeight.ExtraBold),
-        ResFont(Res.font.cairo_black, FontWeight.Black),
-    )
-}
+fun rememberCairoFamily(): FontFamily = FontFamily(
+    ResFont(Res.font.cairo_regular, FontWeight.Normal),
+    ResFont(Res.font.cairo_semibold, FontWeight.SemiBold),
+    ResFont(Res.font.cairo_bold, FontWeight.Bold),
+    ResFont(Res.font.cairo_extrabold, FontWeight.ExtraBold),
+    ResFont(Res.font.cairo_black, FontWeight.Black),
+)
 
 /** Reem Kufi — the «طبعتي» wordmark and display caps. */
 @Composable
-fun rememberReemKufiFamily(): FontFamily = androidx.compose.runtime.remember {
-    FontFamily(
-        ResFont(Res.font.reem_kufi_semibold, FontWeight.SemiBold),
-        ResFont(Res.font.reem_kufi_bold, FontWeight.Bold),
-    )
-}
+fun rememberReemKufiFamily(): FontFamily = FontFamily(
+    ResFont(Res.font.reem_kufi_semibold, FontWeight.SemiBold),
+    ResFont(Res.font.reem_kufi_bold, FontWeight.Bold),
+)
 
 /** Expressive Arabic typography — built per theme composition, inside composable scope. */
 @Composable
