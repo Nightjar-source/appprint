@@ -18,6 +18,11 @@ configurations.all {
     }
 }
 
+// Deterministic generated-Res package — never depends on gradle's default naming.
+compose.resources {
+    packageOfResClass = "com.appprint.studio.generated.resources"
+}
+
 kotlin {
     android {
         namespace = "com.appprint.studio.shared"

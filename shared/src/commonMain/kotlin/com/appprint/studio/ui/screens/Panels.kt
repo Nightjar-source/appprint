@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -263,13 +262,14 @@ fun CardsPanel(state: TabatiUiState, viewModel: TabatiViewModel, onReplaceImage:
             )
 
             PanelSectionHeader(Str.rotate_360)
+            val currentRotation = selected.totalRotation
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 listOf(0f, 45f, 90f, 135f, 180f, 270f, 315f).forEach { deg ->
                     FilterChip(
-                        selected = kotlin.math.abs(state.selectedCard?.totalRotation ?: -1f - deg) < 0.01f,
+                        selected = kotlin.math.abs(currentRotation - deg) < 0.01f,
                         onClick = { viewModel.setCardAngle360(selected.id, deg, magneticSnap = false) },
                         label = { Text("${deg.toInt()}°") },
                     )

@@ -18,14 +18,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appprint.studio.core.model.AppTheme
-import com.appprint.studio.shared.generated.resources.Res
-import com.appprint.studio.shared.generated.resources.cairo_black
-import com.appprint.studio.shared.generated.resources.cairo_bold
-import com.appprint.studio.shared.generated.resources.cairo_extrabold
-import com.appprint.studio.shared.generated.resources.cairo_regular
-import com.appprint.studio.shared.generated.resources.cairo_semibold
-import com.appprint.studio.shared.generated.resources.reem_kufi_bold
-import com.appprint.studio.shared.generated.resources.reem_kufi_semibold
+import com.appprint.studio.generated.resources.Res
+import com.appprint.studio.generated.resources.cairo_black
+import com.appprint.studio.generated.resources.cairo_bold
+import com.appprint.studio.generated.resources.cairo_extrabold
+import com.appprint.studio.generated.resources.cairo_regular
+import com.appprint.studio.generated.resources.cairo_semibold
+import com.appprint.studio.generated.resources.reem_kufi_bold
+import com.appprint.studio.generated.resources.reem_kufi_semibold
 import org.jetbrains.compose.resources.Font as ResFont
 
 /**
