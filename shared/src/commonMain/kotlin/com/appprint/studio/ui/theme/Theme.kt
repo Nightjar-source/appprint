@@ -114,37 +114,52 @@ private val DarkColors = darkColorScheme(
 val TabatiCanvasLight = androidx.compose.ui.graphics.Color(0xFFD8DFDA)
 val TabatiCanvasDark = androidx.compose.ui.graphics.Color(0xFF070B09)
 
-/** Cairo — body/UI family (Regular, SemiBold, Bold, ExtraBold, Black). */
-val CairoFamily = FontFamily(
-    ResFont(Res.font.cairo_regular, FontWeight.Normal),
-    ResFont(Res.font.cairo_semibold, FontWeight.SemiBold),
-    ResFont(Res.font.cairo_bold, FontWeight.Bold),
-    ResFont(Res.font.cairo_extrabold, FontWeight.ExtraBold),
-    ResFont(Res.font.cairo_black, FontWeight.Black),
-)
+/**
+ * Cairo — body/UI family (Regular, SemiBold, Bold, ExtraBold, Black).
+ * Fonts are constructed inside composable scope (Font() is a @Composable call).
+ */
+@Composable
+fun rememberCairoFamily(): FontFamily = androidx.compose.runtime.remember {
+    FontFamily(
+        ResFont(Res.font.cairo_regular, FontWeight.Normal),
+        ResFont(Res.font.cairo_semibold, FontWeight.SemiBold),
+        ResFont(Res.font.cairo_bold, FontWeight.Bold),
+        ResFont(Res.font.cairo_extrabold, FontWeight.ExtraBold),
+        ResFont(Res.font.cairo_black, FontWeight.Black),
+    )
+}
 
 /** Reem Kufi — the «طبعتي» wordmark and display caps. */
-val ReemKufiFamily = FontFamily(
-    ResFont(Res.font.reem_kufi_semibold, FontWeight.SemiBold),
-    ResFont(Res.font.reem_kufi_bold, FontWeight.Bold),
-)
+@Composable
+fun rememberReemKufiFamily(): FontFamily = androidx.compose.runtime.remember {
+    FontFamily(
+        ResFont(Res.font.reem_kufi_semibold, FontWeight.SemiBold),
+        ResFont(Res.font.reem_kufi_bold, FontWeight.Bold),
+    )
+}
 
-private val TabatiTypography = Typography(
-    displayLarge = Typography().displayLarge.copy(fontFamily = ReemKufiFamily, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp),
-    displayMedium = Typography().displayMedium.copy(fontFamily = ReemKufiFamily, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp),
-    headlineLarge = Typography().headlineLarge.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Black),
-    headlineMedium = Typography().headlineMedium.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Black),
-    headlineSmall = Typography().headlineSmall.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Black),
-    titleLarge = Typography().titleLarge.copy(fontFamily = ReemKufiFamily, fontWeight = FontWeight.Bold),
-    titleMedium = Typography().titleMedium.copy(fontFamily = CairoFamily, fontWeight = FontWeight.ExtraBold),
-    titleSmall = Typography().titleSmall.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Bold),
-    bodyLarge = Typography().bodyLarge.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Normal),
-    bodyMedium = Typography().bodyMedium.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Normal),
-    bodySmall = Typography().bodySmall.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Normal),
-    labelLarge = Typography().labelLarge.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Bold),
-    labelMedium = Typography().labelMedium.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Bold),
-    labelSmall = Typography().labelSmall.copy(fontFamily = CairoFamily, fontWeight = FontWeight.Bold),
-)
+/** Expressive Arabic typography — built per theme composition, inside composable scope. */
+@Composable
+private fun tabatiTypography(): Typography {
+    val cairo = rememberCairoFamily()
+    val reemKufi = rememberReemKufiFamily()
+    return Typography(
+        displayLarge = Typography().displayLarge.copy(fontFamily = reemKufi, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp),
+        displayMedium = Typography().displayMedium.copy(fontFamily = reemKufi, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp),
+        headlineLarge = Typography().headlineLarge.copy(fontFamily = cairo, fontWeight = FontWeight.Black),
+        headlineMedium = Typography().headlineMedium.copy(fontFamily = cairo, fontWeight = FontWeight.Black),
+        headlineSmall = Typography().headlineSmall.copy(fontFamily = cairo, fontWeight = FontWeight.Black),
+        titleLarge = Typography().titleLarge.copy(fontFamily = reemKufi, fontWeight = FontWeight.Bold),
+        titleMedium = Typography().titleMedium.copy(fontFamily = cairo, fontWeight = FontWeight.ExtraBold),
+        titleSmall = Typography().titleSmall.copy(fontFamily = cairo, fontWeight = FontWeight.Bold),
+        bodyLarge = Typography().bodyLarge.copy(fontFamily = cairo, fontWeight = FontWeight.Normal),
+        bodyMedium = Typography().bodyMedium.copy(fontFamily = cairo, fontWeight = FontWeight.Normal),
+        bodySmall = Typography().bodySmall.copy(fontFamily = cairo, fontWeight = FontWeight.Normal),
+        labelLarge = Typography().labelLarge.copy(fontFamily = cairo, fontWeight = FontWeight.Bold),
+        labelMedium = Typography().labelMedium.copy(fontFamily = cairo, fontWeight = FontWeight.Bold),
+        labelSmall = Typography().labelSmall.copy(fontFamily = cairo, fontWeight = FontWeight.Bold),
+    )
+}
 
 private val TabatiShapes = Shapes(
     extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
@@ -183,7 +198,7 @@ fun TabatiTheme(
     ) {
         MaterialExpressiveTheme(
             colorScheme = scheme,
-            typography = TabatiTypography,
+            typography = tabatiTypography(),
             shapes = TabatiShapes,
             motionScheme = MotionScheme.expressive(),
             content = content,

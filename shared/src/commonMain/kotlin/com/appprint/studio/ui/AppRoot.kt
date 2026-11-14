@@ -261,7 +261,7 @@ private fun FloatingTopBar(
                 com.appprint.studio.ui.components.TabatiLogoMark(size = 22.dp)
                 Text(
                     text = "طبعتي",
-                    fontFamily = com.appprint.studio.ui.theme.ReemKufiFamily,
+                    fontFamily = com.appprint.studio.ui.theme.rememberReemKufiFamily(),
                     fontWeight = FontWeight.Bold,
                     fontSize = androidx.compose.ui.unit.TextUnit(20f, androidx.compose.ui.unit.TextUnitType.Sp),
                     color = scheme.onSurface,
