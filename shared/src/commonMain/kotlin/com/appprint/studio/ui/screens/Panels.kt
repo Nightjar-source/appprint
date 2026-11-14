@@ -217,6 +217,38 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
 }
 
 @Composable
+private fun TypeGridChip(type: CardType, active: Boolean, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val interaction = remember { MutableInteractionSource() }
+    Column(
+        modifier = Modifier
+            .width(76.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(scheme.surfaceContainerHigh)
+            .border(if (active) 1.5.dp else 1.dp, if (active) scheme.primary else scheme.outlineVariant, RoundedCornerShape(14.dp))
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 24.dp, height = 3.dp)
+                .clip(RoundedCornerShape(50.dp))
+                .background(Color(type.brandColorHex)),
+        )
+        Text(type.labelAr, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+        Text(
+            text = "${type.widthMm} × ${type.heightMm}",
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 8.sp,
+            color = scheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
 private fun PaperSizeChip(label: String, sub: String, selected: Boolean, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
@@ -248,6 +280,47 @@ fun CardsPanel(state: TabatiUiState, viewModel: TabatiViewModel, onReplaceImage:
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
+            // ── قياس البطاقة — official Iraqi type grid ──────────────
+            PanelSectionHeader("قياس البطاقة")
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                CardType.PRINTABLE.forEach { type ->
+                    TypeGridChip(
+                        type = type,
+                        active = selected.type == type,
+                        onClick = { viewModel.applyCardType(selected.id, type) },
+                    )
+                }
+            }
+            if (selected.type == CardType.CUSTOM) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = selected.widthMm.toInt().toString(),
+                        onValueChange = { v ->
+                            v.toIntOrNull()?.let { mm ->
+                                viewModel.resizeCard(selected.id, mm.toFloat().coerceIn(20f, 500f), selected.heightMm)
+                            }
+                        },
+                        label = { Text("العرض (مم)") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedTextField(
+                        value = selected.heightMm.toInt().toString(),
+                        onValueChange = { v ->
+                            v.toIntOrNull()?.let { mm ->
+                                viewModel.resizeCard(selected.id, selected.widthMm, mm.toFloat().coerceIn(20f, 500f))
+                            }
+                        },
+                        label = { Text("الطول (مم)") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
             OutlinedTextField(
                 value = selected.name,
                 onValueChange = { viewModel.renameCard(selected.id, it) },

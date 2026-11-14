@@ -279,6 +279,30 @@ class TabatiViewModel : ViewModel() {
         }
     }
 
+    /** Apply an official Iraqi type to a card — dims + name + reset auto-shrink. */
+    fun applyCardType(id: Long, type: CardType) {
+        pushUndo()
+        _state.update { s ->
+            s.copy(
+                cards = s.cards.map { c ->
+                    if (c.id != id) c
+                    else c.copy(
+                        typeKey = type.key,
+                        name = type.labelAr,
+                        baseWidthMm = type.widthMm,
+                        baseHeightMm = type.heightMm,
+                        widthMm = type.widthMm,
+                        heightMm = type.heightMm,
+                        autoRotated = false,
+                        autoShrunk = false,
+                        detectedLabel = "تم ضبط القياس إلى ${type.labelAr}",
+                    )
+                },
+                toast = TabatiToast("تم ضبط القياس إلى ${type.labelAr}"),
+            )
+        }
+    }
+
     fun addSheet() {
         pushUndo()
         _state.update {

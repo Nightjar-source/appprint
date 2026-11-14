@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +36,8 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Rotate90DegreesCw
+import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material3.Icon
@@ -73,8 +76,7 @@ import com.appprint.studio.ui.strings.Str
 @Composable
 fun StudioScreen(
     viewModel: TabatiViewModel,
-    onAddImages: () -> Unit,
-    onCamera: () -> Unit,
+    onImportMenu: () -> Unit,
     onReplaceImage: (Long) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -105,24 +107,18 @@ fun StudioScreen(
         ) {
             // -------------------------------------------------- workspace
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                if (state.cards.isEmpty()) {
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        EmptyState(
-                            state = state,
-                            onAddImages = onAddImages,
-                            onSamples = viewModel::addSamples,
-                            onAddSampleOfType = viewModel::addSampleOfType,
-                        )
-                    }
-                } else {
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        SheetCanvas(state = state, viewModel = viewModel, modifier = Modifier.fillMaxSize())
-                    }
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    SheetCanvas(state = state, viewModel = viewModel, modifier = Modifier.fillMaxSize())
+                }
+                if (state.cards.isNotEmpty()) {
                     SheetPageBar(
                         state = state,
                         onSelectPage = viewModel::currentPage,
                         onAddSheet = viewModel::addSheet,
                         onRequestDelete = { deletePageIdx = state.activePage },
+                        onArrange = viewModel::arrangeSmart,
+                        onResetAll = { clearAllOpen = true },
+                        onImportMenu = onImportMenu,
                     )
                 }
             }
@@ -167,7 +163,7 @@ fun StudioScreen(
         // --------------------------------------- long-press quick sheet
         val longPressedId = state.longPressSheetCardId
         if (longPressedId != null) {
-            QuickActionsSheet(
+            com.appprint.studio.ui.components.QuickActionsSheet(
                 state = state,
                 viewModel = viewModel,
                 onReplaceImage = onReplaceImage,
@@ -283,84 +279,113 @@ private fun SurfaceDrawer(
     }
 }
 
-/** Floating page strip — flat labels + hairline underline on the active sheet, + button at the side. */
+/** Floating page tabs + quick actions — exactly the design's glass pill row under the top bar. */
 @Composable
 private fun SheetPageBar(
     state: com.appprint.studio.ui.TabatiUiState,
     onSelectPage: (Int) -> Unit,
     onAddSheet: () -> Unit,
     onRequestDelete: () -> Unit,
+    onArrange: () -> Unit,
+    onResetAll: () -> Unit,
+    onImportMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 14.dp, top = 2.dp, end = 14.dp, bottom = 4.dp),
+            .padding(start = 12.dp, top = 2.dp, end = 12.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.Center,
     ) {
-        LazyRow(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(18.dp),
+        // glass pill wrapping everything, like the design's floating container
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .background(scheme.surfaceContainerHigh.copy(alpha = 0.86f))
+                .padding(horizontal = 6.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            items((0 until state.pageCount).toList(), key = { it }) { page ->
-                val selected = state.activePage == page
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Box(
+            // page tabs
+            LazyRow(
+                modifier = Modifier.widthIn(max = 180.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                items((0 until state.pageCount).toList(), key = { it }) { page ->
+                    val selected = state.activePage == page
+                    val cardsOnPage = state.cards.count { it.page == page }
+                    Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(percent = 50))
+                            .background(if (selected) scheme.primary else androidx.compose.ui.graphics.Color.Transparent)
                             .clickable { onSelectPage(page) }
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Text(
-                            text = "ورقة ${page + 1} · ${state.cards.count { it.page == page }}",
+                            text = "ورقة ${page + 1} (${cardsOnPage})",
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.ExtraBold
-                            else androidx.compose.ui.text.font.FontWeight.SemiBold,
-                            color = if (selected) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.72f),
+                            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                            color = if (selected) scheme.onPrimary else scheme.onSurface,
                             maxLines = 1,
                         )
+                        if (state.pageCount > 1) {
+                            IconButton(
+                                onClick = { onRequestDelete() },
+                                modifier = Modifier.size(16.dp),
+                            ) {
+                                Icon(Icons.Filled.Close, contentDescription = null, tint = if (selected) scheme.onPrimary else scheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                            }
+                        }
                     }
-                    Box(
-                        modifier = Modifier
-                            .size(width = 26.dp, height = 2.dp)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(if (selected) scheme.primary else androidx.compose.ui.graphics.Color.Transparent),
-                    )
                 }
             }
-        }
-        if (state.pageCount > 1) {
-            androidx.compose.material3.IconButton(onClick = onRequestDelete, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    Icons.Filled.DeleteOutline,
-                    contentDescription = Str.delete_page_title,
-                    tint = scheme.error,
-                    modifier = Modifier.size(20.dp),
-                )
+
+            // add sheet
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .clickable(onClick = onAddSheet)
+                    .semantics { role = Role.Button },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, tint = scheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
             }
-        }
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
-                .clip(RoundedCornerShape(percent = 50))
-                .background(scheme.primary)
-                .clickable(onClick = onAddSheet)
-                .semantics { role = Role.Button },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = Str.add_sheet,
-                tint = scheme.onPrimary,
-                modifier = Modifier.size(24.dp),
-            )
+
+            // ترتيب ذكي — smart arrange (primary-container accent)
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(scheme.primaryContainer)
+                    .clickable(onClick = onArrange)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .semantics { role = Role.Button },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(14.dp))
+                Text("ترتيب ذكي", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = scheme.onPrimaryContainer)
+            }
+
+            // البدء من جديد — tertiary-container accent, resets workspace
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(scheme.tertiaryContainer)
+                    .clickable(onClick = onResetAll)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .semantics { role = Role.Button },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(Icons.Filled.RotateRight, contentDescription = null, tint = scheme.onTertiaryContainer, modifier = Modifier.size(14.dp))
+                Text("البدء من جديد", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = scheme.onTertiaryContainer)
+            }
         }
     }
 }
@@ -405,79 +430,4 @@ private fun SwapPickerSheet(
     }
 }
 
-/** Long-press quick context sheet — the design's card quick actions in a row. */
-@Composable
-private fun QuickActionsSheet(
-    state: com.appprint.studio.ui.TabatiUiState,
-    viewModel: TabatiViewModel,
-    onReplaceImage: (Long) -> Unit,
-    onRequestSwap: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val card = state.selectedCard ?: return
-    val scheme = MaterialTheme.colorScheme
-    val actions: List<Pair<ImageVector, String>> = listOf(
-        Icons.Filled.AutoFixHigh to Str.enhance_auto,
-        Icons.Filled.Crop to Str.auto_crop,
-        Icons.Filled.Rotate90DegreesCw to "تدوير 90°",
-        Icons.Filled.Image to Str.replace_image,
-        Icons.Filled.SwapHoriz to Str.swap,
-        Icons.Filled.ContentCopy to Str.duplicate,
-    )
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = scheme.surfaceContainerLow,
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-            Text(
-                card.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Black,
-            )
-            androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                actions.forEachIndexed { index, (icon, label) ->
-                    val interaction = remember { MutableInteractionSource() }
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(scheme.surfaceContainerHigh)
-                            .clickable(interactionSource = interaction, indication = null) {
-                                when (index) {
-                                    0 -> viewModel.autoEnhanceSelected()
-                                    1 -> viewModel.autoCropSelected()
-                                    2 -> viewModel.setCardAngle360(card.id, (card.rotation + 90f) % 360f, magneticSnap = false)
-                                    3 -> onReplaceImage(card.id)
-                                    4 -> onRequestSwap()
-                                    5 -> viewModel.duplicateCard(card.id)
-                                }
-                                onDismiss()
-                            }
-                            .padding(vertical = 12.dp, horizontal = 4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(icon, contentDescription = label, tint = scheme.onSurface, modifier = Modifier.size(22.dp))
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = scheme.onSurfaceVariant,
-                            maxLines = 2,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        )
-                    }
-                }
-            }
-            TextButton(onClick = { viewModel.deleteCard(card.id); onDismiss() }) {
-                Icon(Icons.Filled.DeleteForever, contentDescription = null, tint = scheme.error)
-                androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
-                Text(Str.remove, color = scheme.error, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            }
-        }
-    }
-}
+

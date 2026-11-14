@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +35,10 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -173,6 +181,9 @@ fun SheetCanvas(
                             .clip(RoundedCornerShape(3.dp))
                             .background(sheetBackgroundColor(settings)),
                     ) {
+                        if (state.cards.isEmpty()) {
+                            EmptyPaperMessage(modifier = Modifier.fillMaxSize())
+                        }
                         if (settings.frame.guides) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 val m = settings.marginMm * DP_PER_MM * density.density
@@ -248,3 +259,45 @@ private fun sheetBackgroundColor(settings: com.appprint.studio.core.model.SheetS
         com.appprint.studio.core.model.SheetBackground.OFFWHITE -> Color(0xFFFDFAF1)
         com.appprint.studio.core.model.SheetBackground.TRANSPARENT -> Color(0x66FFFFFF)
     }
+
+/** Design: empty paper state lives inside the sheet — mint icon + caption. */
+@Composable
+private fun EmptyPaperMessage(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0xFFE8F5E9)),
+                contentAlignment = Alignment.Center,
+            ) {
+                androidx.compose.material3.Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Filled.AddPhotoAlternate,
+                    contentDescription = null,
+                    tint = Color(0xFF006C47),
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+            Text(
+                text = "الورقة فارغة — ارفع صور بطاقاتك للبدء",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF111111),
+            )
+            Text(
+                text = "افتح الاستوديو لاختيار الصور أو التقطها بالكاميرا وسيتم التعرف على الأبعاد الحقيقية وترتيبها تلقائياً",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF777777),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.widthIn(max = 240.dp),
+            )
+        }
+    }
+}

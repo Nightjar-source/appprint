@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -114,6 +115,7 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
         // (notification permission reserved for export toast on Android 13+ — used by the print path)
 
         var shareSheetOpen by remember { mutableStateOf(false) }
+        var importMenuOpen by remember { mutableStateOf(false) }
 
         // edge-to-edge: status + navigation bar icons always contrast the current surface
         val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
@@ -158,8 +160,7 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
             ) {
                 StudioScreen(
                     viewModel = viewModel,
-                    onAddImages = pickImages,
-                    onCamera = onCamera,
+                    onImportMenu = { importMenuOpen = true },
                     onReplaceImage = onReplaceImage,
                 )
                 FloatingTopBar(
@@ -178,13 +179,16 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                     FloatingNavPill(
                         current = state.section,
                         onSelect = viewModel::setSection,
+                        onAdd = { importMenuOpen = true },
+                        cardsCount = state.cards.size,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 } else {
                     FloatingRail(
                         current = state.section,
                         onSelect = viewModel::setSection,
-                        onAddSheet = viewModel::addSheet,
+                        onAdd = { importMenuOpen = true },
+                        cardsCount = state.cards.size,
                         modifier = Modifier.align(Alignment.CenterStart),
                     )
                 }
@@ -198,6 +202,16 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                     )
                 }
             }
+        }
+
+        // ---------------------------------------------------- import menu sheet
+        if (importMenuOpen) {
+            com.appprint.studio.ui.components.ImportMenuSheet(
+                onPickFromGallery = pickImages,
+                onCapturePhoto = onCamera,
+                onAddDemoCards = viewModel::addSamples,
+                onDismiss = { importMenuOpen = false },
+            )
         }
 
         // ---------------------------------------------------- share sheet
@@ -431,28 +445,50 @@ private val DESTINATIONS = listOf(
     Destination(StudioSection.GUIDE, Str.section_guide, Icons.Filled.Info),
 )
 
-/** Floating pill (compact) — 6 destinations, animated oval indicator. */
+/** Floating pill (compact) — standalone + circle beside the pill, badge on البطاقات. */
 @Composable
 private fun FloatingNavPill(
     current: StudioSection,
     onSelect: (StudioSection) -> Unit,
+    onAdd: () -> Unit,
+    cardsCount: Int,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val bottomPad = androidx.compose.foundation.layout.WindowInsets.navigationBars
-        .asPaddingValues().calculateBottomPadding() + 8.dp
-    Box(
-        modifier = modifier
-            .padding(start = Chrome.EdgeInset, top = 0.dp, end = Chrome.EdgeInset, bottom = bottomPad)
-            .fillMaxWidth(),
-        contentAlignment = Alignment.Center,
+    val navBottom = WindowInsets.navigationBars
+        .union(WindowInsets.displayCutout)
+        .asPaddingValues()
+        .calculateBottomPadding() + Chrome.EdgeInset
+    Row(
+        modifier = modifier.fillMaxWidth().padding(
+            start = Chrome.EdgeInset + cutoutStartPadding(),
+            top = 0.dp,
+            end = Chrome.EdgeInset,
+            bottom = navBottom,
+        ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
     ) {
+        // standalone + — outside the pill, the one accented control
+        val interaction = remember { MutableInteractionSource() }
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
+                .clip(RoundedCornerShape(percent = 50))
+                .background(scheme.primary)
+                .clickable(interactionSource = interaction, indication = null, onClick = onAdd)
+                .semantics { role = Role.Button },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = Str.add_images, tint = scheme.onPrimary, modifier = Modifier.size(26.dp))
+        }
         Surface(
             shape = RoundedCornerShape(percent = 50),
             color = scheme.surfaceContainerHigh.copy(alpha = 0.92f),
             shadowElevation = 10.dp,
             tonalElevation = 2.dp,
-            modifier = Modifier.height(Chrome.NavBarDp).widthIn(max = 440.dp),
+            modifier = Modifier.height(Chrome.NavBarDp).widthIn(max = 380.dp),
         ) {
             Row(
                 modifier = Modifier
@@ -465,6 +501,7 @@ private fun FloatingNavPill(
                     NavPillItem(
                         destination = destination,
                         selected = destination.section == current,
+                        badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
                         onSelect = { onSelect(destination.section) },
                     )
                 }
@@ -477,6 +514,7 @@ private fun FloatingNavPill(
 private fun NavPillItem(
     destination: Destination,
     selected: Boolean,
+    badge: String?,
     onSelect: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -515,6 +553,20 @@ private fun NavPillItem(
                 tint = contentColor,
                 modifier = Modifier.size(if (selected) 18.dp else 19.dp),
             )
+            if (badge != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 8.dp, y = (-7).dp)
+                        .size(16.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.tertiary)
+                        .padding(horizontal = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(badge, style = MaterialTheme.typography.labelSmall, color = scheme.onTertiary, fontSize = 8.sp, maxLines = 1)
+                }
+            }
         }
         Text(
             text = destination.label,
@@ -530,7 +582,8 @@ private fun NavPillItem(
 private fun FloatingRail(
     current: StudioSection,
     onSelect: (StudioSection) -> Unit,
-    onAddSheet: () -> Unit,
+    onAdd: () -> Unit,
+    cardsCount: Int,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -556,25 +609,26 @@ private fun FloatingRail(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                // add sheet — the one accented action
+                // add card/image — the one accented action
                 val interaction = remember { MutableInteractionSource() }
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(48.dp)
                         .shadow(6.dp, RoundedCornerShape(percent = 50), clip = false)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.primary)
-                        .clickable(interactionSource = interaction, indication = null, onClick = onAddSheet)
+                        .clickable(interactionSource = interaction, indication = null, onClick = onAdd)
                         .semantics { role = Role.Button },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, tint = scheme.onPrimary, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Filled.Add, contentDescription = Str.add_images, tint = scheme.onPrimary, modifier = Modifier.size(24.dp))
                 }
                 DividerHair()
                 DESTINATIONS.forEach { destination ->
                     RailItem(
                         destination = destination,
                         selected = destination.section == current,
+                        badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
                         onSelect = { onSelect(destination.section) },
                     )
                 }
@@ -605,6 +659,7 @@ private fun DividerHair() {
 private fun RailItem(
     destination: Destination,
     selected: Boolean,
+    badge: String?,
     onSelect: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -624,12 +679,32 @@ private fun RailItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
-        Icon(
-            destination.icon,
-            contentDescription = destination.label,
-            tint = contentColor,
-            modifier = Modifier.size(20.dp),
-        )
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                destination.icon,
+                contentDescription = destination.label,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp),
+            )
+            if (badge != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 10.dp, y = (-6).dp)
+                        .size(15.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.tertiary),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(badge, color = scheme.onTertiary, fontSize = 8.sp, maxLines = 1)
+                }
+            }
+        }
         Text(
             text = destination.label,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),

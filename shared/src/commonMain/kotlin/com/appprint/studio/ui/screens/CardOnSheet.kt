@@ -31,6 +31,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -127,14 +128,18 @@ internal fun CardOnSheet(
             }
         }
 
-        // selection ring
         if (selected) {
+            // selection ring (design: 2.5px primary outline + glow)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .border(2.5.dp, Color(0xFF007A3D), RoundedCornerShape(6.dp)),
+                    .border(2.5.dp, Color(0xFF006C47), RoundedCornerShape(6.dp))
+                    .shadow(16.dp, RoundedCornerShape(6.dp)),
             )
         }
+
+        // design: card badges — size+angle / auto-fix / enhanced
+        com.appprint.studio.ui.components.CardBadges(card = card, modifier = Modifier.fillMaxSize())
 
         // card frame (the printed border on the physical card)
         if (state.settings.frame.card && card.border) {
