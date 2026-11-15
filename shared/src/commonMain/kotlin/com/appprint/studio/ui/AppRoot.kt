@@ -174,6 +174,14 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                     onZoomIn = { viewModel.zoomStep(+15f) },
                     onZoomOut = { viewModel.zoomStep(-15f) },
                     onZoomFit = viewModel::zoomFit,
+                    onZoomToggle = {
+                        if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) {
+                            viewModel.setZoomMode(com.appprint.studio.ui.ZoomMode.MANUAL)
+                            viewModel.setManualZoom(130f)
+                        } else {
+                            viewModel.zoomFit()
+                        }
+                    },
                     modifier = Modifier.align(Alignment.TopCenter),
                 )
                 val showRail = Chrome.railVisible()
@@ -245,6 +253,7 @@ private fun FloatingTopBar(
     onZoomIn: () -> Unit,
     onZoomOut: () -> Unit,
     onZoomFit: () -> Unit,
+    onZoomToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -330,6 +339,22 @@ private fun FloatingTopBar(
 
         Spacer(Modifier.weight(1f))
 
+        // design: fit↔130% zoom toggle — glass circle, FIRST in the left action group (sheet tab only)
+        if (!isEditing) {
+            CircleActionButton(
+                onClick = onZoomToggle,
+                contentDescription = if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) Str.zoom_in else Str.zoom_fit,
+                size = 40.dp,
+                container = scheme.surfaceContainerLow,
+                tint = scheme.onSurface,
+            ) {
+                Icon(
+                    if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) Icons.Filled.ZoomIn else Icons.Filled.FitScreen,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
         // theme cycle — تلقائي / فاتح / داكن
         CircleActionButton(
             onClick = onCycleTheme,
