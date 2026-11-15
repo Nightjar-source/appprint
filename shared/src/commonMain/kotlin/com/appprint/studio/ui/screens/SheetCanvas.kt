@@ -78,9 +78,10 @@ fun SheetCanvas(
     val density = LocalDensity.current
     val paperWdp = settings.sheetWidthMm * DP_PER_MM
     val paperHdp = settings.sheetHeightMm * DP_PER_MM
-    val rulerDp = if (settings.frame.ruler) 20f else 0f
-    val contentW = paperWdp + rulerDp
-    val contentH = paperHdp + rulerDp
+    // design: ruler strip 20dp (w-5/h-5) + 4dp gap (mr-1) — paper starts at 24dp like ml-6
+    val rulerTotalDp = if (settings.frame.ruler) 24f else 0f
+    val contentW = paperWdp + rulerTotalDp
+    val contentH = paperHdp + rulerTotalDp
 
     var panX by remember(settings.sheetWidthMm, settings.sheetHeightMm) { mutableFloatStateOf(0f) }
     var panY by remember(settings.sheetWidthMm, settings.sheetHeightMm) { mutableFloatStateOf(0f) }
@@ -143,12 +144,14 @@ fun SheetCanvas(
 
             // HTML: canvas is flat md-canvas — no dot grid, no pattern
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                // layout size == visual size (graphicsLayer only scales drawing, so we pre-shrink the layout too)
                 Box(
                     modifier = Modifier
-                        .size(contentW.dp, contentH.dp)
+                        .size((contentW * zoom).dp, (contentH * zoom).dp)
                         .graphicsLayer {
                             scaleX = zoom
                             scaleY = zoom
+                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin.Center
                             translationX = panX
                             translationY = panY
                         },
@@ -161,9 +164,7 @@ fun SheetCanvas(
                             lengthMm = settings.sheetWidthMm,
                             stripDp = paperWdp.dp,
                             background = rulerBg,
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .offset(x = rulerDp.dp),
+                            modifier = Modifier.offset(x = 24.dp, y = 2.dp),
                         )
                         // design: "صفحة n / m" on the ruler's right end
                         Text(
@@ -173,20 +174,19 @@ fun SheetCanvas(
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .offset(x = (-4).dp, y = 4.dp),
+                                .offset(x = (-2).dp, y = 1.dp),
                         )
                         RulerBar(
                             vertical = true,
                             lengthMm = settings.sheetHeightMm,
                             stripDp = paperHdp.dp,
                             background = rulerBg,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart),
+                            modifier = Modifier.offset(y = 24.dp),
                         )
                     }
                     Box(
                         modifier = Modifier
-                            .align(Alignment.BottomEnd)
+                            .offset(x = rulerTotalDp.dp, y = rulerTotalDp.dp)
                             .size(paperWdp.dp, paperHdp.dp)
                             // design: 0 24px 56px -14px rgba(0,0,0,.36) + 0 6px 18px -4px rgba(0,0,0,.22) + 1px hairline ring
                             .shadow(30.dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x5C000000), spotColor = Color(0x5C000000))
@@ -304,14 +304,14 @@ private fun RulerBar(
     val density = LocalDensity.current
     val tick = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
     if (vertical) {
-        Box(modifier = modifier.width(16.dp).height(stripDp).background(background)) {
+        Box(modifier = modifier.width(20.dp).height(stripDp).background(background)) {
             var mm = 0
             while (mm <= lengthMm) {
                 val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = if (big) 7.sp else 5.5.sp,
-                    fontWeight = if (big) FontWeight.ExtraBold else FontWeight.Bold,
+                    fontSize = if (big) 9.sp else 8.sp,
+                    fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
                     color = tick,
                     modifier = Modifier
                         .offset(y = (mm * DP_PER_MM).dp, x = 2.dp),
@@ -320,17 +320,17 @@ private fun RulerBar(
             }
         }
     } else {
-        Box(modifier = modifier.height(16.dp).width(stripDp).background(background)) {
+        Box(modifier = modifier.height(20.dp).width(stripDp).background(background)) {
             var mm = 0
             while (mm <= lengthMm) {
                 val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = if (big) 8.sp else 5.5.sp,
-                    fontWeight = if (big) FontWeight.ExtraBold else FontWeight.Bold,
+                    fontSize = if (big) 9.sp else 8.sp,
+                    fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
                     color = tick,
                     modifier = Modifier
-                        .offset(x = (mm * DP_PER_MM).dp, y = 1.dp),
+                        .offset(x = (mm * DP_PER_MM).dp, y = 2.dp),
                 )
                 mm += 10
             }
