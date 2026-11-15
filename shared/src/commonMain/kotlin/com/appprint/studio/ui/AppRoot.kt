@@ -1,4 +1,4 @@
-﻿package com.appprint.studio.ui
+package com.appprint.studio.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -254,6 +254,7 @@ private fun FloatingTopBar(
 
     Row(
         modifier = modifier
+            .widthIn(max = 1024.dp)
             .padding(start = Chrome.EdgeInset, top = statusTopSafe() + Chrome.TopBarGapDp, end = Chrome.EdgeInset)
             .height(barHeight),
         verticalAlignment = Alignment.CenterVertically,
@@ -417,7 +418,7 @@ private fun CircleActionButton(
         modifier = Modifier
             .size(size)
             .then(
-                if (elevated) Modifier.shadow(6.dp, RoundedCornerShape(percent = 50), clip = false) else Modifier,
+                if (elevated) Modifier.shadow(10.dp, RoundedCornerShape(percent = 50), clip = false) else Modifier,
             )
             .clip(RoundedCornerShape(percent = 50))
             .background(container.copy(alpha = if (container == MaterialTheme.colorScheme.primary) 1f else 0.9f))
