@@ -48,11 +48,28 @@ jobs:
           if [ $code -ne 0 ]; then
             echo "----- gradle errors -----"
             grep -E "^e: |What went wrong|FAILED|Execution failed|error:" shots.log | head -40 | while IFS= read -r line; do echo "::error::$line"; done
-            echo "----- test report failures -----"
-            for f in shared/build/test-results/testAndroidHostTest/*.xml; do
-              [ -f "$f" ] || continue
-              grep -oE '(message|type)="[^"]+"' "$f" | head -12 | while IFS= read -r line; do echo "::error::$line"; done
-            done
+            echo "----- test report stack traces -----"
+            python3 - <<'PY'
+          import glob, re
+          import xml.etree.ElementTree as ET
+          out = []
+          for f in glob.glob('shared/build/test-results/testAndroidHostTest/*.xml'):
+              try:
+                  root = ET.parse(f).getroot()
+              except Exception:
+                  continue
+              for tc in root.iter('testcase'):
+                  for err in list(tc.iter('error')) + list(tc.iter('failure')):
+                      out.append('TEST ' + tc.get('classname', '') + '.' + tc.get('name', ''))
+                      text = (err.text or '') + '\n' + (err.get('message', '') or '')
+                      lines = [l.strip() for l in text.splitlines()]
+                      exceptions = [l for l in lines if re.match(r'^[A-Za-z_.$][\w.$]*(Exception|Error|Cause)', l)]
+                      caused = [l for l in lines if l.startswith('Caused by')]
+                      appprint = [l for l in lines if 'at com.appprint' in l]
+                      out += exceptions[:1] + caused[:2] + appprint[:6]
+          for line in out[:9]:
+              print('::error::' + line[:300])
+          PY
             echo "----- tail -----"
             tail -15 shots.log | while IFS= read -r line; do echo "::error::$line"; done
             exit 1
