@@ -1,4 +1,4 @@
-﻿// Shared UI-free core + Compose Multiplatform UI shared by Android (shipping),
+// Shared UI-free core + Compose Multiplatform UI shared by Android (shipping),
 // Desktop JVM (verification target) and iOS (targets declared; wire on macOS).
 // Follows the Compose Multiplatform 1.12 conventions (AGP 9 built-in Kotlin).
 import org.gradle.api.tasks.testing.Test
@@ -30,10 +30,12 @@ kotlin {
         namespace = "com.appprint.studio.shared"
         compileSdk = 37
         minSdk = 26
-        withHostTest { }
         // Enables Compose Multiplatform resources (Res class + accessors) for the androidLibrary target
         androidResources {
             enable = true
+        }
+        withHostTest {
+            isIncludeAndroidResources = true
         }
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -92,6 +94,14 @@ kotlin {
         }
         jvmMain.dependencies {
             // Skia-backed Compose for Desktop comes transitively via the Compose plugin
+        }
+        named("androidHostTest") {
+            dependencies {
+                implementation(libs.robolectric)
+                implementation(libs.androidx.test.core.ktx)
+                implementation(libs.ui.test.junit4)
+                implementation(libs.ui.test.manifest)
+            }
         }
         iosMain.dependencies {
             // iOS actuals are placeholders — enable the iosApp on macOS

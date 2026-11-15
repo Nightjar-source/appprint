@@ -216,7 +216,7 @@ fun SheetCanvas(
                                 drawRect(
                                     color = Color(0xFFB32638).copy(alpha = 0.55f),
                                     topLeft = Offset(m, m),
-                                    size = Size(size.width - 2 * m, size.height - 2 * m),
+                                    size = Size((size.width - 2 * m).coerceAtLeast(0f), (size.height - 2 * m).coerceAtLeast(0f)),
                                     style = Stroke(
                                         width = 1.dp.toPx(),
                                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f),
@@ -246,9 +246,8 @@ fun SheetCanvas(
                                     com.appprint.studio.core.model.FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(16f, 12f), 0f)
                                     com.appprint.studio.core.model.FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5f, 8f), 0f)
                                 }
-                                drawRoundRect(
+                                drawRect(
                                     color = Color(settings.frame.colorHex),
-                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx()),
                                     style = Stroke(width = (settings.frame.thickness * 1.6f).coerceAtLeast(1.6f), pathEffect = dash),
                                 )
                             }
@@ -365,7 +364,7 @@ private fun EmptyPaperMessage(
                 contentAlignment = Alignment.Center,
             ) {
                 androidx.compose.material3.Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Filled.Image,
+                    imageVector = androidx.compose.material.icons.Icons.Filled.Collections,
                     contentDescription = null,
                     tint = sheetGreen,
                     modifier = Modifier.size(32.dp),

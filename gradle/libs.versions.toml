@@ -19,6 +19,9 @@ coreSplashscreen = "1.2.0"
 exifinterface = "1.4.2"   # androidx.exifinterface — EXIF orientation (stable on Google Maven, verified Nov 2026)  # Google Maven release
 material3Expressive = "1.12.0-alpha03"  # org.jetbrains.compose.material3 — the ONLY line carrying Material3 *Expressive* APIs (decoupled Material3 versioning; forced everywhere)
 junit4 = "4.13.2"
+robolectric = "4.15.1"
+androidxTestCore = "1.6.1"
+uiTestJunit4 = "1.12.1"
 
 [libraries]
 # Android app only
@@ -41,6 +44,10 @@ material3-expressive = { module = "org.jetbrains.compose.material3:material3", v
 ui-tooling = { group = "org.jetbrains.compose.ui", name = "ui-tooling", version.ref = "composeMultiplatform" }
 ui-tooling-preview = { group = "org.jetbrains.compose.ui", name = "ui-tooling-preview", version.ref = "composeMultiplatform" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+androidx-test-core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "androidxTestCore" }
+ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4", version.ref = "uiTestJunit4" }
+ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest", version.ref = "uiTestJunit4" }
 
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "serialization" }
