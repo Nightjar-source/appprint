@@ -41,7 +41,22 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run Robolectric screenshot tests
-        run: ./gradlew :shared:testAndroidHostTest --tests "*StudioScreenshotTest*" --stacktrace
+        run: |
+          set +e
+          ./gradlew :shared:testAndroidHostTest --tests "*StudioScreenshotTest*" --console=plain --stacktrace > shots.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "----- gradle errors -----"
+            grep -E "^e: |What went wrong|FAILED|Execution failed|error:" shots.log | head -40 | while IFS= read -r line; do echo "::error::$line"; done
+            echo "----- test report failures -----"
+            for f in shared/build/test-results/testAndroidHostTest/*.xml; do
+              [ -f "$f" ] || continue
+              grep -oE '(message|type)="[^"]+"' "$f" | head -12 | while IFS= read -r line; do echo "::error::$line"; done
+            done
+            echo "----- tail -----"
+            tail -15 shots.log | while IFS= read -r line; do echo "::error::$line"; done
+            exit 1
+          fi
 
       - name: Commit screenshots
         run: |
