@@ -76,7 +76,7 @@ fun SheetCanvas(
     val density = LocalDensity.current
     val paperWdp = settings.sheetWidthMm * DP_PER_MM
     val paperHdp = settings.sheetHeightMm * DP_PER_MM
-    val rulerDp = if (settings.frame.ruler) 24f else 0f
+    val rulerDp = if (settings.frame.ruler) 20f else 0f
     val contentW = paperWdp + rulerDp
     val contentH = paperHdp + rulerDp
 
@@ -94,7 +94,7 @@ fun SheetCanvas(
     } else {
         com.appprint.studio.ui.theme.TabatiCanvasLight
     }
-    val dotColor = if (darkCanvas) Color(0xFF2B3230) else Color(0xFF8F8C82)
+
 
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
         panX += panChange.x
@@ -139,21 +139,7 @@ fun SheetCanvas(
             fit = optimal
             val zoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
 
-            // blueprint dot backdrop
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val step = 26.dp.toPx()
-                val dot = 1.1.dp.toPx()
-                var x = step / 2
-                while (x < size.width) {
-                    var y = step / 2
-                    while (y < size.height) {
-                        drawCircle(dotColor.copy(alpha = 0.35f), radius = dot, center = Offset(x, y))
-                        y += step
-                    }
-                    x += step
-                }
-            }
-
+            // HTML: canvas is flat md-canvas — no dot grid, no pattern
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Box(
                     modifier = Modifier
@@ -167,7 +153,7 @@ fun SheetCanvas(
                 ) {
                     // rulers: horizontal on top of the paper, vertical to its left
                     if (settings.frame.ruler) {
-                        val rulerBg = if (darkCanvas) Color(0xFF161D1A) else Color(0xFFE6ECE8)
+                        val rulerBg = androidx.compose.ui.graphics.Color.Transparent
                         RulerBar(
                             vertical = false,
                             lengthMm = settings.sheetWidthMm,
@@ -200,10 +186,28 @@ fun SheetCanvas(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .size(paperWdp.dp, paperHdp.dp)
-                            .shadow(18.dp, RoundedCornerShape(3.dp))
-                            .clip(RoundedCornerShape(3.dp))
+                            .shadow(24.dp, androidx.compose.ui.graphics.RectangleShape, clip = false)
                             .background(sheetBackgroundColor(settings)),
                     ) {
+                        if (settings.frame.background == com.appprint.studio.core.model.SheetBackground.TRANSPARENT) {
+                            // checkerboard under the transparent paper — like the design
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val cell = 8.dp.toPx()
+                                val cols = (size.width / cell).toInt() + 1
+                                val rows = (size.height / cell).toInt() + 1
+                                for (r in 0 until rows) {
+                                    for (c in 0 until cols) {
+                                        if ((r + c) % 2 == 0) {
+                                            drawRect(
+                                                color = Color(0xFFE2E2E2),
+                                                topLeft = Offset(c * cell, r * cell),
+                                                size = Size(cell, cell),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         if (settings.frame.guides) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 val m = settings.marginMm * DP_PER_MM * density.density
@@ -249,7 +253,7 @@ fun SheetCanvas(
                         }
                         // design: "A4 • 210 × 297 mm" caption on the paper
                         Text(
-                            text = "${settings.presetKey} • ${settings.sheetWidthMm.toInt()} × ${settings.sheetHeightMm.toInt()} mm",
+                            text = "${settings.presetKey} • ${formatCaptionDim(settings.sheetWidthMm)} × ${formatCaptionDim(settings.sheetHeightMm)} mm",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
                             fontWeight = FontWeight.Bold,
                             color = Color.Black.copy(alpha = 0.4f),
@@ -278,7 +282,7 @@ fun SheetCanvas(
     }
 }
 
-/** Simple ruler bar: tick every 10 mm, long tick every 50 mm. */
+/** Ruler bar: tick every 10 mm, long tick + number every 50 mm, small numbers every 10 mm — like the design. */
 @Composable
 private fun RulerBar(
     vertical: Boolean,
@@ -288,32 +292,38 @@ private fun RulerBar(
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
-    val tick = Color(0xFF3F4943)
-    val stepPx = 10f * DP_PER_MM * density.density
-    val bigStepPx = 50f * DP_PER_MM * density.density
+    val tick = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
     if (vertical) {
-        Canvas(modifier = modifier.width(24.dp).height(stripDp).background(background)) {
-            val lengthPx = lengthMm * DP_PER_MM * density.density
-            var pos = 0f
-            while (pos <= lengthPx) {
-                val big = (pos % bigStepPx) < 0.5f
-                val len = if (big) size.width else size.width * 0.55f
-                drawLine(tick, Offset(size.width, pos), Offset(size.width - len, pos), strokeWidth = 1.4f)
-                pos += stepPx
+        Box(modifier = modifier.width(16.dp).height(stripDp).background(background)) {
+            var mm = 0
+            while (mm <= lengthMm) {
+                val big = mm % 50 == 0
+                Text(
+                    text = "$mm",
+                    fontSize = if (big) 7.sp else 5.5.sp,
+                    fontWeight = if (big) FontWeight.ExtraBold else FontWeight.Bold,
+                    color = tick,
+                    modifier = Modifier
+                        .offset(y = (mm * DP_PER_MM).dp, x = 2.dp),
+                )
+                mm += 10
             }
-            drawLine(tick, Offset(size.width - 1f, 0f), Offset(size.width - 1f, size.height), strokeWidth = 1.6f)
         }
     } else {
-        Canvas(modifier = modifier.height(24.dp).width(stripDp).background(background)) {
-            val lengthPx = lengthMm * DP_PER_MM * density.density
-            var pos = 0f
-            while (pos <= lengthPx) {
-                val big = (pos % bigStepPx) < 0.5f
-                val len = if (big) size.height else size.height * 0.55f
-                drawLine(tick, Offset(pos, size.height), Offset(pos, size.height - len), strokeWidth = 1.4f)
-                pos += stepPx
+        Box(modifier = modifier.height(16.dp).width(stripDp).background(background)) {
+            var mm = 0
+            while (mm <= lengthMm) {
+                val big = mm % 50 == 0
+                Text(
+                    text = "$mm",
+                    fontSize = if (big) 8.sp else 5.5.sp,
+                    fontWeight = if (big) FontWeight.ExtraBold else FontWeight.Bold,
+                    color = tick,
+                    modifier = Modifier
+                        .offset(x = (mm * DP_PER_MM).dp, y = 1.dp),
+                )
+                mm += 10
             }
-            drawLine(tick, Offset(0f, size.height - 1f), Offset(size.width, size.height - 1f), strokeWidth = 1.6f)
         }
     }
 }
@@ -322,8 +332,11 @@ private fun sheetBackgroundColor(settings: com.appprint.studio.core.model.SheetS
     when (settings.frame.background) {
         com.appprint.studio.core.model.SheetBackground.WHITE -> Color.White
         com.appprint.studio.core.model.SheetBackground.OFFWHITE -> Color(0xFFFDFAF1)
-        com.appprint.studio.core.model.SheetBackground.TRANSPARENT -> Color(0x66FFFFFF)
+        com.appprint.studio.core.model.SheetBackground.TRANSPARENT -> Color(0xFFFFFFFF)
     }
+
+private fun formatCaptionDim(v: Float): String =
+    "%.1f".format(v).trimEnd('0').trimEnd('.')
 
 /** Design: empty paper state lives inside the sheet — mint icon + caption + action buttons + demo link. */
 @Composable

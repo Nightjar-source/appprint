@@ -24,6 +24,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
@@ -58,6 +62,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.ui.StudioSection
 import com.appprint.studio.ui.TabatiViewModel
@@ -78,7 +83,7 @@ fun StudioScreen(
     onCaptureCamera: () -> Unit = onImportMenu,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val isCompact = Chrome.isCompact()
+    val showRail = Chrome.railVisible()
     val isExpanded = Chrome.isExpanded()
 
     var deletePageIdx by remember { mutableStateOf<Int?>(null) }
@@ -101,7 +106,7 @@ fun StudioScreen(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = Chrome.topReserve(), bottom = Chrome.bottomReserve()),
+                .padding(top = Chrome.topReserve() + 40.dp, bottom = Chrome.bottomReserve()),
         ) {
             // -------------------------------------------------- workspace
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -114,22 +119,29 @@ fun StudioScreen(
                         onCaptureCamera = onCaptureCamera,
                         onAddDemoCards = viewModel::addSamples,
                     )
-                }
-                if (state.cards.isNotEmpty()) {
-                    SheetPageBar(
-                        state = state,
-                        onSelectPage = viewModel::currentPage,
-                        onAddSheet = viewModel::addSheet,
-                        onRequestDelete = { page -> deletePageIdx = page },
-                        onArrange = viewModel::arrangeSmart,
-                        onResetAll = { clearAllOpen = true },
-                    )
+                    if (state.cards.isNotEmpty()) {
+                        // floating page bar — above the canvas, under the top bar (like the design)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 6.dp),
+                        ) {
+                            SheetPageBar(
+                                state = state,
+                                onSelectPage = viewModel::currentPage,
+                                onAddSheet = viewModel::addSheet,
+                                onRequestDelete = { page -> deletePageIdx = page },
+                                onArrange = viewModel::arrangeSmart,
+                                onResetAll = { clearAllOpen = true },
+                            )
+                        }
+                    }
                 }
             }
 
             // ----------------------------------------- side panel (medium+)
             AnimatedVisibility(
-                visible = !isCompact && state.section != StudioSection.SHEET,
+                visible = showRail && state.section != StudioSection.SHEET,
                 enter = fadeIn(tween(220)) + expandHorizontally(expandFrom = Alignment.End, animationSpec = tween(220)),
                 exit = fadeOut(tween(160)) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = tween(160)),
                 modifier = Modifier.fillMaxHeight(),
@@ -152,7 +164,7 @@ fun StudioScreen(
 
         // --------------------------------------- bottom drawer (compact)
         AnimatedVisibility(
-            visible = isCompact && state.section != StudioSection.SHEET,
+            visible = !showRail && state.section != StudioSection.SHEET,
             enter = fadeIn(tween(180)) + expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(220)),
             exit = fadeOut(tween(120)) + shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(160)),
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -195,14 +207,13 @@ fun StudioScreen(
         // ------------------------------------------ delete page dialog
         deletePageIdx?.let { idx ->
             val count = state.cards.count { it.page == idx }
-            HtmlStyleDialog(
-                title = Str.delete_page_title.format(idx + 1),
-                onDismiss = { deletePageIdx = null },
-            ) {
+            com.appprint.studio.ui.components.HtmlDialog(maxWidth = 384.dp, onDismiss = { deletePageIdx = null }) {
+                com.appprint.studio.ui.components.HtmlDialogHeader(Str.delete_page_title.format(idx + 1), { deletePageIdx = null })
                 Text(
                     text = Str.delete_page_body.format(count),
-                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 17.sp,
                 )
                 HtmlDialogButton(
                     container = MaterialTheme.colorScheme.primary,
@@ -221,14 +232,13 @@ fun StudioScreen(
 
         // ------------------------------------------ clear all dialog
         if (clearAllOpen) {
-            HtmlStyleDialog(
-                title = Str.clear_all_title,
-                onDismiss = { clearAllOpen = false },
-            ) {
+            com.appprint.studio.ui.components.HtmlDialog(maxWidth = 320.dp, onDismiss = { clearAllOpen = false }) {
+                com.appprint.studio.ui.components.HtmlDialogHeader(Str.clear_all_title, { clearAllOpen = false })
                 Text(
                     text = Str.clear_all_body,
-                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 17.sp,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     HtmlDialogButton(
@@ -237,6 +247,7 @@ fun StudioScreen(
                         label = Str.clear_all_cancel,
                         onClick = { clearAllOpen = false },
                         modifier = Modifier.weight(1f),
+                        fontWeight = FontWeight.ExtraBold,
                     )
                     HtmlDialogButton(
                         container = MaterialTheme.colorScheme.tertiary,
@@ -284,19 +295,17 @@ private fun SurfaceDrawer(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(440.dp)
-            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+            .fillMaxHeight(0.48f)
             .background(scheme.surfaceContainerLow),
     ) {
+        // hairline top border only — the design's drawer has borderTop: 1px outline-variant
         Box(
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(top = 10.dp, bottom = 4.dp)
-                .size(width = 40.dp, height = 4.dp)
-                .clip(RoundedCornerShape(50.dp))
+                .fillMaxWidth()
+                .height(1.dp)
                 .background(scheme.outlineVariant),
         )
-        Box(Modifier.fillMaxWidth().fillMaxHeight()) {
+        Box(Modifier.fillMaxWidth().fillMaxHeight().padding(bottom = Chrome.bottomReserve())) {
             SectionPanel(
                 state = state,
                 viewModel = viewModel,
@@ -308,7 +317,7 @@ private fun SurfaceDrawer(
     }
 }
 
-/** Floating page tabs + quick actions — glass pill row above the canvas, exactly the design. */
+/** Floating page tabs + quick actions — individual translucent pills, exactly the design (no outer container). */
 @Composable
 private fun SheetPageBar(
     state: com.appprint.studio.ui.TabatiUiState,
@@ -320,66 +329,58 @@ private fun SheetPageBar(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Row(
+    LazyRow(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 12.dp, top = 2.dp, end = 12.dp, bottom = 2.dp),
+            .padding(start = 12.dp, end = 12.dp)
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
     ) {
-        // glass pill wrapping everything, like the design's floating container
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(percent = 50))
-                .background(scheme.surfaceContainerLow.copy(alpha = 0.92f))
-                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                .padding(horizontal = 6.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            // page tabs
-            LazyRow(
-                modifier = Modifier.widthIn(max = 180.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+        items((0 until state.pageCount).toList(), key = { it }) { page ->
+            val selected = state.activePage == page
+            val cardsOnPage = state.cards.count { it.page == page }
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(
+                        if (selected) scheme.primary
+                        else scheme.surfaceContainerHighest.copy(alpha = 0.78f),
+                    )
+                    .then(
+                        if (selected) Modifier.border(1.dp, scheme.primary, RoundedCornerShape(percent = 50))
+                        else Modifier.border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50)),
+                    )
+                    .clickable { onSelectPage(page) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items((0 until state.pageCount).toList(), key = { it }) { page ->
-                    val selected = state.activePage == page
-                    val cardsOnPage = state.cards.count { it.page == page }
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(if (selected) scheme.primary else androidx.compose.ui.graphics.Color.Transparent)
-                            .clickable { onSelectPage(page) }
-                            .padding(horizontal = 10.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                Text(
+                    text = "ورقة ${page + 1} (${cardsOnPage})",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                    fontSize = 11.sp,
+                    color = if (selected) scheme.onPrimary else scheme.onSurface,
+                    maxLines = 1,
+                )
+                if (state.pageCount > 1) {
+                    IconButton(
+                        onClick = { onRequestDelete(page) },
+                        modifier = Modifier.size(18.dp),
                     ) {
-                        Text(
-                            text = "ورقة ${page + 1} (${cardsOnPage})",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
-                            color = if (selected) scheme.onPrimary else scheme.onSurface,
-                            maxLines = 1,
-                        )
-                        if (state.pageCount > 1) {
-                            IconButton(
-                                onClick = { onRequestDelete(page) },
-                                modifier = Modifier.size(16.dp),
-                            ) {
-                                Icon(Icons.Filled.Close, contentDescription = null, tint = if (selected) scheme.onPrimary else scheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
-                            }
-                        }
+                        Icon(Icons.Filled.Close, contentDescription = null, tint = if (selected) scheme.onPrimary else scheme.onSurfaceVariant, modifier = Modifier.size(13.dp))
                     }
                 }
             }
+        }
 
-            // add sheet — secondary-container circle with outline, like the design
+        // add sheet — secondary-container circle with outline, like the design
+        item(key = "add-sheet") {
             Box(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.secondaryContainer.copy(alpha = 0.92f))
+                    .background(scheme.secondaryContainer.copy(alpha = 0.88f))
                     .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
                     .clickable(onClick = onAddSheet)
                     .semantics { role = Role.Button },
@@ -387,41 +388,47 @@ private fun SheetPageBar(
             ) {
                 Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, tint = scheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
             }
+        }
 
-            // ترتيب ذكي — smart arrange (primary-container accent)
+        // ترتيب ذكي — smart arrange (primary-container translucent pill + border)
+        item(key = "arrange") {
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.primaryContainer)
+                    .background(scheme.primaryContainer.copy(alpha = 0.92f))
+                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
                     .clickable(onClick = onArrange)
                     .padding(horizontal = 10.dp, vertical = 6.dp)
                     .semantics { role = Role.Button },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(14.dp))
-                Text("ترتيب ذكي", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = scheme.onPrimaryContainer)
+                Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(13.dp))
+                Text("ترتيب ذكي", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = scheme.onPrimaryContainer)
             }
+        }
 
-            // البدء من جديد — tertiary-container accent, resets workspace
+        // البدء من جديد — tertiary-container translucent pill, resets workspace
+        item(key = "reset-all") {
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.tertiaryContainer)
+                    .background(scheme.tertiaryContainer.copy(alpha = 0.88f))
+                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
                     .clickable(onClick = onResetAll)
                     .padding(horizontal = 10.dp, vertical = 6.dp)
                     .semantics { role = Role.Button },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Icon(Icons.Filled.RotateRight, contentDescription = null, tint = scheme.onTertiaryContainer, modifier = Modifier.size(14.dp))
-                Text("البدء من جديد", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = scheme.onTertiaryContainer)
+                Icon(Icons.Filled.RotateRight, contentDescription = null, tint = scheme.onTertiaryContainer, modifier = Modifier.size(13.dp))
+                Text("البدء من جديد", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = scheme.onTertiaryContainer)
             }
         }
     }
 }
 
-/** Swap picker sheet — every OTHER card, name + page, tap to exchange placements. */
+/** Swap picker dialog — every OTHER card, name + page + size, tap to exchange placements. */
 @Composable
 private fun SwapPickerSheet(
     fromId: Long,
@@ -429,84 +436,38 @@ private fun SwapPickerSheet(
     onSwap: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-            Text(
-                Str.swap_with,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-            )
-            androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
+    com.appprint.studio.ui.components.HtmlDialog(maxWidth = 384.dp, onDismiss = onDismiss) {
+        com.appprint.studio.ui.components.HtmlDialogHeader(Str.swap_with, onDismiss)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier
+                .heightIn(max = 240.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
             state.cards.filter { it.id != fromId }.forEach { card ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
                         .clickable(onClick = { onSwap(card.id) })
-                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "${card.name} — ورقة ${card.page + 1} • ${card.widthMm}×${card.heightMm}",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = card.name,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         modifier = Modifier.weight(1f),
+                        maxLines = 1,
                     )
-                    Icon(Icons.Filled.SwapHoriz, contentDescription = null)
+                    Text(
+                        text = "ورقة ${card.page + 1} • ${formatDim(card.widthMm)}×${formatDim(card.heightMm)}",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
-        }
-    }
-}
-
-/** Design-style modal dialog: dimmed scrim + rounded high-surface panel + close X + title. */
-@Composable
-private fun HtmlStyleDialog(
-    title: String,
-    onDismiss: () -> Unit,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
-) {
-    val scheme = MaterialTheme.colorScheme
-    val scrim = remember { MutableInteractionSource() }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f))
-            .clickable(interactionSource = scrim, indication = null, onClick = onDismiss),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 44.dp)
-                .widthIn(max = 340.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(scheme.surfaceContainerHigh)
-                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(28.dp))
-                .padding(16.dp)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { /* consume taps — scrim stays closed */ },
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Black,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(Icons.Filled.Close, contentDescription = "إغلاق")
-                }
-            }
-            content()
         }
     }
 }
@@ -519,6 +480,7 @@ private fun HtmlDialogButton(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    fontWeight: FontWeight = FontWeight.Black,
 ) {
     val interaction = remember { MutableInteractionSource() }
     Box(
@@ -532,12 +494,15 @@ private fun HtmlDialogButton(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Black,
+            fontSize = 12.sp,
+            fontWeight = fontWeight,
             color = content,
             maxLines = 1,
         )
     }
 }
+
+private fun formatDim(v: Float): String =
+    "%.1f".format(v).trimEnd('0').trimEnd('.')
 
 

@@ -12,17 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,11 +30,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.appprint.studio.ui.strings.Str
 
 /**
- * Share sheet — the design's exact structure:
- *  طباعة مباشرة (primary full row) → شبكة PNG الحالية / كل الأوراق → شبكة ملف HTML / مشاركة للتطبيقات.
+ * «تصدير ومشاركة وطباعة» — the design's centered modal dialog:
+ * طباعة مباشرة (primary full row) → grid of PNG الحالية / كل الأوراق → grid of ملف HTML / مشاركة للتطبيقات.
  */
 @Composable
 fun ShareSheet(
@@ -51,26 +49,9 @@ fun ShareSheet(
     onDismiss: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-        ) {
-            Text(
-                text = Str.share_title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onDismiss, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Filled.Close, contentDescription = "إغلاق")
-            }
-        }
+    val interaction = remember { MutableInteractionSource() }
+    HtmlDialog(maxWidth = 448.dp, onDismiss = onDismiss) {
+        HtmlDialogHeader(Str.share_title, onDismiss)
 
         // ── طباعة مباشرة عبر الطابعة — the one full-width primary row ──
         Row(
@@ -78,7 +59,7 @@ fun ShareSheet(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(scheme.primary)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                .clickable(interactionSource = interaction, indication = null) {
                     onDismiss(); onDirectPrint()
                 }
                 .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -89,13 +70,13 @@ fun ShareSheet(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     Str.share_direct_print,
-                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Black,
                     color = scheme.onPrimary,
                 )
                 Text(
                     Str.share_direct_print_sub,
-                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
                     color = scheme.onPrimary.copy(alpha = 0.85f),
                 )
             }
@@ -136,7 +117,7 @@ fun ShareSheet(
                 modifier = Modifier.weight(1f),
             )
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(2.dp))
     }
 }
 
@@ -162,14 +143,16 @@ private fun GridAction(
         Icon(icon, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(20.dp))
         Text(
             title,
-            style = MaterialTheme.typography.labelMedium,
+            fontSize = 12.sp,
             fontWeight = FontWeight.ExtraBold,
             color = scheme.onSurface,
+            lineHeight = 15.sp,
         )
         Text(
             sub,
-            style = MaterialTheme.typography.labelSmall,
+            fontSize = 10.sp,
             color = scheme.onSurfaceVariant,
+            lineHeight = 13.sp,
         )
     }
 }

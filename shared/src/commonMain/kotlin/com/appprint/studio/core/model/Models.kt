@@ -188,6 +188,8 @@ data class CardItem(
     val border: Boolean = true,
     val guides: Boolean = true,
     val enhance: EnhanceSettings = EnhanceSettings.IDENTITY,
+    /** True when this card's enhance came from «apply to all» — badge reads «محسّنة - جماعي». */
+    val bulkEnhanced: Boolean = false,
     val isSample: Boolean = false,
     /** Scanner auto-detected type label (non-empty when detection ran). */
     val detectedLabel: String = "",

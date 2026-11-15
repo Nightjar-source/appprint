@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -84,7 +85,6 @@ internal fun CardOnSheet(
             }
             .size((card.widthMm * dpPerMm).dp, (card.heightMm * dpPerMm).dp)
             .graphicsLayer { rotationZ = card.totalRotation }
-            .clip(RoundedCornerShape(6.dp))
             .clickable(interactionSource = interaction, indication = null) { viewModel.selectCard(card.id) }
             // long-press (~430–500 ms) → quick context sheet
             .pointerInput(card.id) {
@@ -116,7 +116,7 @@ internal fun CardOnSheet(
                 .align(Alignment.Center)
                 .size((innerW * dpPerMm).dp, (innerH * dpPerMm).dp)
                 .graphicsLayer { rotationZ = card.rotation.toFloat() }
-                .clip(RoundedCornerShape(6.dp)),
+                .clip(androidx.compose.ui.graphics.RectangleShape),
         ) {
             val bitmap = card.imageUri?.let { rememberCardBitmap(it) }
             if (bitmap != null) {
@@ -133,12 +133,20 @@ internal fun CardOnSheet(
         }
 
         if (selected) {
-            // selection ring (design: 2.5px primary outline + glow)
+            // selection ring (design: 2.5px primary outline outside the card + green glow)
+            val selColor = MaterialTheme.colorScheme.primary
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .border(2.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
-                    .shadow(16.dp, RoundedCornerShape(6.dp)),
+                    .size(((card.widthMm * dpPerMm) + 5f).dp, ((card.heightMm * dpPerMm) + 5f).dp)
+                    .offset(x = (-2.5).dp, y = (-2.5).dp)
+                    .border(2.5.dp, selColor, androidx.compose.ui.graphics.RectangleShape)
+                    .shadow(
+                        16.dp,
+                        androidx.compose.ui.graphics.RectangleShape,
+                        clip = false,
+                        ambientColor = Color(0xFF006C47).copy(alpha = 0.32f),
+                        spotColor = Color(0xFF006C47).copy(alpha = 0.32f),
+                    ),
             )
         }
 
@@ -146,27 +154,26 @@ internal fun CardOnSheet(
         com.appprint.studio.ui.components.CardBadges(card = card, modifier = Modifier.fillMaxSize())
 
         // card frame (the printed border on the physical card)
-        if (state.settings.frame.card && card.border && state.settings.frame.colorHex != 0L) {
+        if (state.settings.frame.card && card.border && state.settings.frame.colorHex != 0L && state.settings.frame.thickness > 0f) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val frame = state.settings.frame
                 val dash = when (frame.style) {
                     com.appprint.studio.core.model.FrameStyle.SOLID -> null
-                    com.appprint.studio.core.model.FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
-                    com.appprint.studio.core.model.FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5f, 5f), 0f)
+                    com.appprint.studio.core.model.FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(9f, 7f), 0f)
+                    com.appprint.studio.core.model.FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5f, 6f), 0f)
                 }
-                drawRoundRect(
+                drawRect(
                     color = Color(frame.colorHex),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx(), 6.dp.toPx()),
                     style = Stroke(width = (frame.thickness * 1.9f).coerceAtLeast(1.4f), pathEffect = dash),
                 )
             }
         }
-        // per-card cut guide (red dashed, slightly beyond the card)
+        // per-card cut guide (red dashed, 1.2 mm beyond the card edge)
         if (state.settings.frame.guides && card.guides) {
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val bleed = 4f
-                drawRoundRect(
-                    color = Color(0xFFB32638).copy(alpha = 0.72f),
+                val bleed = 1.2f * dpPerMm * density.density
+                drawRect(
+                    color = Color(0xFFB32638).copy(alpha = 0.75f),
                     topLeft = androidx.compose.ui.geometry.Offset(-bleed, -bleed),
                     size = androidx.compose.ui.geometry.Size(size.width + bleed * 2, size.height + bleed * 2),
                     style = Stroke(
@@ -178,17 +185,32 @@ internal fun CardOnSheet(
         }
 
         if (selected) {
-            RotateHandle(
-                card = card,
-                viewModel = viewModel,
-                dpPerMm = dpPerMm,
-                modifier = Modifier.align(Alignment.TopCenter).offset(y = (-18).dp),
-            )
+            // rotate handle — floats 36dp above the card with a 2dp × 8dp stem to the card (design: -top-9 + stem)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-36).dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                RotateHandle(
+                    card = card,
+                    viewModel = viewModel,
+                    dpPerMm = dpPerMm,
+                )
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(8.dp)
+                        .background(MaterialTheme.colorScheme.secondary),
+                )
+            }
             ResizeHandle(
                 card = card,
                 viewModel = viewModel,
                 dpPerMm = dpPerMm,
-                modifier = Modifier.align(Alignment.BottomEnd),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = 8.dp, y = 8.dp),
             )
         }
     }
@@ -209,34 +231,58 @@ private fun RotateHandle(
     val density = LocalDensity.current
     val currentCard by rememberUpdatedState(card)
     val scheme = MaterialTheme.colorScheme
-    Box(
-        modifier = modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .background(scheme.secondary)
-            .pointerInput(card.id) {
-                detectDragGestures(onDrag = { change, _ ->
-                    change.consume()
-                    val c = currentCard
-                    // handle sits at the card's top-center (offset -18dp): recover card-box coords
-                    val handleLeft = (c.widthMm * dpPerMm / 2f - 18f) * density.density
-                    val handleTop = -18f * density.density
-                    val px = handleLeft + change.position.x
-                    val py = handleTop + change.position.y
-                    val centerX = c.widthMm * dpPerMm / 2f * density.density
-                    val centerY = c.heightMm * dpPerMm / 2f * density.density
-                    val raw = Math.toDegrees(atan2((py - centerY).toDouble(), (px - centerX).toDouble())).toFloat() + 90f
-                    viewModel.setCardAngle360(c.id, raw, magneticSnap = true)
-                })
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            Icons.Filled.Autorenew,
-            contentDescription = null,
-            tint = scheme.onSecondary,
-            modifier = Modifier.size(17.dp),
-        )
+    var liveAngle by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    Box(contentAlignment = Alignment.Center) {
+        liveAngle?.let { ang ->
+            Text(
+                text = ang,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Black,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-18).dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(MaterialTheme.colorScheme.onSurface)
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
+        Box(
+            modifier = modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(scheme.secondary)
+                .pointerInput(card.id) {
+                    detectDragGestures(
+                        onDragStart = { _start -> /* keep last */ },
+                        onDragEnd = { liveAngle = null },
+                        onDragCancel = { liveAngle = null },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            val c = currentCard
+                            // handle sits at the card's top-center (offset -36dp): recover card-box coords
+                            val handleLeft = (c.widthMm * dpPerMm / 2f - 16f) * density.density
+                            val handleTop = -36f * density.density
+                            val px = handleLeft + change.position.x
+                            val py = handleTop + change.position.y
+                            val centerX = c.widthMm * dpPerMm / 2f * density.density
+                            val centerY = c.heightMm * dpPerMm / 2f * density.density
+                            val raw = Math.toDegrees(atan2((py - centerY).toDouble(), (px - centerX).toDouble())).toFloat() + 90f
+                            val applied = viewModel.setCardAngle360(c.id, raw, magneticSnap = true)
+                            liveAngle = "${applied.toInt()}°"
+                        },
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.Autorenew,
+                contentDescription = null,
+                tint = scheme.onSecondary,
+                modifier = Modifier.size(17.dp),
+            )
+        }
     }
 }
 
@@ -310,7 +356,7 @@ private fun SampleCardArt(card: CardItem) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(9.dp),
+                .padding(11.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Column {
@@ -325,7 +371,7 @@ private fun SampleCardArt(card: CardItem) {
                 Text(
                     text = "OFFICIAL ID DOCUMENT • وثيقة رسمية",
                     color = fg.copy(alpha = 0.75f),
-                    fontSize = 6.sp,
+                    fontSize = 7.sp,
                     maxLines = 1,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -337,13 +383,13 @@ private fun SampleCardArt(card: CardItem) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(width = 30.dp, height = 22.dp)
-                        .border(1.dp, fg.copy(alpha = 0.4f), RoundedCornerShape(3.dp)),
+                        .size(width = 42.dp, height = 31.dp)
+                        .border(1.dp, fg.copy(alpha = 0.4f), RoundedCornerShape(4.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "صورة",
-                        color = fg.copy(alpha = 0.6f),
+                        color = fg.copy(alpha = 0.55f),
                         fontSize = 6.sp,
                         fontWeight = FontWeight.Bold,
                     )

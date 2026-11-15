@@ -109,9 +109,9 @@ class TabatiViewModel : ViewModel() {
 
     fun cycleTheme() = _state.update { s ->
         val next = when (s.theme) {
-            AppTheme.SYSTEM -> AppTheme.LIGHT
-            AppTheme.LIGHT -> AppTheme.DARK
-            AppTheme.DARK -> AppTheme.SYSTEM
+            AppTheme.SYSTEM -> AppTheme.DARK
+            AppTheme.DARK -> AppTheme.LIGHT
+            AppTheme.LIGHT -> AppTheme.SYSTEM
         }
         PlatformActions.saveTheme(next)
         s.copy(theme = next)
@@ -502,14 +502,14 @@ class TabatiViewModel : ViewModel() {
         }
         val selectedId = _state.value.selectedCardId ?: return
         _state.update { s ->
-            s.copy(cards = s.cards.map { if (it.id == selectedId) it.copy(enhance = patch(it.enhance)) else it })
+            s.copy(cards = s.cards.map { if (it.id == selectedId) it.copy(enhance = patch(it.enhance), bulkEnhanced = false) else it })
         }
     }
 
     fun confirmPendingBulkEnhance() {
         val patch = _state.value.pendingBulkPatch ?: return
         _state.update { it.copy(pendingBulkPatch = null) }
-        _state.update { s -> s.copy(cards = s.cards.map { if (it.imageUri != null) it.copy(enhance = patch) else it }) }
+        _state.update { s -> s.copy(cards = s.cards.map { if (it.imageUri != null) it.copy(enhance = patch, bulkEnhanced = true) else it }) }
         // Real pixel pass happens on export; the preview ColorFilter approximates it instantly.
         toast(Str.enhance_applied_all.format(_state.value.cards.count { it.imageUri != null }))
     }
@@ -525,7 +525,7 @@ class TabatiViewModel : ViewModel() {
         }
         _state.update { s ->
             val id = s.selectedCardId
-            val cards = if (id == null) s.cards else s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.AUTO) else it }
+            val cards = if (id == null) s.cards else s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.AUTO, bulkEnhanced = false) else it }
             s.copy(cards = cards, toast = TabatiToast(Str.enhance_auto_done))
         }
     }
@@ -534,7 +534,7 @@ class TabatiViewModel : ViewModel() {
     fun autoEnhanceSelectedDirect(id: Long) {
         _state.update { s ->
             s.copy(
-                cards = s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.AUTO) else it },
+                cards = s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.AUTO, bulkEnhanced = false) else it },
                 toast = TabatiToast("تم التحسين التلقائي للبطاقة"),
             )
         }
@@ -546,7 +546,7 @@ class TabatiViewModel : ViewModel() {
     fun resetSelectedEnhanceOriginal() {
         _state.update { s ->
             val id = s.selectedCardId
-            val cards = if (id == null) s.cards else s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.IDENTITY) else it }
+            val cards = if (id == null) s.cards else s.cards.map { if (it.id == id) it.copy(enhance = EnhanceSettings.IDENTITY, bulkEnhanced = false) else it }
             s.copy(cards = cards, compareBefore = false, toast = TabatiToast(Str.enhance_reset_one))
         }
     }
@@ -562,7 +562,7 @@ class TabatiViewModel : ViewModel() {
     }
 
     fun resetAllEnhance() {
-        _state.update { s -> s.copy(cards = s.cards.map { it.copy(enhance = EnhanceSettings.IDENTITY) }, toast = TabatiToast(Str.enhance_reset_all)) }
+        _state.update { s -> s.copy(cards = s.cards.map { it.copy(enhance = EnhanceSettings.IDENTITY, bulkEnhanced = false) }, toast = TabatiToast(Str.enhance_reset_all)) }
     }
 
     // ------------------------------------------------------------------ export / print / share

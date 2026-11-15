@@ -1,6 +1,7 @@
 ﻿package com.appprint.studio.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -23,8 +24,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /**
- * Oval snackbar under the floating bar — on-surface pill with the design's
- * leading status icon: check inside a primary-container circle (or a morphing star-style loader while busy).
+ * Oval snackbar under the floating bar — the design's `.m3-float-enter` toast:
+ * on-surface pill, outlineVariant border, shadow, check inside a primary-container circle
+ * (morphing star-style loader while busy).
  */
 @Composable
 fun AppSnackbar(
@@ -36,9 +38,10 @@ fun AppSnackbar(
     Row(
         modifier = modifier
             .height(36.dp)
-            .shadow(6.dp, RoundedCornerShape(percent = 50), clip = false)
+            .shadow(10.dp, RoundedCornerShape(percent = 50), clip = false)
             .clip(RoundedCornerShape(percent = 50))
-            .background(scheme.inverseSurface)
+            .background(scheme.onSurface)
+            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -69,7 +72,7 @@ fun AppSnackbar(
             text = message,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            color = scheme.inverseOnSurface,
+            color = scheme.surface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

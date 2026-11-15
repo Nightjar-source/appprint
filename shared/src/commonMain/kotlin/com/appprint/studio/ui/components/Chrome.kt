@@ -75,6 +75,14 @@ object Chrome {
         return !info.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
     }
 
+    /** Whether the rail layout is active (design: isExpanded = viewport.w >= 768). */
+    @Composable
+    fun railVisible(): Boolean {
+        val info = androidx.compose.ui.platform.LocalWindowInfo.current
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        return with(density) { info.containerSize.width.toDp() >= 768.dp }
+    }
+
     /** Whether the expanded (rail) layout is active. */
     @Composable
     fun isExpanded(): Boolean {

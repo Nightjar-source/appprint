@@ -153,15 +153,11 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.surfaceContainerLow,
-                                MaterialTheme.colorScheme.background,
-                            ),
-                        ),
+                        if (barDark) com.appprint.studio.ui.theme.TabatiCanvasDark
+                        else com.appprint.studio.ui.theme.TabatiCanvasLight,
                     ),
             ) {
-                StudioScreen(
+        StudioScreen(
                     viewModel = viewModel,
                     onImportMenu = { importMenuOpen = true },
                     onReplaceImage = onReplaceImage,
@@ -179,8 +175,8 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                     onZoomFit = viewModel::zoomFit,
                     modifier = Modifier.align(Alignment.TopCenter),
                 )
-                val isCompact = Chrome.isCompact()
-                if (isCompact) {
+                val showRail = Chrome.railVisible()
+                if (!showRail) {
                     FloatingNavPill(
                         current = state.section,
                         onSelect = viewModel::setSection,
@@ -220,24 +216,18 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
             )
         }
 
-        // ---------------------------------------------------- share sheet
+        // ---------------------------------------------------- share dialog
         if (shareSheetOpen) {
-            ModalBottomSheet(
-                onDismissRequest = { shareSheetOpen = false },
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ) {
-                ShareSheet(
-                    pageCount = state.pageCount,
-                    currentPage = state.activePage,
-                    onDirectPrint = viewModel::printPdf,
-                    onSavePngCurrent = { viewModel.downloadPng(state.activePage) },
-                    onSaveAllPngs = viewModel::downloadAllPngs,
-                    onSaveHtml = viewModel::downloadHtml,
-                    onSharePdf = viewModel::sharePdf,
-                    onDismiss = { shareSheetOpen = false },
-                )
-            }
+            com.appprint.studio.ui.components.ShareSheet(
+                pageCount = state.pageCount,
+                currentPage = state.activePage,
+                onDirectPrint = viewModel::printPdf,
+                onSavePngCurrent = { viewModel.downloadPng(state.activePage) },
+                onSaveAllPngs = viewModel::downloadAllPngs,
+                onSaveHtml = viewModel::downloadHtml,
+                onSharePdf = viewModel::sharePdf,
+                onDismiss = { shareSheetOpen = false },
+            )
         }
     }
 }
@@ -288,7 +278,7 @@ private fun FloatingTopBar(
                     .clip(RoundedCornerShape(percent = 50))
                     .background(scheme.surfaceContainerLow.copy(alpha = 0.9f))
                     .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                    .padding(horizontal = 14.dp),
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -297,7 +287,8 @@ private fun FloatingTopBar(
                     text = "طبعتي",
                     fontFamily = com.appprint.studio.ui.theme.rememberReemKufiFamily(),
                     fontWeight = FontWeight.Bold,
-                    fontSize = androidx.compose.ui.unit.TextUnit(20f, androidx.compose.ui.unit.TextUnitType.Sp),
+                    fontSize = androidx.compose.ui.unit.TextUnit(17f, androidx.compose.ui.unit.TextUnitType.Sp),
+                    letterSpacing = androidx.compose.ui.unit.TextUnit(0.4f, androidx.compose.ui.unit.TextUnitType.Sp),
                     color = scheme.onSurface,
                 )
                 Spacer(Modifier.width(2.dp))
@@ -367,15 +358,12 @@ private fun FloatingTopBar(
             tint = scheme.onPrimary,
             elevated = true,
         ) {
-            if (state.processing) {
-                androidx.compose.material3.CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = scheme.onPrimary,
-                )
-            } else {
-                Icon(Icons.Filled.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
-            }
+            Icon(
+                Icons.Filled.PictureAsPdf,
+                contentDescription = null,
+                tint = androidx.compose.ui.graphics.Color.White.copy(alpha = if (state.processing) 0.35f else 1f),
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
@@ -404,7 +392,8 @@ private fun SurfaceChip(text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Black,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 10.sp,
             color = scheme.onSecondaryContainer,
             maxLines = 1,
         )
@@ -491,15 +480,15 @@ private fun FloatingNavPill(
         val interaction = remember { MutableInteractionSource() }
         Box(
             modifier = Modifier
-                .size(52.dp)
-                .shadow(8.dp, RoundedCornerShape(percent = 50), clip = false)
+                .size(48.dp)
+                .shadow(12.dp, RoundedCornerShape(percent = 50), clip = false)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(scheme.primary)
                 .clickable(interactionSource = interaction, indication = null, onClick = onAdd)
                 .semantics { role = Role.Button },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Add, contentDescription = Str.add_images, tint = scheme.onPrimary, modifier = Modifier.size(26.dp))
+            Icon(Icons.Filled.Add, contentDescription = Str.add_images, tint = scheme.onPrimary, modifier = Modifier.size(24.dp))
         }
         Surface(
             shape = RoundedCornerShape(percent = 50),
@@ -508,7 +497,7 @@ private fun FloatingNavPill(
             tonalElevation = 2.dp,
             modifier = Modifier
                 .height(Chrome.NavBarDp)
-                .widthIn(max = 380.dp)
+                .widthIn(max = 512.dp)
                 .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50)),
         ) {
             Row(
@@ -540,11 +529,6 @@ private fun NavPillItem(
 ) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
-    val pillWidth by animateDpAsState(
-        targetValue = if (selected) 46.dp else 20.dp,
-        animationSpec = Motion.fastDp(),
-        label = "pillIndicator",
-    )
     val contentColor by animateColorAsState(
         targetValue = if (selected) scheme.onSecondaryContainer else scheme.onSurfaceVariant,
         animationSpec = tween(180),
@@ -556,14 +540,14 @@ private fun NavPillItem(
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
             .padding(horizontal = 4.dp, vertical = 2.dp)
-        .widthIn(min = 52.dp),
+            .widthIn(min = 56.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Box(
             modifier = Modifier
-                .height(28.dp)
-                .width(pillWidth)
+                .height(24.dp)
+                .width(44.dp)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent),
             contentAlignment = Alignment.Center,
@@ -572,26 +556,26 @@ private fun NavPillItem(
                 destination.icon,
                 contentDescription = destination.label,
                 tint = contentColor,
-                modifier = Modifier.size(if (selected) 18.dp else 19.dp),
+                modifier = Modifier.size(17.dp),
             )
             if (badge != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 8.dp, y = (-7).dp)
-                        .size(16.dp)
+                        .offset(x = 8.dp, y = (-6).dp)
+                        .size(14.dp)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.tertiary)
-                        .padding(horizontal = 4.dp),
+                        .padding(horizontal = 3.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(badge, style = MaterialTheme.typography.labelSmall, color = scheme.onTertiary, fontSize = 8.sp, maxLines = 1)
+                    Text(badge, style = MaterialTheme.typography.labelSmall, color = scheme.onTertiary, fontSize = 8.5.sp, maxLines = 1)
                 }
             }
         }
         Text(
             text = destination.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp, fontWeight = FontWeight.ExtraBold),
             color = contentColor,
             maxLines = 1,
         )
@@ -630,7 +614,7 @@ private fun FloatingRail(
                     .padding(horizontal = 2.dp, vertical = 8.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // add card/image — the one accented action
                 val interaction = remember { MutableInteractionSource() }
@@ -674,7 +658,7 @@ private fun DividerHair() {
         modifier = Modifier
             .height(1.dp)
             .width(28.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+            .background(MaterialTheme.colorScheme.outlineVariant),
     )
 }
 
@@ -694,16 +678,18 @@ private fun RailItem(
     )
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(percent = 50))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
-            .padding(horizontal = 6.dp, vertical = 5.dp)
-            .widthIn(min = 52.dp),
+            .padding(horizontal = 6.dp, vertical = 6.dp)
+            .widthIn(min = 56.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
         Box(
             modifier = Modifier
+                .width(48.dp)
+                .height(28.dp)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent),
             contentAlignment = Alignment.Center,
@@ -712,25 +698,25 @@ private fun RailItem(
                 destination.icon,
                 contentDescription = destination.label,
                 tint = contentColor,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(19.dp),
             )
             if (badge != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = 10.dp, y = (-6).dp)
-                        .size(15.dp)
+                        .size(14.dp)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.tertiary),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(badge, color = scheme.onTertiary, fontSize = 8.sp, maxLines = 1)
+                    Text(badge, color = scheme.onTertiary, fontSize = 8.5.sp, maxLines = 1)
                 }
             }
         }
         Text(
             text = destination.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.ExtraBold),
             color = contentColor,
             maxLines = 1,
         )

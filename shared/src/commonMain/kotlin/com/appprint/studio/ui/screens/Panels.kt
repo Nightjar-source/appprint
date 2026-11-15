@@ -2,6 +2,7 @@
 
 package com.appprint.studio.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,9 +30,11 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -236,12 +239,14 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                 selected = settings.orientation == Orientation.PORTRAIT,
                 onClick = { viewModel.setOrientation(Orientation.PORTRAIT) },
                 modifier = Modifier.weight(1f),
+                accent = true,
             )
             PanelChoiceChip(
                 Str.landscape,
                 selected = settings.orientation == Orientation.LANDSCAPE,
                 onClick = { viewModel.setOrientation(Orientation.LANDSCAPE) },
                 modifier = Modifier.weight(1f),
+                accent = true,
             )
         }
 
@@ -318,6 +323,11 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
             OutlinedButton(
                 onClick = viewModel::regroupSmart,
                 shape = RoundedCornerShape(percent = 50),
+                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth().height(40.dp),
             ) {
                 Icon(Icons.Filled.Dashboard, contentDescription = null, modifier = Modifier.size(15.dp))
@@ -360,28 +370,41 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
             PanelToggleRow(Str.show_grid, checked = settings.showGrid, onCheckedChange = viewModel::setShowGrid)
         }
 
-        Column(
+        val outlineColor = MaterialTheme.colorScheme.outlineVariant
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+                .background(MaterialTheme.colorScheme.surfaceContainer),
         ) {
-            Text(Str.experiment_title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
-            Text(
-                Str.experiment_desc,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            OutlinedButton(
-                onClick = viewModel::addSamples,
-                shape = RoundedCornerShape(percent = 50),
-                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                modifier = Modifier.fillMaxWidth().height(40.dp),
+            Canvas(modifier = Modifier.matchParentSize()) {
+                drawRoundRect(
+                    color = outlineColor,
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx(), 16.dp.toPx()),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 1.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f),
+                    ),
+                )
+            }
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text(Str.demo_button, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+                Text(Str.experiment_title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
+                Text(
+                    Str.experiment_desc,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = viewModel::addSamples,
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
+                ) {
+                    Text(Str.demo_button, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+                }
             }
         }
     }
@@ -666,7 +689,7 @@ private fun CardEditorRow(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Icon(Icons.Filled.SwapHoriz, contentDescription = null, modifier = Modifier.size(14.dp))
+                Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(14.dp))
                 Spacer6()
                 Text(
                     Str.rotate_free,
@@ -743,7 +766,7 @@ private fun CardEditorRow(
                 PanelIconPill(Icons.Filled.SwapHoriz, Str.swap, accent = true) { onRequestSwap(card.id) }
             }
             PanelIconPill(Icons.Filled.ContentCopy, Str.duplicate) { viewModel.duplicateCard(card.id) }
-            PanelIconPill(Icons.Filled.DeleteOutline, Str.remove, danger = true) { viewModel.deleteCard(card.id) }
+            PanelIconPill(Icons.Filled.Delete, Str.remove, danger = true) { viewModel.deleteCard(card.id) }
         }
     }
 }
@@ -957,7 +980,6 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                 onClick = viewModel::autoCropSelected,
             )
             ActionPill(
-                icon = Icons.Filled.Visibility,
                 label = if (state.compareBefore) Str.compare_after else Str.compare_before,
                 container = if (state.compareBefore) scheme.primary else scheme.surfaceContainerHighest,
                 onContainer = if (state.compareBefore) scheme.onPrimary else scheme.onSurface,
@@ -972,7 +994,6 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                     onClick = { viewModel.requestPendingBulkEnhance(selected.enhance) },
                 )
                 ActionPill(
-                    icon = Icons.Filled.DeleteOutline,
                     label = Str.reset,
                     container = scheme.tertiaryContainer,
                     onContainer = scheme.onTertiaryContainer,
@@ -1019,10 +1040,10 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
 
 @Composable
 private fun ActionPill(
-    icon: ImageVector,
     label: String,
     container: Color,
     onContainer: Color,
+    icon: ImageVector? = null,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
@@ -1036,7 +1057,7 @@ private fun ActionPill(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(icon, contentDescription = null, tint = onContainer, modifier = Modifier.size(15.dp))
+        icon?.let { Icon(it, contentDescription = null, tint = onContainer, modifier = Modifier.size(15.dp)) }
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
@@ -1164,16 +1185,24 @@ private fun BgSwatch(label: String, selected: Boolean, swatch: Color?, onClick: 
             modifier = Modifier
                 .size(width = 28.dp, height = 18.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(4.dp))
-                .then(
-                    if (swatch != null) Modifier.background(swatch)
-                    else Modifier.background(
-                        androidx.compose.ui.graphics.Brush.linearGradient(
-                            listOf(Color(0xFFCCCCCC), Color.White, Color(0xFFCCCCCC)),
-                        ),
-                    )
-                ),
-        )
+                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(4.dp)),
+        ) {
+            if (swatch != null) {
+                Box(Modifier.fillMaxSize().background(swatch))
+            } else {
+                // checkerboard swatch — transparent paper
+                Canvas(Modifier.fillMaxSize()) {
+                    val cell = 6.dp.toPx()
+                    for (r in 0..2) {
+                        for (c in 0..4) {
+                            if ((r + c) % 2 == 0) {
+                                drawRect(Color(0xFFCCCCCC), topLeft = androidx.compose.ui.geometry.Offset(c * cell, r * cell), size = androidx.compose.ui.geometry.Size(cell, cell))
+                            }
+                        }
+                    }
+                }
+            }
+        }
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
@@ -1242,6 +1271,7 @@ fun GuidePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                     modifier = Modifier
                         .clip(RoundedCornerShape(percent = 50))
                         .background(if (isActive) scheme.primary else scheme.surfaceContainerHigh)
+                        .border(1.dp, if (isActive) scheme.primary else scheme.outlineVariant, RoundedCornerShape(percent = 50))
                         .clickable { selectedType = type }
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                 )
