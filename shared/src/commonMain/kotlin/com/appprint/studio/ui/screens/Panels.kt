@@ -78,6 +78,7 @@ import com.appprint.studio.ui.components.PanelChoiceChip
 import com.appprint.studio.ui.components.PanelSectionHeader
 import com.appprint.studio.ui.components.PanelSliderRow
 import com.appprint.studio.ui.components.PanelToggleRow
+import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.strings.Str
 
 /**
@@ -424,6 +425,7 @@ private fun ModeChip(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -453,6 +455,7 @@ private fun PaperSizeChip(label: String, sub: String, selected: Boolean, onClick
             .clip(RoundedCornerShape(16.dp))
             .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
             .border(1.dp, if (selected) scheme.primary else scheme.outlineVariant, RoundedCornerShape(16.dp))
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -786,6 +789,7 @@ private fun MiniTogglePill(label: String, onClick: () -> Unit) {
         modifier = Modifier
             .clip(RoundedCornerShape(percent = 50))
             .background(scheme.surfaceContainerLow)
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
     )
@@ -815,6 +819,7 @@ private fun PanelIconPill(
         modifier = Modifier
             .clip(RoundedCornerShape(percent = 50))
             .background(bg)
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -839,6 +844,7 @@ private fun TypeGridChip(type: CardType, active: Boolean, onClick: () -> Unit) {
                 color = if (active) scheme.primary else scheme.outlineVariant,
                 shape = RoundedCornerShape(16.dp),
             )
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -1176,6 +1182,7 @@ private fun BgSwatch(label: String, selected: Boolean, swatch: Color?, onClick: 
             .width(104.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1221,6 +1228,7 @@ private fun FrameColorDot(label: String, hex: Long?, selected: Boolean, onClick:
             .width(76.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(vertical = 8.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

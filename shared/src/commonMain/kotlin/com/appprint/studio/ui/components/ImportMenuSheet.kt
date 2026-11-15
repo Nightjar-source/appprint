@@ -110,6 +110,7 @@ private fun ImportRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(container)
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = if (container == MaterialTheme.colorScheme.surfaceContainer) 12.dp else 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -381,6 +382,7 @@ private fun QuickActionButton(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .background(container)
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,

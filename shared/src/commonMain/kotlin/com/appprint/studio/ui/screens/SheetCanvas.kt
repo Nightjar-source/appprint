@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
@@ -55,6 +56,7 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
 import com.appprint.studio.ui.ZoomMode
+import com.appprint.studio.ui.components.pressScale
 
 /** Compose dp per millimetre (96 dp/inch). */
 private const val DP_PER_MM = 3.7795276f
@@ -383,14 +385,17 @@ private fun EmptyPaperMessage(
                 modifier = Modifier.widthIn(max = 240.dp),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val galleryInteraction = remember { MutableInteractionSource() }
+                val cameraInteraction = remember { MutableInteractionSource() }
                 // رفع صور البطاقات — the design's primary green pill
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier
+                        .pressScale(galleryInteraction)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(sheetGreen)
-                        .clickable(onClick = onPickGallery)
+                        .clickable(interactionSource = galleryInteraction, indication = null, onClick = onPickGallery)
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                 ) {
                     androidx.compose.material3.Icon(
@@ -411,10 +416,11 @@ private fun EmptyPaperMessage(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier
+                        .pressScale(cameraInteraction)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(Color.White)
                         .border(1.dp, Color(0xFFD4D4D4), RoundedCornerShape(percent = 50))
-                        .clickable(onClick = onCaptureCamera)
+                        .clickable(interactionSource = cameraInteraction, indication = null, onClick = onCaptureCamera)
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                 ) {
                     androidx.compose.material3.Icon(

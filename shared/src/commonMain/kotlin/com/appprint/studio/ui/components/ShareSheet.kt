@@ -59,6 +59,7 @@ fun ShareSheet(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(scheme.primary)
+                .pressScale(interaction)
                 .clickable(interactionSource = interaction, indication = null) {
                     onDismiss(); onDirectPrint()
                 }
@@ -136,6 +137,7 @@ private fun GridAction(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .background(scheme.surfaceContainer)
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),

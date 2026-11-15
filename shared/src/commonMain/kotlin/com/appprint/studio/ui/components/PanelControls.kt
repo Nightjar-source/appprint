@@ -209,6 +209,7 @@ fun PanelChoiceChip(
     val selectedFg = if (accent) scheme.onSecondaryContainer else scheme.onPrimary
     Row(
         modifier = modifier
+            .pressScale(interaction)
             .clip(RoundedCornerShape(16.dp))
             .background(if (selected) selectedBg else scheme.surfaceContainerHigh)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)

@@ -82,6 +82,7 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.components.AppSnackbar
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.ShareSheet
+import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
 import com.appprint.studio.ui.screens.StudioScreen
 import com.appprint.studio.ui.strings.Str
@@ -425,6 +426,7 @@ private fun CircleActionButton(
                 if (container == MaterialTheme.colorScheme.primary) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.outlineVariant,
                 RoundedCornerShape(percent = 50),
             )
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .semantics { role = Role.Button },
         contentAlignment = Alignment.Center,
@@ -484,7 +486,8 @@ private fun FloatingNavPill(
                 .shadow(12.dp, RoundedCornerShape(percent = 50), clip = false)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(scheme.primary)
-                .clickable(interactionSource = interaction, indication = null, onClick = onAdd)
+                .pressScale(interaction)
+            .clickable(interactionSource = interaction, indication = null, onClick = onAdd)
                 .semantics { role = Role.Button },
             contentAlignment = Alignment.Center,
         ) {
@@ -537,6 +540,7 @@ private fun NavPillItem(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(percent = 50))
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
             .padding(horizontal = 4.dp, vertical = 2.dp)
@@ -624,7 +628,8 @@ private fun FloatingRail(
                         .shadow(6.dp, RoundedCornerShape(percent = 50), clip = false)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.primary)
-                        .clickable(interactionSource = interaction, indication = null, onClick = onAdd)
+                        .pressScale(interaction)
+            .clickable(interactionSource = interaction, indication = null, onClick = onAdd)
                         .semantics { role = Role.Button },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -679,6 +684,7 @@ private fun RailItem(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
             .padding(horizontal = 6.dp, vertical = 6.dp)

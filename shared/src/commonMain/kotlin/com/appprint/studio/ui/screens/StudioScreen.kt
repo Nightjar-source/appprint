@@ -63,10 +63,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.appprint.studio.ui.components.pressScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.ui.StudioSection
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
 import com.appprint.studio.ui.strings.Str
 
@@ -338,6 +340,7 @@ private fun SheetPageBar(
     ) {
         items((0 until state.pageCount).toList(), key = { it }) { page ->
             val selected = state.activePage == page
+            val pageInteraction = remember { MutableInteractionSource() }
             val cardsOnPage = state.cards.count { it.page == page }
             Row(
                 modifier = Modifier
@@ -350,7 +353,8 @@ private fun SheetPageBar(
                         if (selected) Modifier.border(1.dp, scheme.primary, RoundedCornerShape(percent = 50))
                         else Modifier.border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50)),
                     )
-                    .clickable { onSelectPage(page) }
+                    .pressScale(pageInteraction)
+                    .clickable(interactionSource = pageInteraction, indication = null) { onSelectPage(page) }
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -376,13 +380,15 @@ private fun SheetPageBar(
 
         // add sheet — secondary-container circle with outline, like the design
         item(key = "add-sheet") {
+            val addInteraction = remember { MutableInteractionSource() }
             Box(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(RoundedCornerShape(percent = 50))
                     .background(scheme.secondaryContainer.copy(alpha = 0.88f))
                     .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                    .clickable(onClick = onAddSheet)
+                    .pressScale(addInteraction)
+                    .clickable(interactionSource = addInteraction, indication = null, onClick = onAddSheet)
                     .semantics { role = Role.Button },
                 contentAlignment = Alignment.Center,
             ) {
@@ -392,12 +398,14 @@ private fun SheetPageBar(
 
         // ترتيب ذكي — smart arrange (primary-container translucent pill + border)
         item(key = "arrange") {
+            val arrangeInteraction = remember { MutableInteractionSource() }
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(percent = 50))
                     .background(scheme.primaryContainer.copy(alpha = 0.92f))
                     .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                    .clickable(onClick = onArrange)
+                    .pressScale(arrangeInteraction)
+                    .clickable(interactionSource = arrangeInteraction, indication = null, onClick = onArrange)
                     .padding(horizontal = 10.dp, vertical = 6.dp)
                     .semantics { role = Role.Button },
                 verticalAlignment = Alignment.CenterVertically,
@@ -410,12 +418,14 @@ private fun SheetPageBar(
 
         // البدء من جديد — tertiary-container translucent pill, resets workspace
         item(key = "reset-all") {
+            val resetInteraction = remember { MutableInteractionSource() }
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(percent = 50))
                     .background(scheme.tertiaryContainer.copy(alpha = 0.88f))
                     .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                    .clickable(onClick = onResetAll)
+                    .pressScale(resetInteraction)
+                    .clickable(interactionSource = resetInteraction, indication = null, onClick = onResetAll)
                     .padding(horizontal = 10.dp, vertical = 6.dp)
                     .semantics { role = Role.Button },
                 verticalAlignment = Alignment.CenterVertically,
@@ -445,12 +455,14 @@ private fun SwapPickerSheet(
                 .verticalScroll(rememberScrollState()),
         ) {
             state.cards.filter { it.id != fromId }.forEach { card ->
+                val swapInteraction = remember(card.id) { MutableInteractionSource() }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .pressScale(swapInteraction)
                         .clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .clickable(onClick = { onSwap(card.id) })
+                        .clickable(interactionSource = swapInteraction, indication = null) { onSwap(card.id) }
                         .padding(horizontal = 12.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -485,6 +497,7 @@ private fun HtmlDialogButton(
     val interaction = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
+            .pressScale(interaction)
             .fillMaxWidth()
             .clip(RoundedCornerShape(percent = 50))
             .background(container)
