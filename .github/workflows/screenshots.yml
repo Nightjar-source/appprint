@@ -1,0 +1,63 @@
+name: Screenshot (Robolectric)
+
+# Renders the real Compose UI on Robolectric and commits the PNGs into
+# screenshots/ so they can be reviewed against the HTML reference design.
+# The bot commit carries [skip ci] to avoid triggering itself.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'shared/**'
+      - '.github/workflows/screenshots.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screenshots
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture Compose screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Run Robolectric screenshot tests
+        run: ./gradlew :shared:testAndroidHostTest --tests "*StudioScreenshotTest*" --stacktrace
+
+      - name: Commit screenshots
+        run: |
+          if [ ! -d shared/build/screenshots ]; then
+            echo "::warning::No screenshots were produced"
+            exit 0
+          fi
+          mkdir -p screenshots
+          cp -f shared/build/screenshots/*.png screenshots/ || true
+          ls -la screenshots/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add screenshots/
+          if git diff --cached --quiet; then
+            echo "Screenshots unchanged — nothing to commit"
+            exit 0
+          fi
+          git commit -m "chore(screenshots): refresh from CI" -m "[skip ci]"
+          git push origin HEAD:main
