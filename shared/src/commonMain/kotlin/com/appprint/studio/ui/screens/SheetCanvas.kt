@@ -188,7 +188,9 @@ fun SheetCanvas(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .size(paperWdp.dp, paperHdp.dp)
-                            .shadow(24.dp, androidx.compose.ui.graphics.RectangleShape, clip = false)
+                            // design: 0 24px 56px -14px rgba(0,0,0,.36) + 0 6px 18px -4px rgba(0,0,0,.22) + 1px hairline ring
+                            .shadow(30.dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x5C000000), spotColor = Color(0x5C000000))
+                            .shadow(7.dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x38000000), spotColor = Color(0x38000000))
                             .background(sheetBackgroundColor(settings)),
                     ) {
                         if (settings.frame.background == com.appprint.studio.core.model.SheetBackground.TRANSPARENT) {
@@ -251,6 +253,13 @@ fun SheetCanvas(
                                     style = Stroke(width = (settings.frame.thickness * 1.6f).coerceAtLeast(1.6f), pathEffect = dash),
                                 )
                             }
+                        }
+                        // design: 0 0 0 1px rgba(0,0,0,.08) hairline ring around the paper
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            drawRect(
+                                color = Color(0x14000000),
+                                style = Stroke(width = 1.dp.toPx()),
+                            )
                         }
                         // design: "A4 • 210 × 297 mm" caption on the paper
                         Text(

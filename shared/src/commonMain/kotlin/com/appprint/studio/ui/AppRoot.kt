@@ -277,6 +277,9 @@ private fun FloatingTopBar(
             Row(
                 modifier = Modifier
                     .height(40.dp)
+                    // design: 0 12px 30px -6px rgba(0,0,0,.22) + 0 3px 10px -2px rgba(0,0,0,.11)
+                    .shadow(18.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x38000000), spotColor = androidx.compose.ui.graphics.Color(0x38000000))
+                    .shadow(5.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x1C000000), spotColor = androidx.compose.ui.graphics.Color(0x1C000000))
                     .clip(RoundedCornerShape(percent = 50))
                     .background(scheme.surfaceContainerLow.copy(alpha = 0.9f))
                     .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
@@ -418,7 +421,14 @@ private fun CircleActionButton(
         modifier = Modifier
             .size(size)
             .then(
-                if (elevated) Modifier.shadow(10.dp, RoundedCornerShape(percent = 50), clip = false) else Modifier,
+                if (elevated) {
+                    Modifier.shadow(10.dp, RoundedCornerShape(percent = 50), clip = false)
+                } else {
+                    // design: 0 12px 30px -6px rgba(0,0,0,.22) + 0 3px 10px -2px rgba(0,0,0,.11)
+                    Modifier
+                        .shadow(18.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x38000000), spotColor = androidx.compose.ui.graphics.Color(0x38000000))
+                        .shadow(5.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x1C000000), spotColor = androidx.compose.ui.graphics.Color(0x1C000000))
+                },
             )
             .clip(RoundedCornerShape(percent = 50))
             .background(container.copy(alpha = if (container == MaterialTheme.colorScheme.primary) 1f else 0.9f))
@@ -497,7 +507,7 @@ private fun FloatingNavPill(
         Surface(
             shape = RoundedCornerShape(percent = 50),
             color = scheme.surfaceContainerLow.copy(alpha = 0.9f),
-            shadowElevation = 10.dp,
+            shadowElevation = 12.dp,
             tonalElevation = 2.dp,
             modifier = Modifier
                 .height(Chrome.NavBarDp)
