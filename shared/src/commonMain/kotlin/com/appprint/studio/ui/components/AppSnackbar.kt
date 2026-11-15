@@ -71,7 +71,7 @@ fun AppSnackbar(
         Text(
             text = message,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.ExtraBold,
             color = scheme.surface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

@@ -140,14 +140,21 @@ fun SheetCanvas(
                 1.35f,
             ).coerceAtLeast(0.2f)
             fit = optimal
-            val zoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
+            val targetZoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
+            // design: fluid-spring on sheet scale (cubic-bezier(0.20, 1.24, 0.34, 1))
+            val zoom by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = targetZoom,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 320f),
+                label = "sheetZoom",
+            )
 
             // HTML: canvas is flat md-canvas — no dot grid, no pattern
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                // layout size == visual size (graphicsLayer only scales drawing, so we pre-shrink the layout too)
+                // children are positioned in unscaled dp, so ONE graphicsLayer scale shrinks
+                // layout and content identically — offsets, fonts and paper all stay registered
                 Box(
                     modifier = Modifier
-                        .size((contentW * zoom).dp, (contentH * zoom).dp)
+                        .size(contentW.dp, contentH.dp)
                         .graphicsLayer {
                             scaleX = zoom
                             scaleY = zoom
