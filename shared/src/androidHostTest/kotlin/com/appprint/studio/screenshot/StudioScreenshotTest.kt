@@ -6,6 +6,9 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.test.core.app.ApplicationProvider
+import com.appprint.studio.core.platform.AndroidPlatform
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,6 +26,13 @@ class StudioScreenshotTest {
 
     @get:Rule
     val rule = createComposeRule()
+
+    @Before
+    fun setUp() {
+        // the android app sets this in MainActivity.onCreate — Robolectric has no Activity here,
+        // so initialize the platform context the same way before rendering
+        AndroidPlatform.set(ApplicationProvider.getApplicationContext())
+    }
 
     private fun capture(name: String) {
         val bitmap = rule.onRoot().captureToImage().asAndroidBitmap()
