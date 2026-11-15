@@ -66,7 +66,7 @@ object Chrome {
         WindowInsets.navigationBars
             .union(WindowInsets.displayCutout)
             .asPaddingValues()
-            .calculateBottomPadding() + 8.dp + NavBarDp + 8.dp
+            .calculateBottomPadding() + 22.dp + NavBarDp
 
     /** Whether the compact (bottom pill) layout is active. */
     @Composable
@@ -90,14 +90,6 @@ object Chrome {
         return info.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
     }
 
-    /** Navigation rail width: 64dp for medium/foldable, 72dp for expanded/tablet/DeX. */
-    @Composable
-    fun railWidth(): Dp {
-        val expanded = isExpanded()
-        return animateDpAsState(
-            targetValue = if (expanded) 72.dp else 64.dp,
-            animationSpec = Motion.defaultDp(),
-            label = "railWidth",
-        ).value
-    }
+    /** Rail (design: 768.dp) unchanged; width wraps content like the design's aside. */
+    fun railWidth(): Dp = 72.dp
 }

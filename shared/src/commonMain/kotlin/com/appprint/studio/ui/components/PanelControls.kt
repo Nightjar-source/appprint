@@ -91,6 +91,10 @@ fun PanelSliderRow(
             onValueChange = onValueChange,
             valueRange = valueRange,
             steps = steps,
+            colors = androidx.compose.material3.SliderDefaults.colors(
+                thumbColor = androidx.compose.ui.graphics.Color(0xFF006C47),
+                activeTrackColor = androidx.compose.ui.graphics.Color(0xFF006C47),
+            ),
             modifier = Modifier.fillMaxWidth(),
         )
     }

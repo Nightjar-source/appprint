@@ -150,7 +150,7 @@ fun StudioScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .width((if (isExpanded) 400 else 360).dp)
+                        .width((if (isExpanded) 410 else 370).dp)
                         .fillMaxHeight(),
                 ) {
                     SectionPanel(

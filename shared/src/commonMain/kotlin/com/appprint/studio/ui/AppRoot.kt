@@ -291,8 +291,8 @@ private fun FloatingTopBar(
                     fontSize = androidx.compose.ui.unit.TextUnit(17f, androidx.compose.ui.unit.TextUnitType.Sp),
                     letterSpacing = androidx.compose.ui.unit.TextUnit(0.4f, androidx.compose.ui.unit.TextUnitType.Sp),
                     color = scheme.onSurface,
+                    maxLines = 1,
                 )
-                Spacer(Modifier.width(2.dp))
                 SurfaceChip(
                     text = "${state.settings.presetKey} (${state.cards.size})",
                 )

@@ -528,7 +528,7 @@ fun CardsPanel(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(
                 Str.your_cards.format(state.cards.size),
-                style = MaterialTheme.typography.labelLarge,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier.weight(1f),
             )
@@ -836,7 +836,7 @@ private fun TypeGridChip(type: CardType, active: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
-            .width(104.dp)
+            .width(120.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(scheme.surfaceContainerHigh)
             .border(

@@ -259,7 +259,7 @@ fun SheetCanvas(
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
                             fontWeight = FontWeight.Bold,
                             color = Color.Black.copy(alpha = 0.4f),
-                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 6.dp),
+                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 10.dp),
                         )
                         if (state.cards.isEmpty()) {
                             EmptyPaperMessage(
@@ -360,7 +360,7 @@ private fun EmptyPaperMessage(
             Box(
                 modifier = Modifier
                     .size(64.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(Color(0xFFE8F5E9)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -374,6 +374,7 @@ private fun EmptyPaperMessage(
             Text(
                 text = "الورقة فارغة — ارفع صور بطاقاتك للبدء",
                 style = MaterialTheme.typography.titleMedium,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF262626),
             )
