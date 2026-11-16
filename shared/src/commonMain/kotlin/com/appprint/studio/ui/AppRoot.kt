@@ -1,7 +1,7 @@
 package com.appprint.studio.ui
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -410,7 +410,6 @@ private fun FloatingTopBar(
     }
 }
 
-@Composable
 /**
  * DESIGN `.m3-float-enter`: scale 0.72 → 1.04 → 1 with a slight downward settle.
  * Implemented as a spring-backed float driving graphicsLayer scale + alpha.
