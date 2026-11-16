@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- «طبعتي» — fully offline: no INTERNET, no ads, no analytics.
-     Permissions: camera (فقط لالتقاط صور البطاقات) + إشعارات التصدير. -->
+     Permissions: camera (فقط لالتقاط صور البطاقات) + إشعارات التصدير (POST_NOTIFICATIONS). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Fully offline: no INTERNET, no ads, no analytics. Minimum permissions only:
@@ -8,6 +8,8 @@
          (permission-free); the legacy File path below needs WRITE_EXTERNAL_STORAGE on 10 and below. -->
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Export completion notification (Android 13+ runtime grant) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Legacy public Downloads path for Android 9 and below only. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
