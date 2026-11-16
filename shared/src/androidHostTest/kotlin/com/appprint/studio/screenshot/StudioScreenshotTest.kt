@@ -78,4 +78,18 @@ class StudioScreenshotTest {
             settings.orientation.name,
         ))
     }
+
+    @Test
+    fun diag_manual_zoom_60() {
+        val vm = com.appprint.studio.ui.TabatiViewModel()
+        vm.setZoomMode(com.appprint.studio.ui.ZoomMode.MANUAL)
+        vm.setManualZoom(60f)
+        rule.setContent {
+            com.appprint.studio.ui.theme.TabatiTheme(theme = com.appprint.studio.core.model.AppTheme.LIGHT) {
+                com.appprint.studio.ui.screens.SheetCanvas(state = vm.state.value, viewModel = vm)
+            }
+        }
+        rule.waitForIdle()
+        capture("diag-manual-60")
+    }
 }

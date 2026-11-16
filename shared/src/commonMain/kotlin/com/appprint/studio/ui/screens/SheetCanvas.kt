@@ -191,8 +191,7 @@ fun SheetCanvas(
                             .offset(x = rulerTotalDp.dp, y = rulerTotalDp.dp)
                             .size(paperWdp.dp, paperHdp.dp)
                             // design: 0 24px 56px -14px rgba(0,0,0,.36) + 0 6px 18px -4px rgba(0,0,0,.22) + 1px hairline ring
-                            .shadow(30.dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x5C000000), spotColor = Color(0x5C000000))
-                            .shadow(7.dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x38000000), spotColor = Color(0x38000000))
+                            .shadow(24.dp, androidx.compose.ui.graphics.RectangleShape, clip = false)
                             .background(sheetBackgroundColor(settings)),
                     ) {
                         if (settings.frame.background == com.appprint.studio.core.model.SheetBackground.TRANSPARENT) {
