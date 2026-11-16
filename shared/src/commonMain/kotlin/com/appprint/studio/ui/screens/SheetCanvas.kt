@@ -262,6 +262,20 @@ fun SheetCanvas(
                                 style = Stroke(width = 1.dp.toPx()),
                             )
                         }
+                        // TODO(debug): remove after verifying geometry
+                        androidx.compose.material3.Text(
+                            text = "paper=%.0fx%.0fdp zoom=%.3f avail=%.0fx%.0f optimal=%.3f".format(
+                                paperWdp,
+                                paperHdp,
+                                zoom,
+                                availW,
+                                availH,
+                                optimal,
+                            ),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                            color = Color.Black,
+                            modifier = Modifier.align(Alignment.TopStart).padding(top = 2.dp, start = 4.dp),
+                        )
                         // design: "A4 • 210 × 297 mm" caption on the paper
                         Text(
                             text = "${settings.presetKey} • ${formatCaptionDim(settings.sheetWidthMm)} × ${formatCaptionDim(settings.sheetHeightMm)} mm",
