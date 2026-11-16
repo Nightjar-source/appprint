@@ -259,7 +259,8 @@ fun SheetCanvas(
                             stripDp = paperWdp * zoom,
                             background = rulerBg,
                             scale = zoom,
-                            modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp),
+                            modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp)
+                                .background(Color(0x80FF00FF)),
                         )
                         // design: "صفحة n / m" on the ruler's right end
                         Text(
