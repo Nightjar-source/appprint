@@ -318,18 +318,19 @@ private fun RulerBar(
         }
     } else {
         Box(modifier = modifier.height((20f * scale).dp).width(stripDp.dp).background(background)) {
+            Text("TEST1", fontSize = 30.sp, color = Color.Black, softWrap = false, maxLines = 1)
             var mm = 0
             while (mm <= lengthMm) {
                 val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = 20.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
                     softWrap = false,
                     maxLines = 1,
                     modifier = Modifier
-                        .offset(x = (mm * DP_PER_MM * scale).dp, y = 2.dp),
+                        .offset(x = (mm * DP_PER_MM * scale).dp, y = 4.dp),
                 )
                 mm += 10
             }
