@@ -323,13 +323,13 @@ private fun RulerBar(
                 val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = (if (big) 9f else 8f).let { it * scale }.coerceAtLeast(5f).sp,
-                    fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
-                    color = tick,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
                     softWrap = false,
                     maxLines = 1,
                     modifier = Modifier
-                        .offset(x = (mm * DP_PER_MM * scale).dp, y = (2f * scale).dp),
+                        .offset(x = (mm * DP_PER_MM * scale).dp, y = 2.dp),
                 )
                 mm += 10
             }
