@@ -66,10 +66,8 @@ class StudioScreenshotTest {
         val vm = com.appprint.studio.ui.TabatiViewModel()
         val settings = vm.state.value.settings
         rule.setContent {
-            com.appprint.studio.ui.TabatiTheme(theme = com.appprint.studio.core.model.AppTheme.LIGHT) {
-                androidx.compose.material3.Surface {
-                    com.appprint.studio.ui.screens.SheetCanvas(state = vm.state.value, viewModel = vm)
-                }
+            com.appprint.studio.ui.theme.TabatiTheme(theme = com.appprint.studio.core.model.AppTheme.LIGHT) {
+                com.appprint.studio.ui.screens.SheetCanvas(state = vm.state.value, viewModel = vm)
             }
         }
         rule.waitForIdle()
