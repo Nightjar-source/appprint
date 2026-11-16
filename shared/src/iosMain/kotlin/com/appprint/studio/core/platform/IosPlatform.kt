@@ -51,4 +51,6 @@ actual object PlatformActions {
     actual fun autoCropImage(path: String, id: Long): String? = null
 
     actual fun showExportNotification(title: String, body: String, path: String?) = Unit
+
+    actual fun exportNotificationPermissionGranted(): Boolean = true
 }

@@ -348,6 +348,12 @@ actual object PlatformActions {
         }
     }
 
+    actual fun exportNotificationPermissionGranted(): Boolean {
+        val context = AndroidPlatform.appContext
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    }
+
     // ------------------------------------------------------------- print adapter
 
     private class PdfBytesPrintAdapter(

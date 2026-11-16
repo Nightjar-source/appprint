@@ -181,4 +181,6 @@ actual object PlatformActions {
         // Desktop: no system notification service wired — log for the verification build.
         println("[tabati] $title — $body (${path ?: "no file"})")
     }
+
+    actual fun exportNotificationPermissionGranted(): Boolean = true
 }

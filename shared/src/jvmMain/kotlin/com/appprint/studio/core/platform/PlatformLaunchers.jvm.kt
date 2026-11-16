@@ -29,5 +29,3 @@ actual fun rememberCameraCaptureLauncher(
 
 @Composable
 actual fun rememberNotificationPermissionRequester(): () -> Unit = remember { { } }
-
-actual fun exportNotificationPermissionGranted(): Boolean = true
