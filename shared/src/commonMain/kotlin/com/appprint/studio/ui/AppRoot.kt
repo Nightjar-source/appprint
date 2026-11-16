@@ -477,9 +477,12 @@ private fun CircleActionButton(
                 },
             )
             .clip(RoundedCornerShape(percent = 50))
-            .background(
-                if (container == MaterialTheme.colorScheme.primary) container
-                else glassBrush(container),
+            .then(
+                if (container == MaterialTheme.colorScheme.primary) {
+                    Modifier.background(container)
+                } else {
+                    Modifier.background(glassBrush(container))
+                },
             )
             .border(
                 if (container == MaterialTheme.colorScheme.primary) 0.dp else 1.dp,
