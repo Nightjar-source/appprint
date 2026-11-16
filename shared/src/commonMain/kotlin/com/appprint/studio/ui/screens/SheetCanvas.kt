@@ -149,36 +149,6 @@ fun SheetCanvas(
                         .size((contentW * zoom).dp, (contentH * zoom).dp)
                         .offset(x = panAsDpX, y = panAsDpY),
                 ) {
-                    // rulers: horizontal on top of the paper, vertical to its left
-                    if (settings.frame.ruler) {
-                        val rulerBg = androidx.compose.ui.graphics.Color.Transparent
-                        RulerBar(
-                            vertical = false,
-                            lengthMm = settings.sheetWidthMm,
-                            stripDp = paperWdp * zoom,
-                            background = rulerBg,
-                            scale = zoom,
-                            modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp),
-                        )
-                        // design: "صفحة n / m" on the ruler's right end
-                        Text(
-                            text = "صفحة ${state.activePage + 1} / ${state.pageCount}",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (9f * zoom).sp),
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = (-2f * zoom).dp, y = (1f * zoom).dp),
-                        )
-                        RulerBar(
-                            vertical = true,
-                            lengthMm = settings.sheetHeightMm,
-                            stripDp = paperHdp * zoom,
-                            background = rulerBg,
-                            scale = zoom,
-                            modifier = Modifier.offset(y = (24f * zoom).dp),
-                        )
-                    }
                     Box(
                         modifier = Modifier
                             .offset(x = (rulerTotalDp * zoom).dp, y = (rulerTotalDp * zoom).dp)
@@ -280,6 +250,36 @@ fun SheetCanvas(
                             )
                         }
                     }
+                    // rulers drawn on top like the design's ui-overlay: horizontal above the paper, vertical to its left
+                    if (settings.frame.ruler) {
+                        val rulerBg = androidx.compose.ui.graphics.Color.Transparent
+                        RulerBar(
+                            vertical = false,
+                            lengthMm = settings.sheetWidthMm,
+                            stripDp = paperWdp * zoom,
+                            background = rulerBg,
+                            scale = zoom,
+                            modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp),
+                        )
+                        // design: "صفحة n / m" on the ruler's right end
+                        Text(
+                            text = "صفحة ${state.activePage + 1} / ${state.pageCount}",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (9f * zoom).sp),
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = (-2f * zoom).dp, y = (1f * zoom).dp),
+                        )
+                        RulerBar(
+                            vertical = true,
+                            lengthMm = settings.sheetHeightMm,
+                            stripDp = paperHdp * zoom,
+                            background = rulerBg,
+                            scale = zoom,
+                            modifier = Modifier.offset(y = (24f * zoom).dp),
+                        )
+                    }
                 }
             }
         }
@@ -307,6 +307,8 @@ private fun RulerBar(
                     fontSize = (if (big) 9f else 8f).let { it * scale }.coerceAtLeast(5f).sp,
                     fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
                     color = tick,
+                    softWrap = false,
+                    maxLines = 1,
                     modifier = Modifier
                         .offset(y = (mm * DP_PER_MM * scale).dp, x = (2f * scale).dp),
                 )
@@ -323,6 +325,8 @@ private fun RulerBar(
                     fontSize = (if (big) 9f else 8f).let { it * scale }.coerceAtLeast(5f).sp,
                     fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
                     color = tick,
+                    softWrap = false,
+                    maxLines = 1,
                     modifier = Modifier
                         .offset(x = (mm * DP_PER_MM * scale).dp, y = (2f * scale).dp),
                 )
