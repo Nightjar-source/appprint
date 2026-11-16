@@ -261,15 +261,15 @@ fun SheetCanvas(
                             scale = zoom,
                             modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp),
                         )
-                        // design: "صفحة n / m" on the ruler's right end
+                        // design: "صفحة n / m" at the right end, inside the ruler strip row
                         Text(
                             text = "صفحة ${state.activePage + 1} / ${state.pageCount}",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (9f * zoom).sp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (8f * zoom).coerceAtLeast(6f).sp),
                             fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .offset(x = (-2f * zoom).dp, y = (1f * zoom).dp),
+                                .offset(x = (-2f * zoom).dp, y = (2f * zoom).dp),
                         )
                         RulerBar(
                             vertical = true,
