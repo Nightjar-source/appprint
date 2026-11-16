@@ -180,6 +180,7 @@ object Str {
     const val png_all_saved = "تم حفظ كل الأوراق (%d) كصور PNG في التنزيلات"
     const val html_saved = "تم تحميل ملف HTML للطباعة — افتحه واطبعه بقياس 100%"
     const val png_progress = "جارٍ تحميل الصور... ورقة %d من %d"
+    const val export_notif_title = "طبعتي — تم التحميل"
 
     // ---------------- النظام / عام
     const val cancel = "إلغاء"

@@ -118,6 +118,14 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
         }
         // (notification permission reserved for export toast on Android 13+ — used by the print path)
 
+        // Export-completion notification: request POST_NOTIFICATIONS (Android 13+) before the
+        // save-to-Downloads path can fire the export notification (granted check lives in PlatformActions).
+        val exportNotifPermissionGranted = com.appprint.studio.core.platform.PlatformActions.exportNotificationPermissionGranted()
+        val notificationPermissionRequester = com.appprint.studio.core.platform.rememberNotificationPermissionRequester()
+        LaunchedEffect(exportNotifPermissionGranted) {
+            if (!exportNotifPermissionGranted) notificationPermissionRequester()
+        }
+
         var shareSheetOpen by remember { mutableStateOf(false) }
         var importMenuOpen by remember { mutableStateOf(false) }
 

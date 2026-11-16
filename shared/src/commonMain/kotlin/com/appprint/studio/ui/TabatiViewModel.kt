@@ -582,6 +582,12 @@ class TabatiViewModel : ViewModel() {
                 return@launch
             }
             toast(Str.pdf_saved.format(s.pageCount, s.settings.sheetWidthMm.toInt(), s.settings.sheetHeightMm.toInt()))
+            // export-completion notification (permission gate lives inside the platform action)
+            PlatformActions.showExportNotification(
+                title = Str.export_notif_title,
+                body = Str.pdf_saved.format(s.pageCount, s.settings.sheetWidthMm.toInt(), s.settings.sheetHeightMm.toInt()),
+                path = "طبعتي-${s.settings.presetKey}.pdf",
+            )
         }
     }
 
@@ -650,6 +656,13 @@ class TabatiViewModel : ViewModel() {
                 PlatformActions.downloadToDownloads("طبعتي-ورقة-${page + 1}.png", bytes)
             }
             toast(if (ok) Str.png_saved else Str.empty_for_export)
+            if (ok) {
+                PlatformActions.showExportNotification(
+                    title = Str.export_notif_title,
+                    body = Str.png_saved,
+                    path = "طبعتي-ورقة-${page + 1}.png",
+                )
+            }
         }
     }
 
@@ -671,6 +684,13 @@ class TabatiViewModel : ViewModel() {
             }
             setProcessing(false)
             toast(if (saved > 0) Str.png_all_saved.format(saved) else Str.empty_for_export)
+            if (saved > 0) {
+                PlatformActions.showExportNotification(
+                    title = Str.export_notif_title,
+                    body = Str.png_all_saved.format(saved),
+                    path = "طبعتي-ورقة-1.png",
+                )
+            }
         }
     }
 
@@ -689,6 +709,13 @@ class TabatiViewModel : ViewModel() {
                 PlatformActions.downloadToDownloads("طبعتي-للطباعة.html", html)
             }
             toast(if (ok) Str.html_saved else Str.empty_for_export)
+            if (ok) {
+                PlatformActions.showExportNotification(
+                    title = Str.export_notif_title,
+                    body = Str.html_saved,
+                    path = "طبعتي-للطباعة.html",
+                )
+            }
         }
     }
 

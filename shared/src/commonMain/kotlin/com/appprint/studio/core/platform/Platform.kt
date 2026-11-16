@@ -66,4 +66,11 @@ expect object PlatformActions {
 
     /** System notification: export finished. No-op where unsupported. */
     fun showExportNotification(title: String, body: String, path: String?)
+
+    /**
+     * Whether the export-completion notification can currently be shown:
+     * true under Android 12 and below (no runtime grant needed), false on Android 13+
+     * when POST_NOTIFICATIONS has not been granted yet.
+     */
+    fun exportNotificationPermissionGranted(): Boolean
 }
