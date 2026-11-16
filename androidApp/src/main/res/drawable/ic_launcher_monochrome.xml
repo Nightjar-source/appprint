@@ -1,11 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Themed-icon glyph: circle with sparkle knocked out (even-odd), single tintable color -->
+
+    <!-- Paper Input -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M54,10a44,44 0,1,1,0,88a44,44 0,1,1,0,-88z M54,32 L61.5,46.5 L76,54 L61.5,61.5 L54,76 L46.5,61.5 L32,54 L46.5,46.5 Z" />
+        android:pathData="M37,24h34c2.2,0 4,1.8 4,4v21H33V28C33,25.8 34.8,24 37,24z" />
+
+    <!-- Printer Body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M31,48h46c3.3,0 6,2.7 6,6v13c0,3.3 -2.7,6 -6,6H31c-3.3,0 -6-2.7 -6-6V54C25,50.7 27.7,48 31,48z" />
+
+    <!-- Output Paper -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37,65h34v15c0,2.2 -1.8,4 -4,4H41c-2.2,0 -4-1.8 -4-4V65z" />
 </vector>

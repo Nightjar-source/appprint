@@ -1,8 +1,7 @@
-﻿package com.appprint.studio.ui.screens
+package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -12,14 +11,14 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -30,21 +29,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Collections
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalDensity
@@ -98,7 +95,6 @@ fun SheetCanvas(
         com.appprint.studio.ui.theme.TabatiCanvasLight
     }
 
-
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
         panX += panChange.x
         panY += panChange.y
@@ -120,15 +116,15 @@ fun SheetCanvas(
                     detectTapGestures(
                         onTap = { viewModel.selectCard(null) },
                         onDoubleTap = {
-                        when {
-                            state.zoomMode == ZoomMode.FIT -> {
-                                viewModel.setZoomMode(ZoomMode.MANUAL)
-                                viewModel.setManualZoom(160f)
+                            when {
+                                state.zoomMode == ZoomMode.FIT -> {
+                                    viewModel.setZoomMode(ZoomMode.MANUAL)
+                                    viewModel.setManualZoom(160f)
+                                }
+                                state.manualZoomPercent < 130f -> viewModel.setManualZoom(220f)
+                                else -> viewModel.setZoomMode(ZoomMode.FIT)
                             }
-                            state.manualZoomPercent < 130f -> viewModel.setManualZoom(220f)
-                            else -> viewModel.setZoomMode(ZoomMode.FIT)
-                        }
-                    })
+                        })
                 }
                 .transformable(state = transformableState),
         ) {
@@ -140,23 +136,18 @@ fun SheetCanvas(
                 1.35f,
             ).coerceAtLeast(0.2f)
             fit = optimal
-            val targetZoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
-            val zoom = targetZoom
+            val zoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
+            val panAsDpX = with(density) { panX.toDp() }
+            val panAsDpY = with(density) { panY.toDp() }
 
             // HTML: canvas is flat md-canvas — no dot grid, no pattern
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                // children are positioned in unscaled dp, so ONE graphicsLayer scale shrinks
-                // layout and content identically — offsets, fonts and paper all stay registered
+                // layout is PRE-SHRUNK by zoom — no graphicsLayer scale anywhere, so the
+                // layout is exactly the visual rect and every child lines up by construction
                 Box(
                     modifier = Modifier
-                        .size(contentW.dp, contentH.dp)
-                        .graphicsLayer {
-                            scaleX = zoom
-                            scaleY = zoom
-                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin.Center
-                            translationX = panX
-                            translationY = panY
-                        },
+                        .size((contentW * zoom).dp, (contentH * zoom).dp)
+                        .offset(x = panAsDpX, y = panAsDpY),
                 ) {
                     // rulers: horizontal on top of the paper, vertical to its left
                     if (settings.frame.ruler) {
@@ -164,40 +155,42 @@ fun SheetCanvas(
                         RulerBar(
                             vertical = false,
                             lengthMm = settings.sheetWidthMm,
-                            stripDp = paperWdp.dp,
+                            stripDp = paperWdp * zoom,
                             background = rulerBg,
-                            modifier = Modifier.offset(x = 24.dp, y = 2.dp),
+                            scale = zoom,
+                            modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp),
                         )
                         // design: "صفحة n / m" on the ruler's right end
                         Text(
                             text = "صفحة ${state.activePage + 1} / ${state.pageCount}",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (9f * zoom).sp),
                             fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .offset(x = (-2).dp, y = 1.dp),
+                                .offset(x = (-2f * zoom).dp, y = (1f * zoom).dp),
                         )
                         RulerBar(
                             vertical = true,
                             lengthMm = settings.sheetHeightMm,
-                            stripDp = paperHdp.dp,
+                            stripDp = paperHdp * zoom,
                             background = rulerBg,
-                            modifier = Modifier.offset(y = 24.dp),
+                            scale = zoom,
+                            modifier = Modifier.offset(y = (24f * zoom).dp),
                         )
                     }
                     Box(
                         modifier = Modifier
-                            .offset(x = rulerTotalDp.dp, y = rulerTotalDp.dp)
-                            .size(paperWdp.dp, paperHdp.dp)
+                            .offset(x = (rulerTotalDp * zoom).dp, y = (rulerTotalDp * zoom).dp)
+                            .size((paperWdp * zoom).dp, (paperHdp * zoom).dp)
                             // design: 0 24px 56px -14px rgba(0,0,0,.36) + 0 6px 18px -4px rgba(0,0,0,.22) + 1px hairline ring
-                            .shadow(24.dp, androidx.compose.ui.graphics.RectangleShape, clip = false)
+                            .shadow((24f * zoom).dp, androidx.compose.ui.graphics.RectangleShape, clip = false)
                             .background(sheetBackgroundColor(settings)),
                     ) {
                         if (settings.frame.background == com.appprint.studio.core.model.SheetBackground.TRANSPARENT) {
                             // checkerboard under the transparent paper — like the design
                             Canvas(modifier = Modifier.fillMaxSize()) {
-                                val cell = 8.dp.toPx()
+                                val cell = 8.dp.toPx() * zoom
                                 val cols = (size.width / cell).toInt() + 1
                                 val rows = (size.height / cell).toInt() + 1
                                 for (r in 0 until rows) {
@@ -215,21 +208,21 @@ fun SheetCanvas(
                         }
                         if (settings.frame.guides) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
-                                val m = settings.marginMm * DP_PER_MM * density.density
+                                val m = settings.marginMm * DP_PER_MM * density.density * zoom
                                 drawRect(
                                     color = Color(0xFFB32638).copy(alpha = 0.55f),
                                     topLeft = Offset(m, m),
                                     size = Size((size.width - 2 * m).coerceAtLeast(0f), (size.height - 2 * m).coerceAtLeast(0f)),
                                     style = Stroke(
-                                        width = 1.dp.toPx(),
-                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f),
+                                        width = 1f.coerceAtLeast(1.dp.toPx() * zoom),
+                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f * zoom, 8f * zoom), 0f),
                                     ),
                                 )
                             }
                         }
                         if (settings.showGrid) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
-                                val step = 10f * DP_PER_MM * density.density
+                                val step = 10f * DP_PER_MM * density.density * zoom
                                 var pos = step
                                 while (pos < size.width) {
                                     drawLine(Color(0x0D000000), Offset(pos, 0f), Offset(pos, size.height), 1f)
@@ -246,12 +239,12 @@ fun SheetCanvas(
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 val dash = when (settings.frame.style) {
                                     com.appprint.studio.core.model.FrameStyle.SOLID -> null
-                                    com.appprint.studio.core.model.FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(16f, 12f), 0f)
-                                    com.appprint.studio.core.model.FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5f, 8f), 0f)
+                                    com.appprint.studio.core.model.FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(16f * zoom, 12f * zoom), 0f)
+                                    com.appprint.studio.core.model.FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5f * zoom, 8f * zoom), 0f)
                                 }
                                 drawRect(
                                     color = Color(settings.frame.colorHex),
-                                    style = Stroke(width = (settings.frame.thickness * 1.6f).coerceAtLeast(1.6f), pathEffect = dash),
+                                    style = Stroke(width = (settings.frame.thickness * 1.6f * zoom).coerceAtLeast(1.6f), pathEffect = dash),
                                 )
                             }
                         }
@@ -262,27 +255,13 @@ fun SheetCanvas(
                                 style = Stroke(width = 1.dp.toPx()),
                             )
                         }
-                        // TODO(debug): remove after verifying geometry
-                        androidx.compose.material3.Text(
-                            text = "paper=%.0fx%.0fdp zoom=%.3f avail=%.0fx%.0f optimal=%.3f".format(
-                                paperWdp,
-                                paperHdp,
-                                zoom,
-                                availW,
-                                availH,
-                                optimal,
-                            ),
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                            color = Color.Black,
-                            modifier = Modifier.align(Alignment.TopStart).padding(top = 2.dp, start = 4.dp),
-                        )
                         // design: "A4 • 210 × 297 mm" caption on the paper
                         Text(
                             text = "${settings.presetKey} • ${formatCaptionDim(settings.sheetWidthMm)} × ${formatCaptionDim(settings.sheetHeightMm)} mm",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (8f * zoom).coerceAtLeast(6f).sp),
                             fontWeight = FontWeight.Bold,
                             color = Color.Black.copy(alpha = 0.4f),
-                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 10.dp),
+                            modifier = Modifier.align(Alignment.TopEnd).padding(top = (8f * zoom).dp, end = (10f * zoom).dp),
                         )
                         if (state.cards.isEmpty()) {
                             EmptyPaperMessage(
@@ -297,7 +276,7 @@ fun SheetCanvas(
                                 card = card,
                                 state = state,
                                 viewModel = viewModel,
-                                dpPerMm = DP_PER_MM,
+                                dpPerMm = DP_PER_MM * zoom,
                             )
                         }
                     }
@@ -312,40 +291,40 @@ fun SheetCanvas(
 private fun RulerBar(
     vertical: Boolean,
     lengthMm: Float,
-    stripDp: androidx.compose.ui.unit.Dp,
+    stripDp: Float,
     background: Color,
+    scale: Float,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
     val tick = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
     if (vertical) {
-        Box(modifier = modifier.width(20.dp).height(stripDp).background(background)) {
+        Box(modifier = modifier.width((20f * scale).dp).height(stripDp.dp).background(background)) {
             var mm = 0
             while (mm <= lengthMm) {
                 val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = if (big) 9.sp else 8.sp,
+                    fontSize = (if (big) 9f else 8f).let { it * scale }.coerceAtLeast(5f).sp,
                     fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
                     color = tick,
                     modifier = Modifier
-                        .offset(y = (mm * DP_PER_MM).dp, x = 2.dp),
+                        .offset(y = (mm * DP_PER_MM * scale).dp, x = (2f * scale).dp),
                 )
                 mm += 10
             }
         }
     } else {
-        Box(modifier = modifier.height(20.dp).width(stripDp).background(background)) {
+        Box(modifier = modifier.height((20f * scale).dp).width(stripDp.dp).background(background)) {
             var mm = 0
             while (mm <= lengthMm) {
                 val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = if (big) 9.sp else 8.sp,
+                    fontSize = (if (big) 9f else 8f).let { it * scale }.coerceAtLeast(5f).sp,
                     fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
                     color = tick,
                     modifier = Modifier
-                        .offset(x = (mm * DP_PER_MM).dp, y = 2.dp),
+                        .offset(x = (mm * DP_PER_MM * scale).dp, y = (2f * scale).dp),
                 )
                 mm += 10
             }
@@ -405,22 +384,20 @@ private fun EmptyPaperMessage(
                 text = "افتح الاستوديو لاختيار الصور أو التقطها بالكاميرا وسيتم التعرف على أبعادها الحقيقية وترتيبها تلقائياً",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFF737373),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.widthIn(max = 240.dp),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val galleryInteraction = remember { MutableInteractionSource() }
-                val cameraInteraction = remember { MutableInteractionSource() }
-                // رفع صور البطاقات — the design's primary green pill
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier
-                        .pressScale(galleryInteraction)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(sheetGreen)
+                        .pressScale(galleryInteraction)
                         .clickable(interactionSource = galleryInteraction, indication = null, onClick = onPickGallery)
                         .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     androidx.compose.material3.Icon(
                         imageVector = androidx.compose.material.icons.Icons.Filled.Collections,
@@ -430,22 +407,20 @@ private fun EmptyPaperMessage(
                     )
                     Text(
                         text = "رفع صور البطاقات",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Black,
                         color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
                     )
                 }
-                // الكاميرا — white pill with border
+                val cameraInteraction = remember { MutableInteractionSource() }
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier
-                        .pressScale(cameraInteraction)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(Color.White)
-                        .border(1.dp, Color(0xFFD4D4D4), RoundedCornerShape(percent = 50))
                         .clickable(interactionSource = cameraInteraction, indication = null, onClick = onCaptureCamera)
                         .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     androidx.compose.material3.Icon(
                         imageVector = androidx.compose.material.icons.Icons.Filled.CameraAlt,
@@ -455,19 +430,19 @@ private fun EmptyPaperMessage(
                     )
                     Text(
                         text = "الكاميرا",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Black,
                         color = Color(0xFF262626),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
                     )
                 }
             }
             Text(
                 text = "أو جرب بأمثلة تعليمية",
-                style = MaterialTheme.typography.labelSmall,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = sheetGreen,
                 textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                modifier = Modifier.clickable(onClick = onAddDemoCards).padding(4.dp),
+                modifier = Modifier.clickable(onClick = onAddDemoCards),
             )
         }
     }
