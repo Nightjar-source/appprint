@@ -141,12 +141,7 @@ fun SheetCanvas(
             ).coerceAtLeast(0.2f)
             fit = optimal
             val targetZoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
-            // design: fluid-spring on sheet scale (cubic-bezier(0.20, 1.24, 0.34, 1))
-            val zoom by androidx.compose.animation.core.animateFloatAsState(
-                targetValue = targetZoom,
-                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 320f),
-                label = "sheetZoom",
-            )
+            val zoom = targetZoom
 
             // HTML: canvas is flat md-canvas — no dot grid, no pattern
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

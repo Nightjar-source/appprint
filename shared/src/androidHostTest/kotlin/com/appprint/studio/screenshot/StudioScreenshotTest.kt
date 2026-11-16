@@ -60,4 +60,24 @@ class StudioScreenshotTest {
         rule.waitForIdle()
         capture("02-default")
     }
+
+    @Test
+    fun diag_settings_dump() {
+        val vm = com.appprint.studio.ui.TabatiViewModel()
+        val settings = vm.state.value.settings
+        rule.setContent {
+            com.appprint.studio.ui.TabatiTheme(theme = com.appprint.studio.core.model.AppTheme.LIGHT) {
+                androidx.compose.material3.Surface {
+                    com.appprint.studio.ui.screens.SheetCanvas(state = vm.state.value, viewModel = vm)
+                }
+            }
+        }
+        rule.waitForIdle()
+        capture("diag-%.0fx%.0f-%s-%s".format(
+            settings.sheetWidthMm,
+            settings.sheetHeightMm,
+            settings.presetKey,
+            settings.orientation.name,
+        ))
+    }
 }
