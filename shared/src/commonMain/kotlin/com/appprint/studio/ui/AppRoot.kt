@@ -1,7 +1,9 @@
 package com.appprint.studio.ui
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -66,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -273,7 +276,8 @@ private fun FloatingTopBar(
         modifier = modifier
             .widthIn(max = 1024.dp)
             .padding(start = Chrome.EdgeInset, top = statusTopSafe() + Chrome.TopBarGapDp, end = Chrome.EdgeInset)
-            .height(barHeight),
+            .height(barHeight)
+            .floatEnter(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -404,6 +408,23 @@ private fun FloatingTopBar(
             )
         }
     }
+}
+
+@Composable
+/**
+ * DESIGN `.m3-float-enter`: scale 0.72 → 1.04 → 1 with a slight downward settle.
+ * Implemented as a spring-backed float driving graphicsLayer scale + alpha.
+ */
+@Composable
+private fun Modifier.floatEnter(): Modifier {
+    val progress by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 300f),
+        label = "floatEnter",
+    )
+    val eased = 1f - (1f - progress) * (1f - progress)
+    return this
+        .graphicsLayer(scaleX = 0.72f + 0.28f * eased, scaleY = 0.72f + 0.28f * eased, alpha = eased)
 }
 
 @Composable

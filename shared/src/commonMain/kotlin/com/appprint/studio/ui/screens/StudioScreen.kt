@@ -105,11 +105,10 @@ fun StudioScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = Chrome.topReserve() + 40.dp, bottom = Chrome.bottomReserve()),
-        ) {
+        // Edge-to-edge: the canvas fills the whole screen — the paper renders from the real
+        // screen edges (under the floating top/nav bars), exactly like printaapp.html's
+        // `main` which is flex-1 with no reserved top/bottom band. The chrome floats above.
+        Row(modifier = Modifier.fillMaxSize()) {
             // -------------------------------------------------- workspace
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {

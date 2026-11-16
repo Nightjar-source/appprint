@@ -130,12 +130,12 @@ fun SheetCanvas(
         ) {
             val availW = maxWidth.value
             val availH = maxHeight.value
-            // Design (HTML): at 411x892 the A4 sheet renders 397x561 CSS px = scale 0.5 of
-            // 210x297mm (794x1123px). Fit to the *paper width* with a 14dp edge inset so the
-            // sheet lands edge-to-edge exactly like printaapp.html (not 32dp + full ruler strip).
+            // Edge-to-edge canvas: maxWidth/maxHeight are now the FULL screen (no reserved
+            // top/bottom bands). Fit the paper so it spans nearly the full width like the
+            // design's 397/411 ratio, with the sheet extending under the floating chrome.
             val optimal = minOf(
-                ((availW - 14f) / paperWdp).coerceAtLeast(0.2f),
-                ((availH - 42f) / paperHdp).coerceAtLeast(0.2f),
+                (availW / paperWdp).coerceAtLeast(0.2f) * 0.97f,
+                ((availH - 8f) / paperHdp).coerceAtLeast(0.2f),
                 1.35f,
             ).coerceAtLeast(0.2f)
             fit = optimal
