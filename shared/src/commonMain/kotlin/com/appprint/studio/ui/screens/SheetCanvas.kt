@@ -259,8 +259,7 @@ fun SheetCanvas(
                             stripDp = paperWdp * zoom,
                             background = rulerBg,
                             scale = zoom,
-                            modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp)
-                                .background(Color(0x80FF00FF)),
+                            modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp),
                         )
                         // design: "صفحة n / m" on the ruler's right end
                         Text(
@@ -317,20 +316,20 @@ private fun RulerBar(
             }
         }
     } else {
-        Box(modifier = modifier.height((20f * scale).dp).width(stripDp.dp).background(background)) {
-            Text("TEST1", fontSize = 30.sp, color = Color.Black, softWrap = false, maxLines = 1)
+        // no fixed height constraint — a 9dp cap clipped every Text to invisibility
+        Box(modifier = modifier.width(stripDp.dp).background(background)) {
             var mm = 0
             while (mm <= lengthMm) {
                 val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    fontSize = (if (big) 11f else 10f).let { it * scale }.coerceAtLeast(7f).sp,
+                    fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
+                    color = tick,
                     softWrap = false,
                     maxLines = 1,
                     modifier = Modifier
-                        .offset(x = (mm * DP_PER_MM * scale).dp, y = 4.dp),
+                        .offset(x = (mm * DP_PER_MM * scale).dp, y = (1f * scale).dp),
                 )
                 mm += 10
             }
