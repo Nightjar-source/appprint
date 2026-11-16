@@ -1,4 +1,4 @@
-﻿// Android application — thin launcher over :shared (KMP + Compose Multiplatform).
+// Android application — thin launcher over :shared (KMP + Compose Multiplatform).
 // No org.jetbrains.kotlin.android plugin: AGP 9+ ships built-in Kotlin.
 import java.io.FileInputStream
 import java.util.Properties
@@ -17,8 +17,8 @@ android {
         applicationId = "com.appprint.studio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 23
-        versionName = "2.0.6"
+        versionCode = 24
+        versionName = "2.0.7"
         resourceConfigurations += listOf("ar", "en")
     }
 
