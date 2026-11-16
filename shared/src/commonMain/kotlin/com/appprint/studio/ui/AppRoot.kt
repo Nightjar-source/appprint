@@ -298,8 +298,8 @@ private fun FloatingTopBar(
                     .shadow(18.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x38000000), spotColor = androidx.compose.ui.graphics.Color(0x38000000))
                     .shadow(5.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x1C000000), spotColor = androidx.compose.ui.graphics.Color(0x1C000000))
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.surfaceContainerLow.copy(alpha = 0.9f))
-                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
+                    .background(glassBrush(scheme.surfaceContainerLow))
+                    .border(1.dp, scheme.outlineVariant.copy(alpha = 0.7f), RoundedCornerShape(percent = 50))
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -410,6 +410,19 @@ private fun FloatingTopBar(
 private fun statusTopSafe(): androidx.compose.ui.unit.Dp =
     androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
+/**
+ * DESIGN glass pill: CSS `color-mix(surface-low 90%, transparent)` + `backdrop-filter: blur(22px)`
+ * + white top sheen. Compose has no backdrop-filter, so we approximate with a translucent
+ * vertical gradient (bright top → tinted bottom) + hairline border + the design's 2-layer shadow.
+ */
+private fun glassBrush(base: androidx.compose.ui.graphics.Color): Brush = Brush.verticalGradient(
+    colors = listOf(
+        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.50f),
+        base.copy(alpha = 0.42f),
+        base.copy(alpha = 0.55f),
+    ),
+)
+
 private fun themeDescription(theme: AppTheme): String = when (theme) {
     AppTheme.SYSTEM -> "المظهر: ${Str.theme_auto}"
     AppTheme.LIGHT -> "المظهر: ${Str.theme_light}"
@@ -464,10 +477,13 @@ private fun CircleActionButton(
                 },
             )
             .clip(RoundedCornerShape(percent = 50))
-            .background(container.copy(alpha = if (container == MaterialTheme.colorScheme.primary) 1f else 0.9f))
+            .background(
+                if (container == MaterialTheme.colorScheme.primary) container
+                else glassBrush(container),
+            )
             .border(
                 if (container == MaterialTheme.colorScheme.primary) 0.dp else 1.dp,
-                if (container == MaterialTheme.colorScheme.primary) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.outlineVariant,
+                if (container == MaterialTheme.colorScheme.primary) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
                 RoundedCornerShape(percent = 50),
             )
             .pressScale(interaction)
@@ -539,13 +555,14 @@ private fun FloatingNavPill(
         }
         Surface(
             shape = RoundedCornerShape(percent = 50),
-            color = scheme.surfaceContainerLow.copy(alpha = 0.9f),
-            shadowElevation = 12.dp,
-            tonalElevation = 2.dp,
+            color = androidx.compose.ui.graphics.Color.Transparent,
+            shadowElevation = 14.dp,
+            tonalElevation = 0.dp,
             modifier = Modifier
                 .height(Chrome.NavBarDp)
                 .widthIn(max = 512.dp)
-                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50)),
+                .background(glassBrush(scheme.surfaceContainerLow), RoundedCornerShape(percent = 50))
+                .border(1.dp, scheme.outlineVariant.copy(alpha = 0.7f), RoundedCornerShape(percent = 50)),
         ) {
             Row(
                 modifier = Modifier
@@ -651,11 +668,12 @@ private fun FloatingRail(
     ) {
         Surface(
             shape = RoundedCornerShape(32.dp),
-            color = scheme.surfaceContainerLow.copy(alpha = 0.9f),
-            shadowElevation = 12.dp,
+            color = androidx.compose.ui.graphics.Color.Transparent,
+            shadowElevation = 14.dp,
             modifier = Modifier
                 .fillMaxSize()
-                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(32.dp)),
+                .background(glassBrush(scheme.surfaceContainerLow), RoundedCornerShape(32.dp))
+                .border(1.dp, scheme.outlineVariant.copy(alpha = 0.7f), RoundedCornerShape(32.dp)),
         ) {
             Column(
                 modifier = Modifier
