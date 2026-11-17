@@ -3,6 +3,7 @@
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -20,15 +21,26 @@ import android.provider.MediaStore
 import android.util.Base64
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.appprint.studio.core.export.SheetRenderer
 import com.appprint.studio.core.image.Enhance
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.model.SheetSettings
 import com.appprint.studio.core.pdf.PdfBuilder
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+
+/** Compose-First preferences: Jetpack DataStore replaces the legacy SharedPreferences. */
+private val Context.tabatiDataStore: DataStore<Preferences> by preferencesDataStore(name = "tabati_prefs")
+private val THEME_KEY = stringPreferencesKey("theme")
 
 actual object PlatformActions {
 
@@ -42,15 +54,15 @@ actual object PlatformActions {
 
     actual fun loadTheme(): AppTheme {
         val context = AndroidPlatform.appContext
-        val raw = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
-            .getString(KEY_THEME, AppTheme.SYSTEM.name)
-        return runCatching { AppTheme.valueOf(raw!!) }.getOrDefault(AppTheme.SYSTEM)
+        val raw = runBlocking { context.tabatiDataStore.data.first()[THEME_KEY] }
+        return runCatching { AppTheme.valueOf(raw ?: AppTheme.SYSTEM.name) }.getOrDefault(AppTheme.SYSTEM)
     }
 
     actual fun saveTheme(theme: AppTheme) {
-        AndroidPlatform.appContext
-            .getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
-            .edit().putString(KEY_THEME, theme.name).apply()
+        val context = AndroidPlatform.appContext
+        runBlocking {
+            context.tabatiDataStore.edit { it[THEME_KEY] = theme.name }
+        }
     }
 
     // ------------------------------------------------------------- filesystem

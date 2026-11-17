@@ -481,12 +481,13 @@ private fun CircleActionButton(
                 if (container == MaterialTheme.colorScheme.primary) {
                     Modifier.background(container)
                 } else {
-                    Modifier.background(glassBrush(container))
+                    // 100% transparent buttons — icons float with no dry color block.
+                    Modifier.background(androidx.compose.ui.graphics.Color.Transparent)
                 },
             )
             .border(
                 if (container == MaterialTheme.colorScheme.primary) 0.dp else 1.dp,
-                if (container == MaterialTheme.colorScheme.primary) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+                if (container == MaterialTheme.colorScheme.primary) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                 RoundedCornerShape(percent = 50),
             )
             .pressScale(interaction)

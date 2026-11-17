@@ -90,6 +90,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.exifinterface)
+            implementation(libs.androidx.datastore.preferences)
             implementation(libs.ui.tooling)
         }
         jvmMain.dependencies {
