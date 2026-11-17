@@ -106,16 +106,10 @@ fun StudioScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Edge-to-edge BACKGROUND is painted by AppRoot (fills every edge). The paper itself
-        // lives inside a content region inset by the floating chrome — exactly like the HTML
-        // `main` (paddingTop top-bar+46, paddingBottom nav+22). Clipping this region keeps the
-        // panned sheet from ever sliding under/over the floating title + status bars.
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .clipToBounds()
-                .padding(top = Chrome.topReserve() + 6.dp, bottom = Chrome.bottomReserve()),
-        ) {
+        // True edge-to-edge: the paper canvas fills the entire screen (no reserved band).
+        // The floating bars are 100% transparent glass with no color blocks, so the sheet
+        // legitimately extends to every screen edge underneath them — exactly like the HTML.
+        Row(modifier = Modifier.fillMaxSize()) {
             // -------------------------------------------------- workspace
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {

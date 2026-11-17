@@ -96,19 +96,19 @@ fun SheetCanvas(
     }
 
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
-        // Clamp pan so the sheet can never slide fully out of the content viewport —
-        // mirrors the design's `overflow-auto` canvas where content stays reachable.
-        val maxPanX = paperWdp * 0.5f
-        val maxPanY = paperHdp * 0.5f
-        panX = (panX + panChange.x).coerceIn(-maxPanX, maxPanX)
-        panY = (panY + panChange.y).coerceIn(-maxPanY, maxPanY)
-        val basePercent = when (state.zoomMode) {
-            ZoomMode.FIT -> fit * 100f
-            ZoomMode.MANUAL -> state.manualZoomPercent
+        panX += panChange.x
+        panY += panChange.y
+        // The zoom percent is already a percentage (100 = fit). Never divide by `fit`
+        // here — that double-scaled the sheet on every touch and flung cards off-screen.
+        when (state.zoomMode) {
+            ZoomMode.FIT -> {
+                viewModel.setZoomMode(ZoomMode.MANUAL)
+                viewModel.setManualZoom((100f * zoomChange).coerceIn(50f, 200f))
+            }
+            ZoomMode.MANUAL -> {
+                viewModel.setManualZoom((state.manualZoomPercent * zoomChange).coerceIn(50f, 200f))
+            }
         }
-        viewModel.setZoomMode(ZoomMode.MANUAL)
-        val target = (basePercent * zoomChange / fit).coerceIn(50f, 200f)
-        viewModel.setManualZoom(target)
     }
 
     androidx.compose.runtime.CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -120,13 +120,18 @@ fun SheetCanvas(
                     detectTapGestures(
                         onTap = { viewModel.selectCard(null) },
                         onDoubleTap = {
-                            when {
-                                state.zoomMode == ZoomMode.FIT -> {
+                            // Gentle step zoom like the design's zoom_in/zoom_out (no jump to 220
+                            // which blew the sheet past the viewport and scattered the cards).
+                            when (state.zoomMode) {
+                                ZoomMode.FIT -> {
                                     viewModel.setZoomMode(ZoomMode.MANUAL)
-                                    viewModel.setManualZoom(160f)
+                                    viewModel.setManualZoom(115f)
                                 }
-                                state.manualZoomPercent < 130f -> viewModel.setManualZoom(220f)
-                                else -> viewModel.setZoomMode(ZoomMode.FIT)
+                                else -> {
+                                    val next = state.manualZoomPercent + 15f
+                                    if (next > 200f) viewModel.zoomFit()
+                                    else viewModel.setManualZoom(next)
+                                }
                             }
                         })
                 }
@@ -134,10 +139,11 @@ fun SheetCanvas(
         ) {
             val availW = maxWidth.value
             val availH = maxHeight.value
-            // Fit the paper inside the inset content region to the design's 397/411 ratio.
+            // Edge-to-edge canvas: full screen. Fit the paper to ~97% of screen width so
+            // the sheet reaches both edges like printaapp.html's 397/411 ratio.
             val optimal = minOf(
-                ((availW - 14f) / paperWdp).coerceAtLeast(0.2f),
-                ((availH - 42f) / paperHdp).coerceAtLeast(0.2f),
+                (availW / paperWdp).coerceAtLeast(0.2f) * 0.97f,
+                ((availH - 8f) / paperHdp).coerceAtLeast(0.2f),
                 1.35f,
             ).coerceAtLeast(0.2f)
             fit = optimal
@@ -161,6 +167,7 @@ fun SheetCanvas(
                             // design: 0 24px 56px -14px rgba(0,0,0,.36) + 0 6px 18px -4px rgba(0,0,0,.22) + 1px hairline ring
                             .shadow((24f * zoom).dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x5C000000), spotColor = Color(0x5C000000))
                             .shadow((6f * zoom).dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x38000000), spotColor = Color(0x38000000))
+                            .clipToBounds()
                             .background(sheetBackgroundColor(settings)),
                     ) {
                         if (settings.frame.background == com.appprint.studio.core.model.SheetBackground.TRANSPARENT) {

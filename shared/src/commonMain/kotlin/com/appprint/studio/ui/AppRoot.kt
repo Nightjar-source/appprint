@@ -298,8 +298,8 @@ private fun FloatingTopBar(
                     .shadow(18.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x38000000), spotColor = androidx.compose.ui.graphics.Color(0x38000000))
                     .shadow(5.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x1C000000), spotColor = androidx.compose.ui.graphics.Color(0x1C000000))
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(glassBrush(scheme.surfaceContainerLow))
-                    .border(1.dp, scheme.outlineVariant.copy(alpha = 0.7f), RoundedCornerShape(percent = 50))
+                    .background(androidx.compose.ui.graphics.Color.Transparent)
+                    .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(percent = 50))
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -559,8 +559,8 @@ private fun FloatingNavPill(
             modifier = Modifier
                 .height(Chrome.NavBarDp)
                 .widthIn(max = 512.dp)
-                .background(glassBrush(scheme.surfaceContainerLow), RoundedCornerShape(percent = 50))
-                .border(1.dp, scheme.outlineVariant.copy(alpha = 0.7f), RoundedCornerShape(percent = 50)),
+                .background(androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50))
+                .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(percent = 50)),
         ) {
             Row(
                 modifier = Modifier
@@ -670,8 +670,8 @@ private fun FloatingRail(
             shadowElevation = 14.dp,
             modifier = Modifier
                 .fillMaxSize()
-                .background(glassBrush(scheme.surfaceContainerLow), RoundedCornerShape(32.dp))
-                .border(1.dp, scheme.outlineVariant.copy(alpha = 0.7f), RoundedCornerShape(32.dp)),
+                .background(androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(32.dp))
+                .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
         ) {
             Column(
                 modifier = Modifier
