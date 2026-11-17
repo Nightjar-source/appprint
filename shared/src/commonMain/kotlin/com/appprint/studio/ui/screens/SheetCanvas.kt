@@ -5,8 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -80,8 +81,6 @@ fun SheetCanvas(
     val contentW = paperWdp + rulerTotalDp
     val contentH = paperHdp + rulerTotalDp
 
-    var panX by remember(settings.sheetWidthMm, settings.sheetHeightMm) { mutableFloatStateOf(0f) }
-    var panY by remember(settings.sheetWidthMm, settings.sheetHeightMm) { mutableFloatStateOf(0f) }
     var fit by remember { mutableFloatStateOf(0.5f) }
 
     val darkCanvas = when (state.theme) {
@@ -93,22 +92,6 @@ fun SheetCanvas(
         com.appprint.studio.ui.theme.TabatiCanvasDark
     } else {
         com.appprint.studio.ui.theme.TabatiCanvasLight
-    }
-
-    val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
-        panX += panChange.x
-        panY += panChange.y
-        // The zoom percent is already a percentage (100 = fit). Never divide by `fit`
-        // here — that double-scaled the sheet on every touch and flung cards off-screen.
-        when (state.zoomMode) {
-            ZoomMode.FIT -> {
-                viewModel.setZoomMode(ZoomMode.MANUAL)
-                viewModel.setManualZoom((100f * zoomChange).coerceIn(50f, 200f))
-            }
-            ZoomMode.MANUAL -> {
-                viewModel.setManualZoom((state.manualZoomPercent * zoomChange).coerceIn(50f, 200f))
-            }
-        }
     }
 
     androidx.compose.runtime.CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -134,13 +117,10 @@ fun SheetCanvas(
                                 }
                             }
                         })
-                }
-                .transformable(state = transformableState),
+                },
         ) {
             val availW = maxWidth.value
             val availH = maxHeight.value
-            // Edge-to-edge canvas: full screen. Fit the paper to ~97% of screen width so
-            // the sheet reaches both edges like printaapp.html's 397/411 ratio.
             val optimal = minOf(
                 (availW / paperWdp).coerceAtLeast(0.2f) * 0.97f,
                 ((availH - 8f) / paperHdp).coerceAtLeast(0.2f),
@@ -148,17 +128,23 @@ fun SheetCanvas(
             ).coerceAtLeast(0.2f)
             fit = optimal
             val zoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
-            val panAsDpX = with(density) { panX.toDp() }
-            val panAsDpY = with(density) { panY.toDp() }
+            val vScroll = rememberScrollState()
+            val hScroll = rememberScrollState()
 
-            // HTML: canvas is flat md-canvas — no dot grid, no pattern
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // HTML: canvas is flat md-canvas — no dot grid, no pattern.
+            // overflow-auto: the canvas scrolls; the sheet is pre-shrunk by zoom.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(vScroll)
+                    .horizontalScroll(hScroll),
+                contentAlignment = Alignment.Center,
+            ) {
                 // layout is PRE-SHRUNK by zoom — no graphicsLayer scale anywhere, so the
                 // layout is exactly the visual rect and every child lines up by construction
                 Box(
                     modifier = Modifier
-                        .size((contentW * zoom).dp, (contentH * zoom).dp)
-                        .offset(x = panAsDpX, y = panAsDpY),
+                        .size((contentW * zoom).dp, (contentH * zoom).dp),
                 ) {
                     Box(
                         modifier = Modifier

@@ -282,29 +282,57 @@ actual object PlatformActions {
 
     // ------------------------------------------------------------- notifications
 
+    private fun findDownloadedUri(context: android.content.Context, displayName: String): Uri? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+        val collection = android.provider.MediaStore.Downloads.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val projection = arrayOf(android.provider.MediaStore.Downloads._ID)
+        // Prefer an exact display-name match, most-recently-inserted first.
+        val selection = "${android.provider.MediaStore.Downloads.DISPLAY_NAME} = ?"
+        val sortOrder = "${android.provider.MediaStore.Downloads.DATE_MODIFIED} DESC"
+        return context.contentResolver.query(collection, projection, selection, arrayOf(displayName), sortOrder)?.use { c ->
+            if (c.moveToFirst()) Uri.withAppendedPath(collection, c.getLong(0).toString()) else null
+        }
+    }
+
     actual fun showExportNotification(title: String, body: String, path: String?) {
         val context = AndroidPlatform.appContext
         try {
+            // Notifications are opt-in: if the user has not granted the permission yet,
+            // ask HERE — on every download, not just on first launch — via the system sheet.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
                     PackageManager.PERMISSION_GRANTED
-                if (!granted) return
+                if (!granted) {
+                    val activity = AndroidPlatform.currentWindow()?.context as? android.app.Activity
+                    activity?.let {
+                        androidx.core.app.ActivityCompat.requestPermissions(
+                            it,
+                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                            9137,
+                        )
+                    }
+                    return // the system sheet is the action — nothing else to do here
+                }
             }
             val manager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(NOTIF_CHANNEL_ID, "تنبيهات التصدير · طبعتي", NotificationManager.IMPORTANCE_DEFAULT)
                 manager.createNotificationChannel(channel)
             }
-            val contentUri = path?.let { filePath ->
-                runCatching {
-                    val file = File(filePath)
-                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            // Resolve the real MediaStore/ContentUri for the saved file so the tap-to-open
+            // launches the device's default viewer (Gallery for PNG/JPG, PDF reader for PDF).
+            val contentUri = path?.let { fileName ->
+                findDownloadedUri(context, fileName) ?: runCatching {
+                    // Legacy (API 26–28 public Downloads): hand the file through FileProvider.
+                    val file = File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), fileName)
+                    if (file.exists()) FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file) else null
                 }.getOrNull()
             }
             val mime = when (path?.substringAfterLast('.', "")?.lowercase()) {
                 "png" -> "image/png"
                 "jpg", "jpeg" -> "image/jpeg"
                 "pdf" -> "application/pdf"
+                "html" -> "text/html"
                 else -> "*/*"
             }
             val viewIntent = contentUri?.let {
@@ -327,7 +355,7 @@ actual object PlatformActions {
                 @Suppress("DEPRECATION")
                 android.app.Notification.Builder(context)
             }
-            builder.setSmallIcon(android.R.drawable.ic_menu_save)
+            builder.setSmallIcon(android.R.drawable.ic_dialog_save)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setAutoCancel(true)

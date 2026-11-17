@@ -122,11 +122,12 @@ fun StudioScreen(
                         onAddDemoCards = viewModel::addSamples,
                     )
                     if (state.cards.isNotEmpty()) {
-                        // floating page bar — above the canvas, under the top bar (like the design)
+                        // floating page bar — sits BELOW the floating top bar + buttons
+                        // (status-bar inset + top-bar height + gap), like the design.
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
-                                .padding(top = 6.dp),
+                                .padding(top = Chrome.topReserve() + 12.dp),
                         ) {
                             SheetPageBar(
                                 state = state,
