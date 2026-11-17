@@ -200,17 +200,21 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
 
     PanelScaffold(title = Str.section_paper, state = state, viewModel = viewModel) {
         PanelSectionHeader(Str.paper_size)
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            PaperPreset.PRESETS.forEach { preset ->
-                PaperSizeChip(
-                    label = preset.label,
-                    sub = if (preset == PaperPreset.CUSTOM) Str.custom_sub else "${preset.widthMm.toInt()}×${preset.heightMm.toInt()}",
-                    selected = settings.presetKey == preset.key,
-                    onClick = { viewModel.setPaperPreset(preset.key) },
-                )
+        // Design grid-cols-3: equal-width cards in rows of three — no fixed width, no gaps.
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            PaperPreset.PRESETS.chunked(3).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    row.forEach { preset ->
+                        Box(Modifier.weight(1f)) {
+                            PaperSizeChip(
+                                label = preset.label,
+                                sub = if (preset == PaperPreset.CUSTOM) Str.custom_sub else "${preset.widthMm.toInt()}×${preset.heightMm.toInt()}",
+                                selected = settings.presetKey == preset.key,
+                                onClick = { viewModel.setPaperPreset(preset.key) },
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -451,13 +455,13 @@ private fun PaperSizeChip(label: String, sub: String, selected: Boolean, onClick
     val interaction = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
-            .width(102.dp)
+            .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
             .border(1.dp, if (selected) scheme.primary else scheme.outlineVariant, RoundedCornerShape(16.dp))
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .padding(vertical = 8.dp, horizontal = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, color = if (selected) scheme.onPrimary else scheme.onSurface)
