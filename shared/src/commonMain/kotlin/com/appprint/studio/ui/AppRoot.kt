@@ -387,19 +387,19 @@ private fun FloatingTopBar(
         ) {
             Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
         }
-        // export PDF — the one primary action
+        // export PDF — primary action; icon stays brand-green on the transparent bar.
         CircleActionButton(
             onClick = onExportPdf,
             contentDescription = Str.export_pdf,
             size = 40.dp,
             container = scheme.primary,
-            tint = scheme.onPrimary,
-            elevated = true,
+            tint = scheme.primary,
+            elevated = false,
         ) {
             Icon(
                 Icons.Filled.PictureAsPdf,
                 contentDescription = null,
-                tint = androidx.compose.ui.graphics.Color.White.copy(alpha = if (state.processing) 0.35f else 1f),
+                tint = scheme.primary.copy(alpha = if (state.processing) 0.35f else 1f),
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -477,17 +477,11 @@ private fun CircleActionButton(
                 },
             )
             .clip(RoundedCornerShape(percent = 50))
-            .then(
-                if (container == MaterialTheme.colorScheme.primary) {
-                    Modifier.background(container)
-                } else {
-                    // 100% transparent buttons — icons float with no dry color block.
-                    Modifier.background(androidx.compose.ui.graphics.Color.Transparent)
-                },
-            )
+            // 100% transparent buttons — icons float with no dry color block (including PDF).
+            .background(androidx.compose.ui.graphics.Color.Transparent)
             .border(
-                if (container == MaterialTheme.colorScheme.primary) 0.dp else 1.dp,
-                if (container == MaterialTheme.colorScheme.primary) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                 RoundedCornerShape(percent = 50),
             )
             .pressScale(interaction)

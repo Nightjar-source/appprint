@@ -21,49 +21,27 @@ import android.provider.MediaStore
 import android.util.Base64
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.appprint.studio.core.export.SheetRenderer
 import com.appprint.studio.core.image.Enhance
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.model.SheetSettings
 import com.appprint.studio.core.pdf.PdfBuilder
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
-/** Compose-First preferences: Jetpack DataStore replaces the legacy SharedPreferences. */
-private val Context.tabatiDataStore: DataStore<Preferences> by preferencesDataStore(name = "tabati_prefs")
-private val THEME_KEY = stringPreferencesKey("theme")
-
 actual object PlatformActions {
 
-    private const val PREFS = "tabati_prefs"
-    private const val KEY_THEME = "theme"
     private const val EXPORTS_DIR = "exports"
     private const val IMPORTS_DIR = "imports"
     private const val NOTIF_CHANNEL_ID = "tabati_exports"
 
     // ------------------------------------------------------------- theme
 
-    actual fun loadTheme(): AppTheme {
-        val context = AndroidPlatform.appContext
-        val raw = runBlocking { context.tabatiDataStore.data.first()[THEME_KEY] }
-        return runCatching { AppTheme.valueOf(raw ?: AppTheme.SYSTEM.name) }.getOrDefault(AppTheme.SYSTEM)
-    }
+    actual fun loadTheme(): AppTheme = AppDataStore.loadThemeSync()
 
-    actual fun saveTheme(theme: AppTheme) {
-        val context = AndroidPlatform.appContext
-        runBlocking {
-            context.tabatiDataStore.edit { it[THEME_KEY] = theme.name }
-        }
-    }
+    actual fun saveTheme(theme: AppTheme) = AppDataStore.saveTheme(theme)
 
     // ------------------------------------------------------------- filesystem
 

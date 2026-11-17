@@ -16,6 +16,9 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         AndroidPlatform.set(applicationContext)
         AndroidPlatform.setWindow(window)
+        // Compose-First: initialize Jetpack DataStore (with legacy SharedPreferences migration)
+        // before any UI reads settings — the in-memory mirror then serves 0-cost sync reads.
+        com.appprint.studio.core.platform.AppDataStore.init(applicationContext)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
