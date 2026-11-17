@@ -355,7 +355,7 @@ actual object PlatformActions {
                 @Suppress("DEPRECATION")
                 android.app.Notification.Builder(context)
             }
-            builder.setSmallIcon(android.R.drawable.ic_dialog_save)
+            builder.setSmallIcon(android.R.drawable.ic_menu_save)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setAutoCancel(true)
