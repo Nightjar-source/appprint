@@ -31,13 +31,8 @@ object AppDataStore {
     private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
         name = "app_settings",
         produceMigrations = { ctx ->
-            listOf(
-                SharedPreferencesMigration(ctx, LEGACY_PREFS) { legacy, prefs ->
-                    val stored = legacy.getString(LEGACY_THEME_KEY, null)
-                    if (stored != null) prefs[THEME_KEY] = stored
-                    prefs
-                },
-            )
+            // Migrate the legacy "theme" key from tabati_prefs → app_settings automatically.
+            listOf(SharedPreferencesMigration(ctx, LEGACY_PREFS, setOf(LEGACY_THEME_KEY)))
         },
     )
 
