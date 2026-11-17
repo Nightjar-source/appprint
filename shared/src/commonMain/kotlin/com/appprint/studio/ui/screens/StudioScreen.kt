@@ -55,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
@@ -105,10 +106,16 @@ fun StudioScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Edge-to-edge: the canvas fills the whole screen — the paper renders from the real
-        // screen edges (under the floating top/nav bars), exactly like printaapp.html's
-        // `main` which is flex-1 with no reserved top/bottom band. The chrome floats above.
-        Row(modifier = Modifier.fillMaxSize()) {
+        // Edge-to-edge BACKGROUND is painted by AppRoot (fills every edge). The paper itself
+        // lives inside a content region inset by the floating chrome — exactly like the HTML
+        // `main` (paddingTop top-bar+46, paddingBottom nav+22). Clipping this region keeps the
+        // panned sheet from ever sliding under/over the floating title + status bars.
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .clipToBounds()
+                .padding(top = Chrome.topReserve() + 6.dp, bottom = Chrome.bottomReserve()),
+        ) {
             // -------------------------------------------------- workspace
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -293,11 +300,19 @@ private fun SurfaceDrawer(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
+    // Translucent glass drawer (no solid "dry block") — uses the same bright-top tint as the
+    // floating pills so the sheet shows through softly instead of being covered by a slab.
+    val drawerBrush = androidx.compose.ui.graphics.Brush.verticalGradient(
+        colors = listOf(
+            scheme.surfaceContainerLow.copy(alpha = 0.78f),
+            scheme.surfaceContainerLow.copy(alpha = 0.88f),
+        ),
+    )
     Column(
         modifier = modifier
             .fillMaxWidth()
             .fillMaxHeight(0.48f)
-            .background(scheme.surfaceContainerLow),
+            .background(drawerBrush),
     ) {
         // hairline top border only — the design's drawer has borderTop: 1px outline-variant
         Box(

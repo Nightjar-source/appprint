@@ -96,8 +96,12 @@ fun SheetCanvas(
     }
 
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
-        panX += panChange.x
-        panY += panChange.y
+        // Clamp pan so the sheet can never slide fully out of the content viewport —
+        // mirrors the design's `overflow-auto` canvas where content stays reachable.
+        val maxPanX = paperWdp * 0.5f
+        val maxPanY = paperHdp * 0.5f
+        panX = (panX + panChange.x).coerceIn(-maxPanX, maxPanX)
+        panY = (panY + panChange.y).coerceIn(-maxPanY, maxPanY)
         val basePercent = when (state.zoomMode) {
             ZoomMode.FIT -> fit * 100f
             ZoomMode.MANUAL -> state.manualZoomPercent
@@ -130,12 +134,10 @@ fun SheetCanvas(
         ) {
             val availW = maxWidth.value
             val availH = maxHeight.value
-            // Edge-to-edge canvas: maxWidth/maxHeight are now the FULL screen (no reserved
-            // top/bottom bands). Fit the paper so it spans nearly the full width like the
-            // design's 397/411 ratio, with the sheet extending under the floating chrome.
+            // Fit the paper inside the inset content region to the design's 397/411 ratio.
             val optimal = minOf(
-                (availW / paperWdp).coerceAtLeast(0.2f) * 0.97f,
-                ((availH - 8f) / paperHdp).coerceAtLeast(0.2f),
+                ((availW - 14f) / paperWdp).coerceAtLeast(0.2f),
+                ((availH - 42f) / paperHdp).coerceAtLeast(0.2f),
                 1.35f,
             ).coerceAtLeast(0.2f)
             fit = optimal
