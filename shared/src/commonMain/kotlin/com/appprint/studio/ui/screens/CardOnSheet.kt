@@ -85,7 +85,12 @@ internal fun CardOnSheet(
             }
             .size((card.widthMm * dpPerMm).dp, (card.heightMm * dpPerMm).dp)
             .graphicsLayer { rotationZ = card.totalRotation }
-            .clickable(interactionSource = interaction, indication = null) { viewModel.selectCard(card.id) }
+            .pointerInput(card.id) {
+                detectTapGestures(
+                    onTap = { viewModel.selectCard(card.id) },
+                    onLongPress = { viewModel.openLongPressSheet(card.id) },
+                )
+            }
             // long-press (~430–500 ms) → quick context sheet
             .pointerInput(card.id) {
                 detectTapGestures(onLongPress = { viewModel.openLongPressSheet(card.id) })

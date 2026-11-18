@@ -99,12 +99,15 @@ fun SheetCanvas(
             modifier = modifier
                 .background(canvasColor)
                 .clipToBounds()
+                // background tap clears the selection (empty area); cards consume their own taps first
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { viewModel.selectCard(null) },
+                )
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onTap = { viewModel.selectCard(null) },
                         onDoubleTap = {
-                            // Gentle step zoom like the design's zoom_in/zoom_out (no jump to 220
-                            // which blew the sheet past the viewport and scattered the cards).
                             when (state.zoomMode) {
                                 ZoomMode.FIT -> {
                                     viewModel.setZoomMode(ZoomMode.MANUAL)
