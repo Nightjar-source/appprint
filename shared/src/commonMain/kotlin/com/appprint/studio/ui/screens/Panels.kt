@@ -375,28 +375,30 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
             PanelToggleRow(Str.show_grid, checked = settings.showGrid, onCheckedChange = viewModel::setShowGrid)
         }
 
-        val outlineColor = MaterialTheme.colorScheme.outlineVariant
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainer),
-        ) {
-            Canvas(modifier = Modifier.matchParentSize()) {
-                drawRoundRect(
-                    color = outlineColor,
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx(), 16.dp.toPx()),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 1.dp.toPx(),
-                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f),
-                    ),
-                )
-            }
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+        // Quick experiment section — only for an empty workspace; a working user doesn't need demos.
+        if (state.cards.isEmpty()) {
+            val outlineColor = MaterialTheme.colorScheme.outlineVariant
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
             ) {
-                Text(Str.experiment_title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    drawRoundRect(
+                        color = outlineColor,
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx(), 16.dp.toPx()),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = 1.dp.toPx(),
+                            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f),
+                        ),
+                    )
+                }
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(Str.experiment_title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
                 Text(
                     Str.experiment_desc,
                     style = MaterialTheme.typography.labelSmall,
@@ -413,6 +415,7 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
             }
         }
     }
+}
 }
 
 @Composable

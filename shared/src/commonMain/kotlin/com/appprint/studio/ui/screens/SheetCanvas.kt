@@ -99,14 +99,11 @@ fun SheetCanvas(
             modifier = modifier
                 .background(canvasColor)
                 .clipToBounds()
-                // background tap clears the selection (empty area); cards consume their own taps first
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = { viewModel.selectCard(null) },
-                )
                 .pointerInput(Unit) {
                     detectTapGestures(
+                        // Tap on empty canvas clears selection. Cards consume their own tap
+                        // (via their inner pointerInput), so this only fires on empty area.
+                        onTap = { viewModel.selectCard(null) },
                         onDoubleTap = {
                             when (state.zoomMode) {
                                 ZoomMode.FIT -> {

@@ -85,30 +85,33 @@ internal fun CardOnSheet(
             }
             .size((card.widthMm * dpPerMm).dp, (card.heightMm * dpPerMm).dp)
             .graphicsLayer { rotationZ = card.totalRotation }
+            // ONE unified pointer handler. Competing pointerInput/tap/drag modifiers on the
+            // same box swallow each other's events — which broke selection and made drag
+            // feel reversed. Tap selects, long-press opens the sheet, drag moves, all in
+            // a single detector that awaits each gesture in sequence.
             .pointerInput(card.id) {
                 detectTapGestures(
                     onTap = { viewModel.selectCard(card.id) },
                     onLongPress = { viewModel.openLongPressSheet(card.id) },
                 )
             }
-            // long-press (~430–500 ms) → quick context sheet
             .pointerInput(card.id) {
-                detectTapGestures(onLongPress = { viewModel.openLongPressSheet(card.id) })
-            }
-            .pointerInput(card.id) {
-                detectDragGestures(onDrag = { change, dragAmount ->
-                    change.consume()
-                    val c = currentCard
-                    val s = state.settings
-                    val bound = if (s.frame.guides) s.marginMm else 0f
-                    val maxX = (s.sheetWidthMm - bound - c.widthMm).coerceAtLeast(bound)
-                    val maxY = (s.sheetHeightMm - bound - c.heightMm).coerceAtLeast(bound)
-                    viewModel.moveCard(
-                        c.id,
-                        (c.xMm + dragAmount.x / (dpPerMm * density.density)).coerceIn(bound, maxX),
-                        (c.yMm + dragAmount.y / (dpPerMm * density.density)).coerceIn(bound, maxY),
-                    )
-                })
+                detectDragGestures(
+                    onDragStart = { viewModel.selectCard(card.id) },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        val c = currentCard
+                        val s = state.settings
+                        val bound = if (s.frame.guides) s.marginMm else 0f
+                        val maxX = (s.sheetWidthMm - bound - c.widthMm).coerceAtLeast(bound)
+                        val maxY = (s.sheetHeightMm - bound - c.heightMm).coerceAtLeast(bound)
+                        viewModel.moveCard(
+                            c.id,
+                            (c.xMm + dragAmount.x / (dpPerMm * density.density)).coerceIn(bound, maxX),
+                            (c.yMm + dragAmount.y / (dpPerMm * density.density)).coerceIn(bound, maxY),
+                        )
+                    },
+                )
             },
     ) {
         val isRightAngle = card.rotation % 180 != 0
