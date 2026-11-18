@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +28,14 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.TravelExplore
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.DriveEta
+import androidx.compose.material.icons.filled.HowToVote
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Dashboard
@@ -489,19 +498,22 @@ fun CardsPanel(
 
     PanelScaffold(title = Str.section_cards, state = state, viewModel = viewModel) {
         PanelSectionHeader(Str.card_type_header)
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            CardType.PRINTABLE.forEach { type ->
-                TypeGridChip(
-                    type = type,
-                    active = currentType == type,
-                    onClick = {
-                        pendingType = type
-                        selected?.let { sel -> viewModel.applyCardType(sel.id, type) }
-                    },
-                )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            CardType.PRINTABLE.chunked(2).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    row.forEach { type ->
+                        Box(Modifier.weight(1f)) {
+                            TypeGridChip(
+                                type = type,
+                                active = currentType == type,
+                                onClick = {
+                                    pendingType = type
+                                    selected?.let { sel -> viewModel.applyCardType(sel.id, type) }
+                                },
+                            )
+                        }
+                    }
+                }
             }
         }
         if (currentType == CardType.CUSTOM && selected != null) {
@@ -841,11 +853,22 @@ private fun PanelIconPill(
 private fun TypeGridChip(type: CardType, active: Boolean, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
+    val iconVector = when (type) {
+        CardType.NATIONAL -> Icons.Filled.Person
+        CardType.PASSPORT -> Icons.Filled.TravelExplore
+        CardType.RESIDENCE -> Icons.Filled.Home
+        CardType.RATION -> Icons.Filled.ShoppingCart
+        CardType.DRIVING -> Icons.Filled.DriveEta
+        CardType.VOTER -> Icons.Filled.HowToVote
+        CardType.STUDENT -> Icons.Filled.School
+        CardType.CUSTOM -> Icons.Filled.Tune
+    }
     Column(
         modifier = Modifier
-            .width(120.dp)
+            .fillMaxWidth()
+            .heightIn(min = 92.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(scheme.surfaceContainerHigh)
+            .background(if (active) scheme.primaryContainer else scheme.surfaceContainerHigh)
             .border(
                 width = if (active) 1.5.dp else 1.dp,
                 color = if (active) scheme.primary else scheme.outlineVariant,
@@ -853,28 +876,34 @@ private fun TypeGridChip(type: CardType, active: Boolean, onClick: () -> Unit) {
             )
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(width = 20.dp, height = 4.dp)
-                .clip(RoundedCornerShape(percent = 50))
-                .background(Color(type.brandColorHex)),
-        )
-        Text(
-            type.labelAr,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.ExtraBold,
-            maxLines = 2,
-            minLines = 2,
-            lineHeight = 14.sp,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(type.brandColorHex)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(iconVector, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            }
+            Text(
+                type.labelAr,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = if (active) scheme.onPrimaryContainer else scheme.onSurface,
+                maxLines = 2,
+                modifier = Modifier.weight(1f),
+            )
+        }
         Text(
             text = "${type.widthMm} × ${type.heightMm} مم",
             style = MaterialTheme.typography.labelSmall,
-            fontSize = 9.sp,
-            color = scheme.onSurfaceVariant,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (active) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
             maxLines = 1,
         )
     }

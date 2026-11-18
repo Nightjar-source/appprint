@@ -71,6 +71,10 @@ internal fun CardOnSheet(
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
+    // The app root is RTL; the sheet is pinned LTR. dragAmount follows LocalLayoutDirection,
+    // so read it explicitly and flip X in RTL to keep finger→paper motion 1:1 in both.
+    val layoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val dragXSign = if (layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl) -1f else 1f
     val selected = card.id == state.selectedCardId
     val currentCard by rememberUpdatedState(card)
     val interaction = remember { MutableInteractionSource() }
@@ -107,7 +111,7 @@ internal fun CardOnSheet(
                         val maxY = (s.sheetHeightMm - bound - c.heightMm).coerceAtLeast(bound)
                         viewModel.moveCard(
                             c.id,
-                            (c.xMm + dragAmount.x / (dpPerMm * density.density)).coerceIn(bound, maxX),
+                            (c.xMm + (dragAmount.x * dragXSign) / (dpPerMm * density.density)).coerceIn(bound, maxX),
                             (c.yMm + dragAmount.y / (dpPerMm * density.density)).coerceIn(bound, maxY),
                         )
                     },

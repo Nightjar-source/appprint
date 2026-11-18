@@ -599,7 +599,6 @@ private fun NavPillItem(
     )
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(percent = 50))
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
@@ -612,8 +611,7 @@ private fun NavPillItem(
             modifier = Modifier
                 .height(24.dp)
                 .width(44.dp)
-                .clip(RoundedCornerShape(percent = 50))
-                .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent),
+                .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
