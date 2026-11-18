@@ -7,7 +7,11 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.core.app.ApplicationProvider
+import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.platform.AndroidPlatform
+import com.appprint.studio.ui.StudioSection
+import com.appprint.studio.ui.TabatiViewModel
+import com.appprint.studio.ui.theme.TabatiTheme
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -43,6 +47,20 @@ class StudioScreenshotTest {
         out.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
 
+    /** Real app screen (canvas + floating chrome) with the seven teaching sample cards. */
+    private fun renderStudio(withSamples: Boolean = true): TabatiViewModel {
+        val vm = TabatiViewModel()
+        rule.setContent {
+            com.appprint.studio.ui.AppRoot(viewModel = vm)
+        }
+        rule.waitForIdle()
+        if (withSamples) {
+            rule.runOnIdle { vm.addSamples() }
+            rule.waitForIdle()
+        }
+        return vm
+    }
+
     @Test
     fun empty_sheet_first_launch() {
         rule.setContent {
@@ -53,20 +71,64 @@ class StudioScreenshotTest {
     }
 
     @Test
-    fun paper_section() {
-        rule.setContent {
-            com.appprint.studio.ui.AppRoot()
+    fun demo_sheet() {
+        renderStudio()
+        capture("02-demo-sheet")
+    }
+
+    @Test
+    fun paper_panel() {
+        val vm = renderStudio()
+        rule.runOnIdle { vm.setSection(StudioSection.PAPER) }
+        rule.waitForIdle()
+        capture("03-paper-panel")
+    }
+
+    @Test
+    fun cards_panel() {
+        val vm = renderStudio()
+        rule.runOnIdle { vm.setSection(StudioSection.CARDS) }
+        rule.waitForIdle()
+        capture("04-cards-panel")
+    }
+
+    @Test
+    fun enhance_panel() {
+        val vm = renderStudio()
+        rule.runOnIdle {
+            // The panel only renders its controls when the selected card carries an image;
+            // the teach cards are image-less, so mark one as imported for this capture.
+            val first = vm.state.value.cards.first().id
+            vm.updateCard(first) { it.copy(imageUri = "file:///sample-card.jpg") }
+            vm.selectCard(first)
+            vm.setSection(StudioSection.ENHANCE)
         }
         rule.waitForIdle()
-        capture("02-default")
+        capture("05-enhance-panel")
+    }
+
+    @Test
+    fun borders_panel() {
+        val vm = renderStudio()
+        rule.runOnIdle { vm.setSection(StudioSection.BORDERS) }
+        rule.waitForIdle()
+        capture("06-borders-panel")
+    }
+
+    @Test
+    fun guide_panel() {
+        val vm = renderStudio()
+        rule.runOnIdle { vm.setSection(StudioSection.GUIDE) }
+        rule.waitForIdle()
+        capture("07-guide-panel")
     }
 
     @Test
     fun diag_settings_dump() {
-        val vm = com.appprint.studio.ui.TabatiViewModel()
+        val vm = TabatiViewModel()
         val settings = vm.state.value.settings
         rule.setContent {
-            com.appprint.studio.ui.theme.TabatiTheme(theme = com.appprint.studio.core.model.AppTheme.LIGHT) {
+            TabatiTheme(theme = AppTheme.LIGHT) {
                 com.appprint.studio.ui.screens.SheetCanvas(state = vm.state.value, viewModel = vm)
             }
         }
@@ -81,11 +143,11 @@ class StudioScreenshotTest {
 
     @Test
     fun diag_manual_zoom_60() {
-        val vm = com.appprint.studio.ui.TabatiViewModel()
+        val vm = TabatiViewModel()
         vm.setZoomMode(com.appprint.studio.ui.ZoomMode.MANUAL)
         vm.setManualZoom(60f)
         rule.setContent {
-            com.appprint.studio.ui.theme.TabatiTheme(theme = com.appprint.studio.core.model.AppTheme.LIGHT) {
+            TabatiTheme(theme = AppTheme.LIGHT) {
                 com.appprint.studio.ui.screens.SheetCanvas(state = vm.state.value, viewModel = vm)
             }
         }

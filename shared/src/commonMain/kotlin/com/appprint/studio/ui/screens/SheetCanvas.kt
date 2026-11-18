@@ -253,12 +253,14 @@ fun SheetCanvas(
                         state.cardsOnPage
                             .sortedBy { if (it.id == state.selectedCardId) 1 else 0 }
                             .forEach { card ->
-                                CardOnSheet(
-                                    card = card,
-                                    state = state,
-                                    viewModel = viewModel,
-                                    dpPerMm = DP_PER_MM * zoom,
-                                )
+                                androidx.compose.runtime.key(card.id) {
+                                    CardOnSheet(
+                                        card = card,
+                                        state = state,
+                                        viewModel = viewModel,
+                                        dpPerMm = DP_PER_MM * zoom,
+                                    )
+                                }
                             }
                     }
                     // rulers drawn on top like the design's ui-overlay: horizontal above the paper, vertical to its left
