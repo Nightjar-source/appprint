@@ -74,18 +74,18 @@ actual fun rememberCameraCaptureLauncher(
 @Composable
 actual fun rememberNotificationPermissionRequester(): () -> Unit {
     val context = LocalContext.current
-    var granted by remember {
-        mutableStateOf(
-            android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
-        )
-    }
+    // Re-check the live permission on every call — a cached flag made the requester keep
+    // launching the system dialog after the user had already granted it.
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { granted = it }
+    ) { grantedNow ->
+        if (grantedNow) flushPendingExportNotification()
+    }
     return remember(launcher, context) {
         {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !granted) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
                 launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }

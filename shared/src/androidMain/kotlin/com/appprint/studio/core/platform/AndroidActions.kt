@@ -37,6 +37,10 @@ actual object PlatformActions {
     private const val IMPORTS_DIR = "imports"
     private const val NOTIF_CHANNEL_ID = "tabati_exports"
 
+    /** Export waiting for POST_NOTIFICATIONS — re-posted as soon as the user grants it. */
+    private data class PendingExport(val title: String, val body: String, val path: String?)
+    private var pendingExportNotification: PendingExport? = null
+
     // ------------------------------------------------------------- theme
 
     actual fun loadTheme(): AppTheme = AppDataStore.loadThemeSync()
@@ -302,24 +306,37 @@ actual object PlatformActions {
 
     actual fun showExportNotification(title: String, body: String, path: String?) {
         val context = AndroidPlatform.appContext
-        try {
-            // Notifications are opt-in: if the user has not granted the permission yet,
-            // ask HERE — on every download, not just on first launch — via the system sheet.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                    PackageManager.PERMISSION_GRANTED
-                if (!granted) {
-                    val activity = AndroidPlatform.currentWindow()?.context as? android.app.Activity
-                    activity?.let {
-                        androidx.core.app.ActivityCompat.requestPermissions(
-                            it,
-                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                            9137,
-                        )
-                    }
-                    return // the system sheet is the action — nothing else to do here
-                }
+        // The notification is only posted when POST_NOTIFICATIONS is granted. The request
+        // itself is launched by the UI on EVERY download (AppRoot), so the system dialog
+        // reappears on each export while the permission is still denied. Keep the export
+        // payload around so the moment the user grants, the notification (and its
+        // open-the-file action) is delivered instead of being lost.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                pendingExportNotification = PendingExport(title, body, path)
+                return
             }
+        }
+        postExportNotification(title, body, path)
+    }
+
+    /** Re-posts the export that was waiting for POST_NOTIFICATIONS — called on grant. */
+    fun flushPendingExportNotification() {
+        val pending = pendingExportNotification ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(AndroidPlatform.appContext, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+            if (!granted) return
+        }
+        pendingExportNotification = null
+        postExportNotification(pending.title, pending.body, pending.path)
+    }
+
+    private fun postExportNotification(title: String, body: String, path: String?) {
+        val context = AndroidPlatform.appContext
+        try {
             val manager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(NOTIF_CHANNEL_ID, "تنبيهات التصدير · طبعتي", NotificationManager.IMPORTANCE_DEFAULT)
@@ -348,6 +365,8 @@ actual object PlatformActions {
             val viewIntent = contentUri?.let {
                 Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(it, mime)
+                    // ClipData makes the read grant survive apps that inspect the clip.
+                    clipData = android.content.ClipData.newRawUri("طبعتي", it)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             }
@@ -368,6 +387,7 @@ actual object PlatformActions {
             builder.setSmallIcon(android.R.drawable.ic_menu_save)
                 .setContentTitle(title)
                 .setContentText(body)
+                .setStyle(android.app.Notification.BigTextStyle().bigText(body))
                 .setAutoCancel(true)
             if (pendingIntent != null) builder.setContentIntent(pendingIntent)
             manager.notify(System.currentTimeMillis().toInt(), builder.build())

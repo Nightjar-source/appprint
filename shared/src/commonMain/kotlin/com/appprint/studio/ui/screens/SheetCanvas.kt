@@ -54,6 +54,7 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
 import com.appprint.studio.ui.ZoomMode
+import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.pressScale
 
 /** Compose dp per millimetre (96 dp/inch). */
@@ -82,6 +83,11 @@ fun SheetCanvas(
     val contentH = paperHdp + rulerTotalDp
 
     var fit by remember { mutableFloatStateOf(0.5f) }
+    // HTML: canvas paddingTop = top-bar + 46px + safe-top, paddingBottom = nav-bar + 22px + safe-bottom.
+    // Keeping the paper inside this padding means cards can always scroll clear of the nav pill.
+    val compactChrome = !Chrome.railVisible()
+    val contentTopPad = Chrome.topReserve() + 46.dp
+    val contentBottomPad = if (compactChrome) Chrome.bottomReserve() else 16.dp
 
     val darkCanvas = when (state.theme) {
         AppTheme.DARK -> true
@@ -120,7 +126,7 @@ fun SheetCanvas(
                 },
         ) {
             val availW = maxWidth.value
-            val availH = maxHeight.value
+            val availH = (maxHeight.value - (contentTopPad + contentBottomPad).value).coerceAtLeast(120f)
             val optimal = minOf(
                 (availW / paperWdp).coerceAtLeast(0.2f) * 0.97f,
                 ((availH - 8f) / paperHdp).coerceAtLeast(0.2f),
@@ -140,6 +146,9 @@ fun SheetCanvas(
                     .horizontalScroll(hScroll),
                 contentAlignment = Alignment.Center,
             ) {
+                Column(
+                    modifier = Modifier.padding(top = contentTopPad, bottom = contentBottomPad),
+                ) {
                 // layout is PRE-SHRUNK by zoom — no graphicsLayer scale anywhere, so the
                 // layout is exactly the visual rect and every child lines up by construction
                 Box(
@@ -241,14 +250,16 @@ fun SheetCanvas(
                                 onAddDemoCards = onAddDemoCards,
                             )
                         }
-                        state.cardsOnPage.forEach { card ->
-                            CardOnSheet(
-                                card = card,
-                                state = state,
-                                viewModel = viewModel,
-                                dpPerMm = DP_PER_MM * zoom,
-                            )
-                        }
+                        state.cardsOnPage
+                            .sortedBy { if (it.id == state.selectedCardId) 1 else 0 }
+                            .forEach { card ->
+                                CardOnSheet(
+                                    card = card,
+                                    state = state,
+                                    viewModel = viewModel,
+                                    dpPerMm = DP_PER_MM * zoom,
+                                )
+                            }
                     }
                     // rulers drawn on top like the design's ui-overlay: horizontal above the paper, vertical to its left
                     if (settings.frame.ruler) {
@@ -280,6 +291,7 @@ fun SheetCanvas(
                             modifier = Modifier.offset(y = (24f * zoom).dp),
                         )
                     }
+                }
                 }
             }
         }

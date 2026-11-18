@@ -117,7 +117,25 @@ class TabatiViewModel : ViewModel() {
         s.copy(theme = next)
     }
 
-    fun setSection(section: StudioSection) = _state.update { it.copy(section = section) }
+    fun setSection(section: StudioSection) = _state.update { s ->
+        if (section != StudioSection.ENHANCE) {
+            s.copy(section = section)
+        } else {
+            // Opening «التحسين» from the nav (or long-press) must show usable controls:
+            // keep a selected card with an image, otherwise auto-pick the first real card.
+            val current = s.cards.firstOrNull { it.id == s.selectedCardId }
+            if (current != null && current.imageUri != null) {
+                s.copy(section = section)
+            } else {
+                // Prefer a card the user can actually see on the current sheet.
+                val next = s.cardsOnPage.firstOrNull { it.imageUri != null }
+                    ?: s.cards.firstOrNull { it.imageUri != null }
+                    ?: s.cardsOnPage.firstOrNull()
+                    ?: s.cards.firstOrNull()
+                s.copy(section = section, selectedCardId = next?.id ?: s.selectedCardId)
+            }
+        }
+    }
 
     // ------------------------------------------------------------------ sheet config
 
@@ -617,10 +635,17 @@ class TabatiViewModel : ViewModel() {
                 toast(Str.print_accepted)
             } else {
                 // print service unavailable — save instead so the user still gets the file
-                withContext(Dispatchers.IO) {
+                val saved = withContext(Dispatchers.IO) {
                     PlatformActions.downloadToDownloads("طبعتي-${s.settings.presetKey}.pdf", bytes)
                 }
                 toast(Str.print_fallback)
+                if (saved) {
+                    PlatformActions.showExportNotification(
+                        title = Str.export_notif_title,
+                        body = Str.print_fallback,
+                        path = "طبعتي-${s.settings.presetKey}.pdf",
+                    )
+                }
             }
         }
     }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -48,6 +49,12 @@ import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.PhotoSizeSelectLarge
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -240,9 +247,9 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
 
     PanelScaffold(title = Str.section_paper, state = state, viewModel = viewModel) {
         PanelSectionHeader(Str.paper_size)
-        ResponsiveGrid(items = PaperPreset.PRESETS, minCellWidth = 100.dp) { preset ->
+        ResponsiveGrid(items = PaperPreset.PRESETS, minCellWidth = 104.dp) { preset ->
             PaperSizeChip(
-                label = preset.label,
+                preset = preset,
                 sub = if (preset == PaperPreset.CUSTOM) Str.custom_sub else "${preset.widthMm.toInt()}×${preset.heightMm.toInt()}",
                 selected = settings.presetKey == preset.key,
                 onClick = { viewModel.setPaperPreset(preset.key) },
@@ -487,22 +494,74 @@ private fun ModeChip(
 }
 
 @Composable
-private fun PaperSizeChip(label: String, sub: String, selected: Boolean, onClick: () -> Unit) {
+private fun PaperSizeChip(preset: PaperPreset, sub: String, selected: Boolean, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
+    val icon = when (preset) {
+        PaperPreset.A4 -> Icons.Filled.Description
+        PaperPreset.A5 -> Icons.Filled.MenuBook
+        PaperPreset.A3 -> Icons.Filled.PhotoSizeSelectLarge
+        PaperPreset.LETTER -> Icons.Filled.Article
+        PaperPreset.LEGAL -> Icons.Filled.Gavel
+        PaperPreset.CUSTOM -> Icons.Filled.Tune
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .height(86.dp)
+            .clip(RoundedCornerShape(18.dp))
             .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
-            .border(1.dp, if (selected) scheme.primary else scheme.outlineVariant, RoundedCornerShape(16.dp))
+            .border(1.dp, if (selected) scheme.primary else scheme.outlineVariant, RoundedCornerShape(18.dp))
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, color = if (selected) scheme.onPrimary else scheme.onSurface)
-        Text(sub, style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = if (selected) scheme.onPrimary.copy(alpha = 0.85f) else scheme.onSurfaceVariant)
+        Box(
+            modifier = Modifier
+                .size(26.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(if (selected) scheme.onPrimary.copy(alpha = 0.18f) else scheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (selected) scheme.onPrimary else scheme.primary,
+                modifier = Modifier.size(15.dp),
+            )
+            if (selected) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 3.dp, y = (-3).dp)
+                        .size(13.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.onPrimary),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Filled.Check, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(9.dp))
+                }
+            }
+        }
+        androidx.compose.foundation.layout.Spacer(Modifier.height(4.dp))
+        Text(
+            preset.label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = if (selected) scheme.onPrimary else scheme.onSurface,
+            maxLines = 1,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Text(
+            sub,
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 9.5.sp,
+            color = if (selected) scheme.onPrimary.copy(alpha = 0.85f) else scheme.onSurfaceVariant,
+            maxLines = 1,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
     }
 }
 
@@ -756,34 +815,50 @@ private fun CardEditorRow(
                 valueRange = 0f..360f,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 listOf(0f, 45f, 90f, 180f, 270f).forEach { deg ->
                     val isActive = totalDeg == deg.toInt()
-                    Text(
-                        text = "${deg.toInt()}°",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = if (isActive) scheme.onPrimary else scheme.onSurface,
+                    Box(
                         modifier = Modifier
+                            .weight(1f)
+                            .height(32.dp)
                             .clip(RoundedCornerShape(percent = 50))
                             .background(if (isActive) scheme.primary else scheme.surfaceContainerHigh)
-                            .clickable { viewModel.setCardAngle360(card.id, deg, magneticSnap = false) }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                    Spacer6()
+                            .clickable { viewModel.setCardAngle360(card.id, deg, magneticSnap = false) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "${deg.toInt()}°",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isActive) scheme.onPrimary else scheme.onSurface,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            maxLines = 1,
+                        )
+                    }
                 }
-                androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-                Text(
-                    text = Str.plus_15,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = scheme.onSurface,
+                Box(
                     modifier = Modifier
+                        .weight(1f)
+                        .height(32.dp)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.surfaceContainerHigh)
-                        .clickable { viewModel.setCardAngle360(card.id, (totalDeg + 15f) % 360f, magneticSnap = false) }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
+                        .clickable { viewModel.setCardAngle360(card.id, (totalDeg + 15f) % 360f, magneticSnap = false) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = Str.plus_15,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = scheme.onSurface,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        maxLines = 1,
+                    )
+                }
             }
         }
 
@@ -883,28 +958,28 @@ private fun TypeGridChip(type: CardType, active: Boolean, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 92.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .height(86.dp)
+            .clip(RoundedCornerShape(18.dp))
             .background(if (active) scheme.primaryContainer else scheme.surfaceContainerHigh)
             .border(
                 width = if (active) 1.5.dp else 1.dp,
                 color = if (active) scheme.primary else scheme.outlineVariant,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(18.dp),
             )
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(9.dp))
                     .background(Color(type.brandColorHex)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(iconVector, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Icon(iconVector, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
             }
             Text(
                 type.labelAr,
@@ -912,9 +987,11 @@ private fun TypeGridChip(type: CardType, active: Boolean, onClick: () -> Unit) {
                 fontWeight = FontWeight.ExtraBold,
                 color = if (active) scheme.onPrimaryContainer else scheme.onSurface,
                 maxLines = 2,
+                lineHeight = 15.sp,
                 modifier = Modifier.weight(1f),
             )
         }
+        androidx.compose.foundation.layout.Spacer(Modifier.height(4.dp))
         Text(
             text = "${type.widthMm} × ${type.heightMm} مم",
             style = MaterialTheme.typography.labelSmall,

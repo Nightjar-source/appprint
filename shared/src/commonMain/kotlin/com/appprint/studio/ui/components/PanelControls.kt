@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -28,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,26 +175,29 @@ fun M3Switch(
             .clip(RoundedCornerShape(percent = 50))
             .background(if (checked) scheme.primary else scheme.surfaceContainerHighest)
             .border(2.dp, if (checked) scheme.primary else scheme.outline, RoundedCornerShape(percent = 50))
-            .clickable(interactionSource = interaction, indication = null) { onCheckedChange(!checked) },
+            .toggleable(
+                value = checked,
+                interactionSource = interaction,
+                indication = null,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            ),
     ) {
+        // Offset the thumb itself — padding on a size-constrained box collapsed the
+        // checked thumb to zero width (24dp offset inside a 22dp box).
         Box(
             modifier = Modifier
+                .align(Alignment.CenterStart)
+                .offset(x = thumbOffset)
                 .size(thumbSize)
-                .padding(start = thumbOffset),
+                .clip(RoundedCornerShape(percent = 50))
+                .background(if (checked) scheme.onPrimary else scheme.outline),
             contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(thumbSize)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(if (checked) scheme.onPrimary else scheme.outline),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (checked) {
-                    Icon(Icons.Filled.Check, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(14.dp))
-                } else {
-                    Icon(Icons.Filled.Close, contentDescription = null, tint = scheme.surfaceContainerHighest, modifier = Modifier.size(10.dp))
-                }
+            if (checked) {
+                Icon(Icons.Filled.Check, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(14.dp))
+            } else {
+                Icon(Icons.Filled.Close, contentDescription = null, tint = scheme.surfaceContainerHighest, modifier = Modifier.size(10.dp))
             }
         }
     }

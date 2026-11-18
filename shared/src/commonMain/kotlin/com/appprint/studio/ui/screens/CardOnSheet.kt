@@ -4,10 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,23 +27,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,13 +58,23 @@ import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.platform.rememberCardBitmap
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
+import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /**
- * One card on the sheet — positioned by absolute offset, rotated by
- * rotation (right-angle) + freeRotation (magnetic 360°), with drag,
- * rotate-handle and resize-handle gestures.
+ * One card on the sheet — ported from the HTML `card-item`:
+ *
+ *  - the outer box is the card's *footprint* (`w × h`, already swapped for 90°/270°) and
+ *    rotates ONLY by `freeRotation + enhance.tilt` (HTML line 2672);
+ *  - the inner content keeps the physical photo size and rotates by the right-angle
+ *    `rotation` (HTML lines 2690–2699) — never both on the same layer;
+ *  - pointer deltas arrive in the rotated local frame, so move/resize convert them back
+ *    to screen space before touching millimetres — this is what keeps the drag 1:1;
+ *  - rotation is computed in window coordinates from the card centre captured at
+ *    pointer-down, exactly like the HTML `atan2(clientY - centerY, clientX - centerX)`.
  */
 @Composable
 internal fun CardOnSheet(
@@ -71,13 +85,14 @@ internal fun CardOnSheet(
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
-    // The app root is RTL; the sheet is pinned LTR. dragAmount follows LocalLayoutDirection,
-    // so read it explicitly and flip X in RTL to keep finger→paper motion 1:1 in both.
-    val layoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
-    val dragXSign = if (layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl) -1f else 1f
     val selected = card.id == state.selectedCardId
     val currentCard by rememberUpdatedState(card)
-    val interaction = remember { MutableInteractionSource() }
+    val currentState by rememberUpdatedState(state)
+    // Unrotated layout coordinates of the card box — used for the screen-space rotate maths.
+    var cardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
+    // HTML: transform rotate(card.freeRotation + (compareBefore ? 0 : enhance.tilt))
+    val outerAngle = card.freeRotation + if (state.compareBefore) 0f else card.enhance.tilt
 
     Box(
         modifier = modifier
@@ -88,32 +103,63 @@ internal fun CardOnSheet(
                 )
             }
             .size((card.widthMm * dpPerMm).dp, (card.heightMm * dpPerMm).dp)
-            .graphicsLayer { rotationZ = card.totalRotation }
-            // ONE unified pointer handler. Competing pointerInput/tap/drag modifiers on the
-            // same box swallow each other's events — which broke selection and made drag
-            // feel reversed. Tap selects, long-press opens the sheet, drag moves, all in
-            // a single detector that awaits each gesture in sequence.
+            .then(
+                if (selected) {
+                    // design .card-item.is-selected: box-shadow 0 14px 32px rgba(0,108,71,.32)
+                    Modifier.shadow(
+                        16.dp,
+                        RectangleShape,
+                        clip = false,
+                        ambientColor = Color(0xFF006C47).copy(alpha = 0.32f),
+                        spotColor = Color(0xFF006C47).copy(alpha = 0.32f),
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            // Coordinates BEFORE the rotation layer = stable, unrotated card rect in window space.
+            .onGloballyPositioned { cardCoordinates = it }
+            .graphicsLayer { rotationZ = outerAngle }
+            // ONE unified per-card gesture set. Tap selects (on press, like HTML), long-press
+            // opens the context sheet, drag moves. Both handlers live on this card only, so a
+            // selected card's neighbours can never receive its gestures.
             .pointerInput(card.id) {
                 detectTapGestures(
+                    onPress = { viewModel.selectCard(card.id) },
                     onTap = { viewModel.selectCard(card.id) },
                     onLongPress = { viewModel.openLongPressSheet(card.id) },
                 )
             }
             .pointerInput(card.id) {
+                // Track movement from the gesture's ORIGIN (like HTML origX/origY + dx/dy),
+                // so the card stays exactly under the finger even when several pointer events
+                // arrive between recompositions.
+                var startX = 0f
+                var startY = 0f
+                var movedX = 0f
+                var movedY = 0f
                 detectDragGestures(
-                    onDragStart = { viewModel.selectCard(card.id) },
+                    onDragStart = {
+                        viewModel.selectCard(card.id)
+                        startX = currentCard.xMm
+                        startY = currentCard.yMm
+                        movedX = 0f
+                        movedY = 0f
+                    },
                     onDrag = { change, dragAmount ->
                         change.consume()
                         val c = currentCard
-                        val s = state.settings
-                        val bound = if (s.frame.guides) s.marginMm else 0f
-                        val maxX = (s.sheetWidthMm - bound - c.widthMm).coerceAtLeast(bound)
-                        val maxY = (s.sheetHeightMm - bound - c.heightMm).coerceAtLeast(bound)
-                        viewModel.moveCard(
-                            c.id,
-                            (c.xMm + (dragAmount.x * dragXSign) / (dpPerMm * density.density)).coerceIn(bound, maxX),
-                            (c.yMm + dragAmount.y / (dpPerMm * density.density)).coerceIn(bound, maxY),
-                        )
+                        // Local frame is rotated by the outer layer — rotate the delta back.
+                        val angle = c.freeRotation + if (currentState.compareBefore) 0f else c.enhance.tilt
+                        val rad = angle * PI / 180.0
+                        val cosA = cos(rad).toFloat()
+                        val sinA = sin(rad).toFloat()
+                        val dx = dragAmount.x * cosA - dragAmount.y * sinA
+                        val dy = dragAmount.x * sinA + dragAmount.y * cosA
+                        val scale = dpPerMm * density.density
+                        movedX += dx / scale
+                        movedY += dy / scale
+                        viewModel.moveCard(c.id, startX + movedX, startY + movedY)
                     },
                 )
             },
@@ -122,7 +168,7 @@ internal fun CardOnSheet(
         val innerW = if (isRightAngle) card.heightMm else card.widthMm
         val innerH = if (isRightAngle) card.widthMm else card.heightMm
 
-        // inner content — rotated 90°/270° for right-angle cards
+        // Inner content — physical photo size, rotated only by the right-angle rotation.
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -145,21 +191,20 @@ internal fun CardOnSheet(
         }
 
         if (selected) {
-            // selection ring (design: 2.5px primary outline outside the card + green glow)
+            // design: outline 2.5px primary + outline-offset 2px — drawn OUTSIDE the card
+            // bounds (a plain Box child would be coerced to the parent's fixed constraints).
             val selColor = MaterialTheme.colorScheme.primary
-            Box(
-                modifier = Modifier
-                    .size(((card.widthMm * dpPerMm) + 5f).dp, ((card.heightMm * dpPerMm) + 5f).dp)
-                    .offset(x = (-2.5).dp, y = (-2.5).dp)
-                    .border(2.5.dp, selColor, androidx.compose.ui.graphics.RectangleShape)
-                    .shadow(
-                        16.dp,
-                        androidx.compose.ui.graphics.RectangleShape,
-                        clip = false,
-                        ambientColor = Color(0xFF006C47).copy(alpha = 0.32f),
-                        spotColor = Color(0xFF006C47).copy(alpha = 0.32f),
-                    ),
-            )
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val gap = 2.dp.toPx()
+                val stroke = 2.5.dp.toPx()
+                val inset = gap + stroke / 2f
+                drawRect(
+                    color = selColor,
+                    topLeft = Offset(-inset, -inset),
+                    size = Size(size.width + inset * 2, size.height + inset * 2),
+                    style = Stroke(width = stroke),
+                )
+            }
         }
 
         // design: card badges — size+angle / auto-fix / enhanced
@@ -186,7 +231,7 @@ internal fun CardOnSheet(
                 val bleed = 1.2f * dpPerMm * density.density
                 drawRect(
                     color = Color(0xFFB32638).copy(alpha = 0.75f),
-                    topLeft = androidx.compose.ui.geometry.Offset(-bleed, -bleed),
+                    topLeft = Offset(-bleed, -bleed),
                     size = androidx.compose.ui.geometry.Size(size.width + bleed * 2, size.height + bleed * 2),
                     style = Stroke(
                         width = 1.dp.toPx(),
@@ -197,7 +242,7 @@ internal fun CardOnSheet(
         }
 
         if (selected) {
-            // rotate handle — floats 36dp above the card with a 2dp × 8dp stem to the card (design: -top-9 + stem)
+            // rotate handle — floats 36dp above the card with a 2dp × 8dp stem (design: -top-9 + stem)
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -208,6 +253,7 @@ internal fun CardOnSheet(
                     card = card,
                     viewModel = viewModel,
                     dpPerMm = dpPerMm,
+                    cardCoordinates = { cardCoordinates },
                 )
                 Box(
                     modifier = Modifier
@@ -220,6 +266,7 @@ internal fun CardOnSheet(
                 card = card,
                 viewModel = viewModel,
                 dpPerMm = dpPerMm,
+                compareBefore = state.compareBefore,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(x = 8.dp, y = 8.dp),
@@ -229,21 +276,25 @@ internal fun CardOnSheet(
 }
 
 /**
- * Circular drag handle that rotates the card around its center.
- * The pointer is projected onto the card's own box each event — the angle
- * falls out of atan2(dy, dx) with 45° magnetic snapping.
+ * Circular drag handle that rotates the card around its centre.
+ * The angle is computed in WINDOW space (like HTML `clientX/clientY`), so a snap that
+ * swaps the footprint cannot make the angle jump mid-gesture.
  */
 @Composable
 private fun RotateHandle(
     card: CardItem,
     viewModel: TabatiViewModel,
     dpPerMm: Float,
+    cardCoordinates: () -> LayoutCoordinates?,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val currentCard by rememberUpdatedState(card)
     val scheme = MaterialTheme.colorScheme
-    var liveAngle by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    var liveAngle by remember { mutableStateOf<String?>(null) }
+    var handleCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var startCentre by remember { mutableStateOf<Offset?>(null) }
+
     Box(contentAlignment = Alignment.Center) {
         liveAngle?.let { ang ->
             Text(
@@ -265,22 +316,43 @@ private fun RotateHandle(
                 .size(32.dp)
                 .clip(CircleShape)
                 .background(scheme.secondary)
+                .onGloballyPositioned { handleCoordinates = it }
                 .pointerInput(card.id) {
                     detectDragGestures(
-                        onDragStart = { _start -> /* keep last */ },
-                        onDragEnd = { liveAngle = null },
-                        onDragCancel = { liveAngle = null },
+                        onDragStart = {
+                            val coords = cardCoordinates()
+                            startCentre = coords?.let {
+                                it.localToWindow(Offset(it.size.width / 2f, it.size.height / 2f))
+                            }
+                        },
+                        onDragEnd = { liveAngle = null; startCentre = null },
+                        onDragCancel = { liveAngle = null; startCentre = null },
                         onDrag = { change, _ ->
                             change.consume()
                             val c = currentCard
-                            // handle sits at the card's top-center (offset -36dp): recover card-box coords
-                            val handleLeft = (c.widthMm * dpPerMm / 2f - 16f) * density.density
-                            val handleTop = -36f * density.density
-                            val px = handleLeft + change.position.x
-                            val py = handleTop + change.position.y
-                            val centerX = c.widthMm * dpPerMm / 2f * density.density
-                            val centerY = c.heightMm * dpPerMm / 2f * density.density
-                            val raw = Math.toDegrees(atan2((py - centerY).toDouble(), (px - centerX).toDouble())).toFloat() + 90f
+                            val centre = startCentre
+                            val handle = handleCoordinates
+                            val raw = if (centre != null && handle != null) {
+                                // localToWindow applies the card's free rotation for us.
+                                val pointer = handle.localToWindow(change.position)
+                                (
+                                    atan2(
+                                        (pointer.y - centre.y).toDouble(),
+                                        (pointer.x - centre.x).toDouble(),
+                                    ) * 180.0 / PI
+                                    ).toFloat() + 90f
+                            } else {
+                                // Fallback (first frame / no coordinates yet).
+                                val handleLeft = (c.widthMm * dpPerMm / 2f - 16f) * density.density
+                                val handleTop = -36f * density.density
+                                val px = handleLeft + change.position.x
+                                val py = handleTop + change.position.y
+                                val centerX = c.widthMm * dpPerMm / 2f * density.density
+                                val centerY = c.heightMm * dpPerMm / 2f * density.density
+                                (
+                                    atan2((py - centerY).toDouble(), (px - centerX).toDouble()) * 180.0 / PI
+                                    ).toFloat() + 90f
+                            }
                             val applied = viewModel.setCardAngle360(c.id, raw, magneticSnap = true)
                             liveAngle = "${applied.toInt()}°"
                         },
@@ -304,6 +376,7 @@ private fun ResizeHandle(
     card: CardItem,
     viewModel: TabatiViewModel,
     dpPerMm: Float,
+    compareBefore: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -315,15 +388,36 @@ private fun ResizeHandle(
             .clip(CircleShape)
             .background(scheme.primary)
             .pointerInput(card.id) {
-                detectDragGestures(onDrag = { change, dragAmount ->
-                    change.consume()
-                    val c = currentCard
-                    viewModel.resizeCard(
-                        c.id,
-                        c.widthMm + dragAmount.x / (dpPerMm * density.density),
-                        c.heightMm + dragAmount.y / (dpPerMm * density.density),
-                    )
-                })
+                var startW = 0f
+                var startH = 0f
+                var grownW = 0f
+                var grownH = 0f
+                detectDragGestures(
+                    onDragStart = {
+                        startW = currentCard.widthMm
+                        startH = currentCard.heightMm
+                        grownW = 0f
+                        grownH = 0f
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        val c = currentCard
+                        val angle = c.freeRotation + if (compareBefore) 0f else c.enhance.tilt
+                        val rad = angle * PI / 180.0
+                        val cosA = cos(rad).toFloat()
+                        val sinA = sin(rad).toFloat()
+                        val dx = dragAmount.x * cosA - dragAmount.y * sinA
+                        val dy = dragAmount.x * sinA + dragAmount.y * cosA
+                        val scale = dpPerMm * density.density
+                        grownW += dx / scale
+                        grownH += dy / scale
+                        viewModel.resizeCard(
+                            c.id,
+                            startW + grownW,
+                            startH + grownH,
+                        )
+                    },
+                )
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -375,7 +469,7 @@ private fun SampleCardArt(card: CardItem) {
                 Text(
                     text = card.name,
                     color = fg,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Black,
+                    fontWeight = FontWeight.Black,
                     fontSize = 11.sp,
                     maxLines = 2,
                     lineHeight = 13.sp,

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.navigationBars
@@ -73,6 +74,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -116,15 +118,10 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
             replaceRequest.value = id
             replaceLauncher()
         }
-        // (notification permission reserved for export toast on Android 13+ — used by the print path)
-
-        // Export-completion notification: request POST_NOTIFICATIONS (Android 13+) before the
-        // save-to-Downloads path can fire the export notification (granted check lives in PlatformActions).
-        val exportNotifPermissionGranted = com.appprint.studio.core.platform.PlatformActions.exportNotificationPermissionGranted()
+        // Export-completion notifications: ask for POST_NOTIFICATIONS every time an export
+        // starts while it is still denied (Android 13+). The system dialog therefore appears
+        // on each download, exactly as required; when granted, the notification opens the file.
         val notificationPermissionRequester = com.appprint.studio.core.platform.rememberNotificationPermissionRequester()
-        LaunchedEffect(exportNotifPermissionGranted) {
-            if (!exportNotifPermissionGranted) notificationPermissionRequester()
-        }
 
         var shareSheetOpen by remember { mutableStateOf(false) }
         var importMenuOpen by remember { mutableStateOf(false) }
@@ -178,7 +175,7 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                     onBackToSheet = { viewModel.setSection(StudioSection.SHEET) },
                     onCycleTheme = viewModel::cycleTheme,
                     onShare = { shareSheetOpen = true },
-                    onExportPdf = viewModel::downloadPdf,
+                    onExportPdf = { notificationPermissionRequester(); viewModel.downloadPdf() },
                     onZoomIn = { viewModel.zoomStep(+15f) },
                     onZoomOut = { viewModel.zoomStep(-15f) },
                     onZoomFit = viewModel::zoomFit,
@@ -240,9 +237,9 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                 pageCount = state.pageCount,
                 currentPage = state.activePage,
                 onDirectPrint = viewModel::printPdf,
-                onSavePngCurrent = { viewModel.downloadPng(state.activePage) },
-                onSaveAllPngs = viewModel::downloadAllPngs,
-                onSaveHtml = viewModel::downloadHtml,
+                onSavePngCurrent = { notificationPermissionRequester(); viewModel.downloadPng(state.activePage) },
+                onSaveAllPngs = { notificationPermissionRequester(); viewModel.downloadAllPngs() },
+                onSaveHtml = { notificationPermissionRequester(); viewModel.downloadHtml() },
                 onSharePdf = viewModel::sharePdf,
                 onDismiss = { shareSheetOpen = false },
             )
@@ -558,6 +555,7 @@ private fun FloatingNavPill(
             shadowElevation = 14.dp,
             tonalElevation = 0.dp,
             modifier = Modifier
+                .weight(1f)
                 .height(Chrome.NavBarDp)
                 .widthIn(max = 512.dp)
                 .background(androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50))
@@ -566,9 +564,9 @@ private fun FloatingNavPill(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 6.dp),
+                    .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterHorizontally),
             ) {
                 DESTINATIONS.forEach { destination ->
                     NavPillItem(
@@ -576,6 +574,7 @@ private fun FloatingNavPill(
                         selected = destination.section == current,
                         badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
                         onSelect = { onSelect(destination.section) },
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -589,6 +588,7 @@ private fun NavPillItem(
     selected: Boolean,
     badge: String?,
     onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
@@ -598,19 +598,18 @@ private fun NavPillItem(
         label = "pillContentColor",
     )
     Column(
-        modifier = Modifier
+        modifier = modifier
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
-            .padding(horizontal = 4.dp, vertical = 2.dp)
-            .widthIn(min = 56.dp),
+            .padding(horizontal = 2.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Box(
             modifier = Modifier
+                .fillMaxWidth()
                 .height(24.dp)
-                .width(44.dp)
                 .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50)),
             contentAlignment = Alignment.Center,
         ) {
@@ -621,25 +620,34 @@ private fun NavPillItem(
                 modifier = Modifier.size(17.dp),
             )
             if (badge != null) {
+                // HTML: min-w-16px px-1 — grows with the count and is never clipped.
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 8.dp, y = (-6).dp)
-                        .size(14.dp)
+                        .offset(x = 1.dp, y = (-4).dp)
+                        .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.tertiary)
-                        .padding(horizontal = 3.dp),
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(badge, style = MaterialTheme.typography.labelSmall, color = scheme.onTertiary, fontSize = 8.5.sp, maxLines = 1)
+                    Text(
+                        badge,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.onTertiary,
+                        fontSize = 8.5.sp,
+                        lineHeight = 9.sp,
+                        maxLines = 1,
+                    )
                 }
             }
         }
         Text(
             text = destination.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp, fontWeight = FontWeight.ExtraBold),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 10.sp),
             color = contentColor,
-            maxLines = 1,
+            maxLines = 2,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -769,13 +777,20 @@ private fun RailItem(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 10.dp, y = (-6).dp)
-                        .size(14.dp)
+                        .offset(x = 3.dp, y = (-4).dp)
+                        .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.tertiary),
+                        .background(scheme.tertiary)
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(badge, color = scheme.onTertiary, fontSize = 8.5.sp, maxLines = 1)
+                    Text(
+                        badge,
+                        color = scheme.onTertiary,
+                        fontSize = 8.5.sp,
+                        lineHeight = 9.sp,
+                        maxLines = 1,
+                    )
                 }
             }
         }
