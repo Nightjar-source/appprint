@@ -230,6 +230,7 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                 onCapturePhoto = onCamera,
                 onAddDemoCards = viewModel::addSamples,
                 onDismiss = { importMenuOpen = false },
+                hasCards = state.cards.isNotEmpty(),
             )
         }
 

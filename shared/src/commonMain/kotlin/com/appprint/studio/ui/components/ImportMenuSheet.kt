@@ -55,6 +55,7 @@ fun ImportMenuSheet(
     onCapturePhoto: () -> Unit,
     onAddDemoCards: () -> Unit,
     onDismiss: () -> Unit,
+    hasCards: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
@@ -81,16 +82,18 @@ fun ImportMenuSheet(
             iconSize = 22.dp,
             onClick = { onDismiss(); onCapturePhoto() },
         )
-        // Demo cards
-        ImportRow(
-            icon = Icons.Filled.AutoAwesome,
-            title = "إضافة بطاقات تجريبية بالمقاسات الرسمية",
-            subtitle = "وطنية، جواز سفر، بطاقة سكن",
-            container = scheme.surfaceContainer,
-            onContainer = scheme.onSurface,
-            iconSize = 20.dp,
-            onClick = { onDismiss(); onAddDemoCards() },
-        )
+        // Demo cards — only while the sheet is empty (a real user already working doesn't need examples)
+        if (!hasCards) {
+            ImportRow(
+                icon = Icons.Filled.AutoAwesome,
+                title = "إضافة بطاقات تجريبية بالمقاسات الرسمية",
+                subtitle = "وطنية، جواز سفر، بطاقة سكن",
+                container = scheme.surfaceContainer,
+                onContainer = scheme.onSurface,
+                iconSize = 20.dp,
+                onClick = { onDismiss(); onAddDemoCards() },
+            )
+        }
     }
 }
 
