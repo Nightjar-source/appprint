@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -295,13 +297,16 @@ fun QuickActionsSheet(
                         text = "${deg.toInt()}°",
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 11.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = if (selected) scheme.onPrimary else scheme.onSurface,
                         modifier = Modifier
                             .weight(1f)
+                            .height(38.dp)
+                            .wrapContentHeight(Alignment.CenterVertically)
                             .clip(RoundedCornerShape(percent = 50))
                             .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
                             .clickable { viewModel.setCardAngle360(card.id, deg, magneticSnap = false) }
-                            .padding(vertical = 6.dp),
+                            .padding(vertical = 8.dp),
                     )
                 }
             }

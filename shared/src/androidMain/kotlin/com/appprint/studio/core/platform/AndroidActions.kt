@@ -216,10 +216,16 @@ actual object PlatformActions {
 
     actual fun downloadToDownloads(fileName: String, bytes: ByteArray): Boolean {
         val context = AndroidPlatform.appContext
+        val displayName = fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        // Always keep a private copy so the notification can open it via FileProvider —
+        // MediaStore URIs need storage permission to query on some OEM builds.
+        runCatching {
+            val privateDir = File(context.filesDir, "exports").apply { mkdirs() }
+            File(privateDir, displayName).writeBytes(bytes)
+        }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             // Scoped storage — no permission needed, Downloads via MediaStore
             return runCatching {
-                val displayName = fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
                 val values = android.content.ContentValues().apply {
                     put(android.provider.MediaStore.Downloads.DISPLAY_NAME, displayName)
                     put(android.provider.MediaStore.Downloads.MIME_TYPE, mimeFor(displayName))
@@ -319,14 +325,18 @@ actual object PlatformActions {
                 val channel = NotificationChannel(NOTIF_CHANNEL_ID, "تنبيهات التصدير · طبعتي", NotificationManager.IMPORTANCE_DEFAULT)
                 manager.createNotificationChannel(channel)
             }
-            // Resolve the real MediaStore/ContentUri for the saved file so the tap-to-open
-            // launches the device's default viewer (Gallery for PNG/JPG, PDF reader for PDF).
+            // Open the PRIVATE copy via FileProvider first — guaranteed to work with the
+            // device's default viewer without any storage permission; MediaStore is fallback.
             val contentUri = path?.let { fileName ->
-                findDownloadedUri(context, fileName) ?: runCatching {
-                    // Legacy (API 26–28 public Downloads): hand the file through FileProvider.
-                    val file = File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), fileName)
-                    if (file.exists()) FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file) else null
-                }.getOrNull()
+                val displayName = fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+                runCatching {
+                    val privateFile = File(File(context.filesDir, "exports"), displayName)
+                    if (privateFile.exists()) {
+                        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", privateFile)
+                    } else {
+                        findDownloadedUri(context, displayName)
+                    }
+                }.getOrNull() ?: findDownloadedUri(context, displayName)
             }
             val mime = when (path?.substringAfterLast('.', "")?.lowercase()) {
                 "png" -> "image/png"

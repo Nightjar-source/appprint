@@ -326,7 +326,11 @@ class TabatiViewModel : ViewModel() {
         s.copy(cards = s.cards.map { if (it.id == id) transform(it) else it })
     }
     fun currentPage(page: Int) = _state.update { it.copy(activePage = page.coerceIn(0, (it.pageCount - 1).coerceAtLeast(0)), selectedCardId = null) }
-    fun openLongPressSheet(id: Long) = _state.update { it.copy(longPressSheetCardId = id) }
+    fun openLongPressSheet(id: Long) = _state.update {
+        // Selecting here too so panels opened from the long-press sheet (e.g. التحسين)
+        // have a selectedCard to operate on instead of showing the empty prompt.
+        it.copy(longPressSheetCardId = id, selectedCardId = id)
+    }
     fun dismissLongPressSheet() = _state.update { it.copy(longPressSheetCardId = null) }
     fun toggleCompareBefore() = _state.update { it.copy(compareBefore = !it.compareBefore) }
     fun setZoomMode(mode: ZoomMode) = _state.update { it.copy(zoomMode = mode) }

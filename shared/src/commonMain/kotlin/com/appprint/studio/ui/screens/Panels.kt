@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -66,6 +67,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -174,6 +178,33 @@ private fun Spacer6() {
     androidx.compose.foundation.layout.Spacer(Modifier.size(6.dp))
 }
 
+/**
+ * Material adaptive grid: column count derives from the ACTUAL available width so cards
+ * reflow on phones, tablets and folded screens instead of being pinned to 2/3 columns.
+ */
+@Composable
+private fun <T> ResponsiveGrid(
+    items: List<T>,
+    minCellWidth: androidx.compose.ui.unit.Dp = 150.dp,
+    horizontalGap: androidx.compose.ui.unit.Dp = 8.dp,
+    verticalGap: androidx.compose.ui.unit.Dp = 8.dp,
+    itemContent: @Composable (T) -> Unit,
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val available = maxWidth
+        val columns = (available / (minCellWidth + horizontalGap)).toInt().coerceIn(1, 4)
+        val cellWidth = (available - horizontalGap * (columns - 1)) / columns
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(horizontalGap),
+            verticalArrangement = Arrangement.spacedBy(verticalGap),
+        ) {
+            items.forEach { item ->
+                Box(Modifier.width(cellWidth)) { itemContent(item) }
+            }
+        }
+    }
+}
+
 @Composable
 private fun Spacer8() {
     androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
@@ -209,22 +240,13 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
 
     PanelScaffold(title = Str.section_paper, state = state, viewModel = viewModel) {
         PanelSectionHeader(Str.paper_size)
-        // Design grid-cols-3: equal-width cards in rows of three — no fixed width, no gaps.
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            PaperPreset.PRESETS.chunked(3).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    row.forEach { preset ->
-                        Box(Modifier.weight(1f)) {
-                            PaperSizeChip(
-                                label = preset.label,
-                                sub = if (preset == PaperPreset.CUSTOM) Str.custom_sub else "${preset.widthMm.toInt()}×${preset.heightMm.toInt()}",
-                                selected = settings.presetKey == preset.key,
-                                onClick = { viewModel.setPaperPreset(preset.key) },
-                            )
-                        }
-                    }
-                }
-            }
+        ResponsiveGrid(items = PaperPreset.PRESETS, minCellWidth = 100.dp) { preset ->
+            PaperSizeChip(
+                label = preset.label,
+                sub = if (preset == PaperPreset.CUSTOM) Str.custom_sub else "${preset.widthMm.toInt()}×${preset.heightMm.toInt()}",
+                selected = settings.presetKey == preset.key,
+                onClick = { viewModel.setPaperPreset(preset.key) },
+            )
         }
 
         if (settings.presetKey == PaperPreset.CUSTOM.key) {
@@ -371,10 +393,13 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
         }
 
         PanelSectionHeader(Str.layout_mode)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            ModeChip(Str.mode_compact, Str.mode_compact_sub, selected = settings.mode == ArrangeMode.COMPACT, onClick = { viewModel.setMode(ArrangeMode.COMPACT) }, modifier = Modifier.weight(1f))
-            ModeChip(Str.mode_comfortable, Str.mode_comfortable_sub, selected = settings.mode == ArrangeMode.COMFORTABLE, onClick = { viewModel.setMode(ArrangeMode.COMFORTABLE) }, modifier = Modifier.weight(1f))
-            ModeChip(Str.mode_grid, Str.mode_grid_sub, selected = settings.mode == ArrangeMode.GRID, onClick = { viewModel.setMode(ArrangeMode.GRID) }, modifier = Modifier.weight(1f))
+        val modeItems = listOf(
+            Triple(Str.mode_compact, Str.mode_compact_sub, ArrangeMode.COMPACT),
+            Triple(Str.mode_comfortable, Str.mode_comfortable_sub, ArrangeMode.COMFORTABLE),
+            Triple(Str.mode_grid, Str.mode_grid_sub, ArrangeMode.GRID),
+        )
+        ResponsiveGrid(items = modeItems, minCellWidth = 110.dp) { (label, sub, mode) ->
+            ModeChip(label, sub, selected = settings.mode == mode, onClick = { viewModel.setMode(mode) }, modifier = Modifier.fillMaxWidth())
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -498,23 +523,15 @@ fun CardsPanel(
 
     PanelScaffold(title = Str.section_cards, state = state, viewModel = viewModel) {
         PanelSectionHeader(Str.card_type_header)
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            CardType.PRINTABLE.chunked(2).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    row.forEach { type ->
-                        Box(Modifier.weight(1f)) {
-                            TypeGridChip(
-                                type = type,
-                                active = currentType == type,
-                                onClick = {
-                                    pendingType = type
-                                    selected?.let { sel -> viewModel.applyCardType(sel.id, type) }
-                                },
-                            )
-                        }
-                    }
-                }
-            }
+        ResponsiveGrid(items = CardType.PRINTABLE, minCellWidth = 150.dp) { type ->
+            TypeGridChip(
+                type = type,
+                active = currentType == type,
+                onClick = {
+                    pendingType = type
+                    selected?.let { sel -> viewModel.applyCardType(sel.id, type) }
+                },
+            )
         }
         if (currentType == CardType.CUSTOM && selected != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1094,7 +1111,9 @@ private fun ActionPill(
         modifier = Modifier
             .clip(RoundedCornerShape(percent = 50))
             .background(container.copy(alpha = if (enabled) 1f else 0.4f))
+            .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
+            .semantics { role = Role.Button }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
