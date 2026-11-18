@@ -79,7 +79,7 @@ actual fun rememberNotificationPermissionRequester(): () -> Unit {
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { grantedNow ->
-        if (grantedNow) flushPendingExportNotification()
+        if (grantedNow) PlatformActions.flushPendingExportNotification()
     }
     return remember(launcher, context) {
         {
@@ -87,6 +87,9 @@ actual fun rememberNotificationPermissionRequester(): () -> Unit {
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
             ) {
                 launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                // Permission already granted — make sure nothing is stuck waiting from before.
+                PlatformActions.flushPendingExportNotification()
             }
         }
     }
