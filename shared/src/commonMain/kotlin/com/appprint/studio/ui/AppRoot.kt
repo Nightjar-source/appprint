@@ -236,7 +236,7 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
             com.appprint.studio.ui.components.ShareSheet(
                 pageCount = state.pageCount,
                 currentPage = state.activePage,
-                onDirectPrint = viewModel::printPdf,
+                onDirectPrint = { notificationPermissionRequester(); viewModel.printPdf() },
                 onSavePngCurrent = { notificationPermissionRequester(); viewModel.downloadPng(state.activePage) },
                 onSaveAllPngs = { notificationPermissionRequester(); viewModel.downloadAllPngs() },
                 onSaveHtml = { notificationPermissionRequester(); viewModel.downloadHtml() },
@@ -602,14 +602,14 @@ private fun NavPillItem(
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
-            .padding(horizontal = 2.dp, vertical = 2.dp),
+            .padding(horizontal = 2.dp, vertical = 1.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(24.dp)
+                .height(22.dp)
                 .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50)),
             contentAlignment = Alignment.Center,
         ) {
@@ -624,7 +624,7 @@ private fun NavPillItem(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 1.dp, y = (-4).dp)
+                        .offset(x = 2.dp, y = (-1).dp)
                         .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.tertiary)
@@ -777,7 +777,7 @@ private fun RailItem(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 3.dp, y = (-4).dp)
+                        .offset(x = 1.dp, y = (-2).dp)
                         .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.tertiary)

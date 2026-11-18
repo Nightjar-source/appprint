@@ -374,7 +374,8 @@ class TabatiViewModel : ViewModel() {
     }
 
     fun setCardAngle360(id: Long, rawAngle: Float, magneticSnap: Boolean = true): Float {
-        var deg = ((rawAngle % 360f) + 360f) % 360f
+        // HTML: Math.round(rawAngle * 10) / 10 — one decimal of precision.
+        var deg = ((kotlin.math.round(rawAngle * 10f) / 10f % 360f) + 360f) % 360f
         if (magneticSnap) {
             val snaps = listOf(0f, 45f, 90f, 135f, 180f, 225f, 270f, 315f, 360f)
             for (snap in snaps) {
@@ -390,9 +391,10 @@ class TabatiViewModel : ViewModel() {
                     if (c.id != id) return@map c
                     val baseW = c.baseWidthMm
                     val baseH = c.baseHeightMm
-                    when (deg.toInt()) {
-                        0, 180 -> c.copy(widthMm = baseW, heightMm = baseH, rotation = deg.toInt(), freeRotation = 0f, autoRotated = false)
-                        90, 270 -> c.copy(widthMm = baseH, heightMm = baseW, rotation = deg.toInt(), freeRotation = 0f, autoRotated = false)
+                    // Exact-angle checks mirror the HTML so a free 90.5° stays a free rotation.
+                    when (deg) {
+                        0f, 180f -> c.copy(widthMm = baseW, heightMm = baseH, rotation = deg.toInt(), freeRotation = 0f, autoRotated = false)
+                        90f, 270f -> c.copy(widthMm = baseH, heightMm = baseW, rotation = deg.toInt(), freeRotation = 0f, autoRotated = false)
                         else -> c.copy(widthMm = baseW, heightMm = baseH, rotation = 0, freeRotation = deg, autoRotated = false)
                     }
                 },
