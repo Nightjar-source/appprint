@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +43,9 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.awaitEachGesture
+import androidx.compose.ui.input.pointer.awaitFirstDown
+import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -133,37 +135,38 @@ internal fun CardOnSheet(
                 )
             }
             .pointerInput(card.id) {
-                // Track movement from the gesture's ORIGIN (like HTML origX/origY + dx/dy),
-                // so the card stays exactly under the finger even when several pointer events
-                // arrive between recompositions.
-                var startX = 0f
-                var startY = 0f
-                var movedX = 0f
-                var movedY = 0f
-                detectDragGestures(
-                    onDragStart = {
-                        viewModel.selectCard(card.id)
-                        startX = currentCard.xMm
-                        startY = currentCard.yMm
-                        movedX = 0f
-                        movedY = 0f
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
+                // Direct, slop-free tracking from the gesture origin — the card follows the
+                // finger on EVERY move event, which is both the HTML behaviour and the most
+                // responsive touch model. The delta is rotated back from the card's local
+                // frame, so drag direction is correct even on a rotated card.
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val pointerId = down.id
+                    val startX = currentCard.xMm
+                    val startY = currentCard.yMm
+                    var previous = down.position
+                    var movedX = 0f
+                    var movedY = 0f
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                        if (!change.pressed) break
+                        val deltaLocal = change.position - previous
+                        previous = change.position
                         val c = currentCard
-                        // Local frame is rotated by the outer layer — rotate the delta back.
                         val angle = c.freeRotation + if (currentState.compareBefore) 0f else c.enhance.tilt
                         val rad = angle * PI / 180.0
                         val cosA = cos(rad).toFloat()
                         val sinA = sin(rad).toFloat()
-                        val dx = dragAmount.x * cosA - dragAmount.y * sinA
-                        val dy = dragAmount.x * sinA + dragAmount.y * cosA
+                        val dx = deltaLocal.x * cosA - deltaLocal.y * sinA
+                        val dy = deltaLocal.x * sinA + deltaLocal.y * cosA
                         val scale = dpPerMm * density.density
                         movedX += dx / scale
                         movedY += dy / scale
+                        change.consume()
                         viewModel.moveCard(c.id, startX + movedX, startY + movedY)
-                    },
-                )
+                    }
+                }
             },
     ) {
         val isRightAngle = card.rotation % 180 != 0
