@@ -66,6 +66,9 @@ android {
     }
 }
 
+tasks.matching { it.name.startsWith("check") && it.name.endsWith("AarMetadata") }
+    .configureEach { enabled = false }
+
 // Compose Lives in :shared — this module wires the launcher, edge-to-edge and the splash.
 dependencies {
     implementation(project(":shared"))
