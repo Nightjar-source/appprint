@@ -59,9 +59,6 @@ import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.platform.rememberCardBitmap
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -146,32 +143,37 @@ internal fun CardOnSheet(
                     var movedX = 0f
                     var movedY = 0f
                     var moved = false
-                    coroutineScope {
-                        val longPress = launch {
-                            delay(500L)
-                            if (!moved) viewModel.openLongPressSheet(card.id)
+                    var longPressSent = false
+                    while (true) {
+                        // withTimeoutOrNull is a member of AwaitPointerEventScope, so it is
+                        // legal inside its restricted suspension scope.
+                        val event = withTimeoutOrNull(if (longPressSent) Long.MAX_VALUE else 500L) {
+                            awaitPointerEvent(PointerEventPass.Main)
                         }
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Main)
-                            val change = event.changes.firstOrNull { it.id == pointerId } ?: break
-                            if (!change.pressed) break
-                            val deltaLocal = change.position - previous
-                            previous = change.position
-                            if (deltaLocal.x != 0f || deltaLocal.y != 0f) moved = true
-                            val c = currentCard
-                            val angle = c.freeRotation + if (currentState.compareBefore) 0f else c.enhance.tilt
-                            val rad = angle * PI / 180.0
-                            val cosA = cos(rad).toFloat()
-                            val sinA = sin(rad).toFloat()
-                            val dx = deltaLocal.x * cosA - deltaLocal.y * sinA
-                            val dy = deltaLocal.x * sinA + deltaLocal.y * cosA
-                            val scale = dpPerMm * density.density
-                            movedX += dx / scale
-                            movedY += dy / scale
-                            change.consume()
-                            viewModel.moveCard(c.id, startX + movedX, startY + movedY)
+                        if (event == null) {
+                            if (!moved && !longPressSent) {
+                                longPressSent = true
+                                viewModel.openLongPressSheet(card.id)
+                            }
+                            continue
                         }
-                        longPress.cancel()
+                        val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                        if (!change.pressed) break
+                        val deltaLocal = change.position - previous
+                        previous = change.position
+                        if (deltaLocal.x != 0f || deltaLocal.y != 0f) moved = true
+                        val c = currentCard
+                        val angle = c.freeRotation + if (currentState.compareBefore) 0f else c.enhance.tilt
+                        val rad = angle * PI / 180.0
+                        val cosA = cos(rad).toFloat()
+                        val sinA = sin(rad).toFloat()
+                        val dx = deltaLocal.x * cosA - deltaLocal.y * sinA
+                        val dy = deltaLocal.x * sinA + deltaLocal.y * cosA
+                        val scale = dpPerMm * density.density
+                        movedX += dx / scale
+                        movedY += dy / scale
+                        change.consume()
+                        viewModel.moveCard(c.id, startX + movedX, startY + movedY)
                     }
                     if (!moved) viewModel.selectCard(card.id)
                 }
