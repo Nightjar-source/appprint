@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +59,9 @@ import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.platform.rememberCardBitmap
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -127,50 +129,51 @@ internal fun CardOnSheet(
             // opens the context sheet, drag moves. Both handlers live on this card only, so a
             // selected card's neighbours can never receive its gestures.
             .pointerInput(card.id) {
-                detectTapGestures(
-                    onPress = { viewModel.selectCard(card.id) },
-                    onTap = { viewModel.selectCard(card.id) },
-                    onLongPress = { viewModel.openLongPressSheet(card.id) },
-                )
-            }
-            .pointerInput(card.id) {
-                // Direct, slop-free tracking from the gesture origin — the card follows the
-                // finger on EVERY move event, which is both the HTML behaviour and the most
-                // responsive touch model. The delta is rotated back from the card's local
-                // frame, so drag direction is correct even on a rotated card.
+                // ONE gesture set per card: press selects (like HTML), long-press opens the
+                // context sheet, every move is applied 1:1 in millimetres. Keeping all three
+                // in a single pointerInput avoids detectors stealing each other's events.
                 awaitPointerEventScope {
-                    // wait for the down event (pointer just became pressed)
-                    var downChange = awaitPointerEvent(PointerEventPass.Initial)
+                    var down = awaitPointerEvent(PointerEventPass.Initial)
                         .changes.firstOrNull { it.pressed && !it.previousPressed }
-                    while (downChange == null) {
-                        downChange = awaitPointerEvent(PointerEventPass.Initial)
+                    while (down == null) {
+                        down = awaitPointerEvent(PointerEventPass.Initial)
                             .changes.firstOrNull { it.pressed && !it.previousPressed }
                     }
-                    val pointerId = downChange.id
+                    val pointerId = down.id
                     val startX = currentCard.xMm
                     val startY = currentCard.yMm
-                    var previous = downChange.position
+                    var previous = down.position
                     var movedX = 0f
                     var movedY = 0f
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Main)
-                        val change = event.changes.firstOrNull { it.id == pointerId } ?: break
-                        if (!change.pressed) break
-                        val deltaLocal = change.position - previous
-                        previous = change.position
-                        val c = currentCard
-                        val angle = c.freeRotation + if (currentState.compareBefore) 0f else c.enhance.tilt
-                        val rad = angle * PI / 180.0
-                        val cosA = cos(rad).toFloat()
-                        val sinA = sin(rad).toFloat()
-                        val dx = deltaLocal.x * cosA - deltaLocal.y * sinA
-                        val dy = deltaLocal.x * sinA + deltaLocal.y * cosA
-                        val scale = dpPerMm * density.density
-                        movedX += dx / scale
-                        movedY += dy / scale
-                        change.consume()
-                        viewModel.moveCard(c.id, startX + movedX, startY + movedY)
+                    var moved = false
+                    coroutineScope {
+                        val longPress = launch {
+                            delay(500L)
+                            if (!moved) viewModel.openLongPressSheet(card.id)
+                        }
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Main)
+                            val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                            if (!change.pressed) break
+                            val deltaLocal = change.position - previous
+                            previous = change.position
+                            if (deltaLocal.x != 0f || deltaLocal.y != 0f) moved = true
+                            val c = currentCard
+                            val angle = c.freeRotation + if (currentState.compareBefore) 0f else c.enhance.tilt
+                            val rad = angle * PI / 180.0
+                            val cosA = cos(rad).toFloat()
+                            val sinA = sin(rad).toFloat()
+                            val dx = deltaLocal.x * cosA - deltaLocal.y * sinA
+                            val dy = deltaLocal.x * sinA + deltaLocal.y * cosA
+                            val scale = dpPerMm * density.density
+                            movedX += dx / scale
+                            movedY += dy / scale
+                            change.consume()
+                            viewModel.moveCard(c.id, startX + movedX, startY + movedY)
+                        }
+                        longPress.cancel()
                     }
+                    if (!moved) viewModel.selectCard(card.id)
                 }
             },
     ) {
