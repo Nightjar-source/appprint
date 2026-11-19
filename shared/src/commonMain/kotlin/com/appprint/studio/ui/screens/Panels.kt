@@ -1,5 +1,7 @@
 ﻿@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalFlexBoxApi::class)
+
 package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.Canvas
@@ -11,7 +13,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlexBox
+import androidx.compose.foundation.layout.FlexWrap
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -205,9 +208,12 @@ private fun <T> ResponsiveGrid(
         val available = maxWidth
         val columns = (available / (minCellWidth + horizontalGap)).toInt().coerceIn(1, 4)
         val cellWidth = (available - horizontalGap * (columns - 1)) / columns
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(horizontalGap),
-            verticalArrangement = Arrangement.spacedBy(verticalGap),
+        FlexBox(
+            config = {
+                wrap(FlexWrap.Wrap)
+                rowGap(horizontalGap)
+                columnGap(verticalGap)
+            },
         ) {
             items.forEach { item ->
                 Box(Modifier.width(cellWidth)) { itemContent(item) }
@@ -867,10 +873,7 @@ private fun CardEditorRow(
         }
 
         // border / guides toggles + replace / swap / copy / delete
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
+        FlexBox(config = { wrap(FlexWrap.Wrap); rowGap(6.dp); columnGap(6.dp) }) {
             MiniTogglePill(
                 label = "${Str.frame_on_card}: ${if (card.border) Str.enabled else Str.disabled}",
                 onClick = { viewModel.updateCard(card.id) { it.copy(border = !it.border) } },
@@ -1097,7 +1100,7 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
             }
         }
 
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        FlexBox(config = { wrap(FlexWrap.Wrap); rowGap(6.dp); columnGap(6.dp) }) {
             ActionPill(
                 icon = Icons.Filled.AutoAwesome,
                 label = Str.enhance_auto,
