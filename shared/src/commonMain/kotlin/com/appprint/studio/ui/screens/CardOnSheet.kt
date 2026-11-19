@@ -65,6 +65,8 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+private const val DP_PER_MM = 3.7795276f
+
 /**
  * One card on the sheet — ported from the HTML `card-item`:
  *
