@@ -89,7 +89,10 @@ class StudioInteractionTest {
         }
         rule.waitForIdle()
         val moved = vm.state.value.cards.first { it.id == card.id }
-        assertTrue("drag right must increase x (was ${before.xMm}, now ${moved.xMm})", moved.xMm > before.xMm)
+        assertTrue(
+            "drag right must increase x (was ${before.xMm}, now ${moved.xMm}), longPressSheet=${vm.state.value.longPressSheetCardId}",
+            moved.xMm > before.xMm,
+        )
         assertTrue("drag up must decrease y (was ${before.yMm}, now ${moved.yMm})", moved.yMm < before.yMm)
     }
 
