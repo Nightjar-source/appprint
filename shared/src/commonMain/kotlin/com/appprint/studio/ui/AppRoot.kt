@@ -218,7 +218,11 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                         busy = state.processing,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = Chrome.topReserve()),
+                            .padding(
+                                top = Chrome.topReserve(),
+                                // the rail occupies the start edge (right in RTL) on medium+
+                                end = if (showRail) Chrome.railWidth() + 24.dp else 0.dp,
+                            ),
                     )
                 }
             }
