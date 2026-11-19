@@ -43,7 +43,7 @@ jobs:
       - name: Run Robolectric screenshot tests
         run: |
           set +e
-          ./gradlew :shared:testAndroidHostTest --tests "*StudioScreenshotTest*" --console=plain --stacktrace > shots.log 2>&1
+          ./gradlew :shared:testAndroidHostTest --tests "*StudioScreenshotTest*" --tests "*StudioInteractionTest*" --console=plain --stacktrace > shots.log 2>&1
           code=$?
           if [ $code -ne 0 ]; then
             echo "----- gradle errors -----"
