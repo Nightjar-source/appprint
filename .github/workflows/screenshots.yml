@@ -48,6 +48,8 @@ jobs:
           if [ $code -ne 0 ]; then
             echo "----- gradle errors -----"
             grep -E "^e: |What went wrong|FAILED|Execution failed|error:" shots.log | head -40 | while IFS= read -r line; do echo "::error::$line"; done
+            echo "----- dependency / sdk messages -----"
+            grep -iE "compileSdk|Platform SDK|AarMetadata|Dependency |requires|minCompileSdk|Unsupported" shots.log | head -40 | while IFS= read -r line; do echo "::error::$line"; done
             echo "----- test report stack traces -----"
             python3 - <<'PY'
           import glob, re
