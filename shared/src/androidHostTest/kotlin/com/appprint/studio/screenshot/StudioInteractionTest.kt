@@ -59,8 +59,13 @@ class StudioInteractionTest {
     fun draggingRightMovesCardRight_and_upMovesItUp() {
         val vm = studio()
         val card = vm.state.value.cards.first()
-        rule.runOnIdle { vm.setCardAngle360(card.id, 0f); vm.selectCard(card.id) }
+        rule.runOnIdle {
+            vm.setCardAngle360(card.id, 0f)
+            vm.moveCard(card.id, 60f, 120f)
+            vm.selectCard(card.id)
+        }
         rule.waitForIdle()
+        val before = vm.state.value.cards.first { it.id == card.id }
         rule.onNodeWithTag("card-${card.id}").performTouchInput {
             down(center)
             moveBy(Offset(60f, -45f))
@@ -68,11 +73,11 @@ class StudioInteractionTest {
         }
         rule.waitForIdle()
         val moved = vm.state.value.cards.first { it.id == card.id }
-        assertTrue("drag right must increase x (was ${card.xMm}, now ${moved.xMm})", moved.xMm > card.xMm)
-        assertTrue("drag up must decrease y (was ${card.yMm}, now ${moved.yMm})", moved.yMm < card.yMm)
+        assertTrue("drag right must increase x (was ${before.xMm}, now ${moved.xMm})", moved.xMm > before.xMm)
+        assertTrue("drag up must decrease y (was ${before.yMm}, now ${moved.yMm})", moved.yMm < before.yMm)
         // 60 injected px ≈ 20dp on screen; at fit the sheet is ~0.46 dp-per-mm-scaled,
         // so a 1:1 finger-follow must move the card ≈ 11 mm, not half of that.
-        assertTrue("drag must follow the finger 1:1, got ${moved.xMm - card.xMm}mm", moved.xMm - card.xMm > 7f)
+        assertTrue("drag must follow the finger 1:1, got ${moved.xMm - before.xMm}mm", moved.xMm - before.xMm > 7f)
     }
 
     @Test
