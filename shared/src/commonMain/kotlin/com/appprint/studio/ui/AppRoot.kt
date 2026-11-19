@@ -70,6 +70,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -492,7 +493,7 @@ private fun CircleActionButton(
             )
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .semantics { role = Role.Button },
+            .semantics { role = Role.Button; this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides tint) {
