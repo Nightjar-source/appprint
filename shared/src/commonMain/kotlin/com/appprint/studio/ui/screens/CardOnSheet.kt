@@ -44,9 +44,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.awaitEachGesture
-import androidx.compose.ui.input.pointer.awaitFirstDown
-import androidx.compose.ui.input.pointer.awaitPointerEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -140,16 +138,22 @@ internal fun CardOnSheet(
                 // finger on EVERY move event, which is both the HTML behaviour and the most
                 // responsive touch model. The delta is rotated back from the card's local
                 // frame, so drag direction is correct even on a rotated card.
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    val pointerId = down.id
+                awaitPointerEventScope {
+                    // wait for the down event (pointer just became pressed)
+                    var downChange = awaitPointerEvent(PointerEventPass.Initial)
+                        .changes.firstOrNull { it.pressed && !it.previousPressed }
+                    while (downChange == null) {
+                        downChange = awaitPointerEvent(PointerEventPass.Initial)
+                            .changes.firstOrNull { it.pressed && !it.previousPressed }
+                    }
+                    val pointerId = downChange.id
                     val startX = currentCard.xMm
                     val startY = currentCard.yMm
-                    var previous = down.position
+                    var previous = downChange.position
                     var movedX = 0f
                     var movedY = 0f
                     while (true) {
-                        val event = awaitPointerEvent()
+                        val event = awaitPointerEvent(PointerEventPass.Main)
                         val change = event.changes.firstOrNull { it.id == pointerId } ?: break
                         if (!change.pressed) break
                         val deltaLocal = change.position - previous
