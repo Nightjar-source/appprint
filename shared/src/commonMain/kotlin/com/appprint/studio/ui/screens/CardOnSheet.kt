@@ -83,14 +83,17 @@ internal fun CardOnSheet(
     state: TabatiUiState,
     viewModel: TabatiViewModel,
     dpPerMm: Float,
+    zoom: Float = 1f,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val selected = card.id == state.selectedCardId
     val currentCard by rememberUpdatedState(card)
-    val currentState by rememberUpdatedState(state)
     // Unrotated layout coordinates of the card box — used for the screen-space rotate maths.
     var cardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    // Coordinates of the pointer-input node itself. Pointer positions are LOCAL to a node
+    // that MOVES with the card, so deltas must be mapped to window space before accumulating.
+    var pointerCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     // HTML: transform rotate(card.freeRotation + (compareBefore ? 0 : enhance.tilt))
     val outerAngle = card.freeRotation + if (state.compareBefore) 0f else card.enhance.tilt
@@ -122,6 +125,7 @@ internal fun CardOnSheet(
             // Coordinates BEFORE the rotation layer = stable, unrotated card rect in window space.
             .onGloballyPositioned { cardCoordinates = it }
             .graphicsLayer { rotationZ = outerAngle }
+            .onGloballyPositioned { pointerCoordinates = it }
             // ONE unified per-card gesture set. Tap selects (on press, like HTML), long-press
             // opens the context sheet, drag moves. Both handlers live on this card only, so a
             // selected card's neighbours can never receive its gestures.
@@ -139,7 +143,7 @@ internal fun CardOnSheet(
                     val pointerId = down.id
                     val startX = currentCard.xMm
                     val startY = currentCard.yMm
-                    var previous = down.position
+                    var previous = pointerCoordinates?.localToWindow(down.position) ?: down.position
                     var movedX = 0f
                     var movedY = 0f
                     var moved = false
@@ -159,21 +163,17 @@ internal fun CardOnSheet(
                         }
                         val change = event.changes.firstOrNull { it.id == pointerId } ?: break
                         if (!change.pressed) break
-                        val deltaLocal = change.position - previous
-                        previous = change.position
-                        if (deltaLocal.x != 0f || deltaLocal.y != 0f) moved = true
-                        val c = currentCard
-                        val angle = c.freeRotation + if (currentState.compareBefore) 0f else c.enhance.tilt
-                        val rad = angle * PI / 180.0
-                        val cosA = cos(rad).toFloat()
-                        val sinA = sin(rad).toFloat()
-                        val dx = deltaLocal.x * cosA - deltaLocal.y * sinA
-                        val dy = deltaLocal.x * sinA + deltaLocal.y * cosA
-                        val scale = dpPerMm * density.density
-                        movedX += dx / scale
-                        movedY += dy / scale
+                        val screen = pointerCoordinates?.localToWindow(change.position) ?: change.position
+                        val delta = screen - previous
+                        previous = screen
+                        if (delta.x != 0f || delta.y != 0f) moved = true
+                        // Window space is already screen-aligned — no inverse rotation needed.
+                        // px-per-mm includes the sheet's CSS-style zoom layer.
+                        val scale = DP_PER_MM * zoom * density.density
+                        movedX += delta.x / scale
+                        movedY += delta.y / scale
                         change.consume()
-                        viewModel.moveCard(c.id, startX + movedX, startY + movedY)
+                        viewModel.moveCard(currentCard.id, startX + movedX, startY + movedY)
                     }
                     if (!moved) viewModel.selectCard(card.id)
                 }

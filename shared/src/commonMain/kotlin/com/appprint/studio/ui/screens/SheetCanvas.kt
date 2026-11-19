@@ -267,6 +267,7 @@ fun SheetCanvas(
                                                 state = state,
                                                 viewModel = viewModel,
                                                 dpPerMm = DP_PER_MM,
+                                                zoom = zoom,
                                             )
                                         }
                                     }
