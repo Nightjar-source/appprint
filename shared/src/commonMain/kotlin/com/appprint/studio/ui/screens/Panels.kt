@@ -94,6 +94,7 @@ import com.appprint.studio.core.model.PaperPreset
 import com.appprint.studio.core.model.SheetBackground
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
+import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.PanelChoiceChip
 import com.appprint.studio.ui.components.PanelSectionHeader
 import com.appprint.studio.ui.components.PanelSliderRow
@@ -118,6 +119,9 @@ private fun PanelScaffold(
         modifier = Modifier
             .fillMaxHeight()
             .fillMaxWidth()
+            // large screens: the floating top bar spans the whole width, so push the
+            // panel header below it exactly like the design's expanded-drawer padding
+            .padding(top = if (Chrome.railVisible()) Chrome.topReserve() + 6.dp else 0.dp)
             .background(scheme.surfaceContainerLow),
     ) {
         Row(

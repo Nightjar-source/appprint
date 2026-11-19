@@ -2,29 +2,37 @@ package com.appprint.studio.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,23 +44,21 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Stroke
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Collections
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appprint.studio.core.model.AppTheme
-import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.TabatiUiState
+import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.ZoomMode
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.pressScale
@@ -61,8 +67,11 @@ import com.appprint.studio.ui.components.pressScale
 private const val DP_PER_MM = 3.7795276f
 
 /**
- * Interactive sheet — double-tap zoom, pinch/pan, cards with move/rotate/resize,
- * ruler bars, margin guides. Internally pinned to LTR (the paper is a physical object).
+ * Interactive sheet — literal port of the design's `sheet-scale-wrapper`:
+ * the paper and all of its content are laid out at true 1:1 mm size and then
+ * scaled by one graphics layer, exactly like CSS `transform: scale(...)`.
+ * This keeps card art, fonts, badges, rulers and handles in the same proportion
+ * at every zoom level. Internally pinned to LTR (a sheet is a physical object).
  */
 @Composable
 fun SheetCanvas(
@@ -77,14 +86,11 @@ fun SheetCanvas(
     val density = LocalDensity.current
     val paperWdp = settings.sheetWidthMm * DP_PER_MM
     val paperHdp = settings.sheetHeightMm * DP_PER_MM
-    // design: ruler strip 20dp (w-5/h-5) + 4dp gap (mr-1) — paper starts at 24dp like ml-6
+    // design: ruler strip 20px + 4px gap — the paper starts at 24px
     val rulerTotalDp = if (settings.frame.ruler) 24f else 0f
     val contentW = paperWdp + rulerTotalDp
     val contentH = paperHdp + rulerTotalDp
 
-    var fit by remember { mutableFloatStateOf(0.5f) }
-    // HTML: canvas paddingTop = top-bar + 46px + safe-top, paddingBottom = nav-bar + 22px + safe-bottom.
-    // Keeping the paper inside this padding means cards can always scroll clear of the nav pill.
     val compactChrome = !Chrome.railVisible()
     val contentTopPad = Chrome.topReserve() + 46.dp
     val contentBottomPad = if (compactChrome) Chrome.bottomReserve() else 16.dp
@@ -100,15 +106,14 @@ fun SheetCanvas(
         com.appprint.studio.ui.theme.TabatiCanvasLight
     }
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         BoxWithConstraints(
             modifier = modifier
                 .background(canvasColor)
                 .clipToBounds()
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        // Tap on empty canvas clears selection. Cards consume their own tap
-                        // (via their inner pointerInput), so this only fires on empty area.
+                        // Cards consume their own tap, so this only fires on empty canvas.
                         onTap = { viewModel.selectCard(null) },
                         onDoubleTap = {
                             when (state.zoomMode) {
@@ -125,20 +130,21 @@ fun SheetCanvas(
                         })
                 },
         ) {
-            val availW = maxWidth.value
-            val availH = (maxHeight.value - (contentTopPad + contentBottomPad).value).coerceAtLeast(120f)
+            // HTML: availW = clientWidth - 32, availH = clientHeight - (116|124),
+            // sheet = (paper + 8mm ruler) * 3.7795, optimal = min(w, h, 1.35) clamped ≥ 0.2.
+            val padH = if (Chrome.isExpanded()) 116f else 124f
+            val availW = (maxWidth.value - 32f).coerceAtLeast(150f)
+            val availH = (maxHeight.value - padH).coerceAtLeast(170f)
             val optimal = minOf(
-                (availW / paperWdp).coerceAtLeast(0.2f) * 0.97f,
-                ((availH - 8f) / paperHdp).coerceAtLeast(0.2f),
+                availW / ((settings.sheetWidthMm + 8f) * DP_PER_MM),
+                availH / ((settings.sheetHeightMm + 8f) * DP_PER_MM),
                 1.35f,
             ).coerceAtLeast(0.2f)
-            fit = optimal
             val zoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
             val vScroll = rememberScrollState()
             val hScroll = rememberScrollState()
 
             // HTML: canvas is flat md-canvas — no dot grid, no pattern.
-            // overflow-auto: the canvas scrolls; the sheet is pre-shrunk by zoom.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -149,201 +155,193 @@ fun SheetCanvas(
                 Column(
                     modifier = Modifier.padding(top = contentTopPad, bottom = contentBottomPad),
                 ) {
-                // layout is PRE-SHRUNK by zoom — no graphicsLayer scale anywhere, so the
-                // layout is exactly the visual rect and every child lines up by construction
-                Box(
-                    modifier = Modifier
-                        .size((contentW * zoom).dp, (contentH * zoom).dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .offset(x = (rulerTotalDp * zoom).dp, y = (rulerTotalDp * zoom).dp)
-                            .size((paperWdp * zoom).dp, (paperHdp * zoom).dp)
-                            // design: 0 24px 56px -14px rgba(0,0,0,.36) + 0 6px 18px -4px rgba(0,0,0,.22) + 1px hairline ring
-                            .shadow((24f * zoom).dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x5C000000), spotColor = Color(0x5C000000))
-                            .shadow((6f * zoom).dp, androidx.compose.ui.graphics.RectangleShape, clip = false, ambientColor = Color(0x38000000), spotColor = Color(0x38000000))
-                            .clipToBounds()
-                            .background(sheetBackgroundColor(settings)),
-                    ) {
-                        if (settings.frame.background == com.appprint.studio.core.model.SheetBackground.TRANSPARENT) {
-                            // checkerboard under the transparent paper — like the design
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                // design: repeating-conic-gradient 8mm × 8mm
-                                val cell = (8f * DP_PER_MM * zoom).dp.toPx()
-                                val cols = (size.width / cell).toInt() + 1
-                                val rows = (size.height / cell).toInt() + 1
-                                for (r in 0 until rows) {
-                                    for (c in 0 until cols) {
-                                        if ((r + c) % 2 == 0) {
-                                            drawRect(
-                                                color = Color(0xFFE2E2E2),
-                                                topLeft = Offset(c * cell, r * cell),
-                                                size = Size(cell, cell),
-                                            )
+                    // Outer box reserves the SCALED footprint for scrolling/centering, the
+                    // inner box carries the true mm layout and one uniform scale, CSS-style.
+                    Box(modifier = Modifier.size((contentW * zoom).dp, (contentH * zoom).dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(contentW.dp, contentH.dp)
+                                .graphicsLayer {
+                                    scaleX = zoom
+                                    scaleY = zoom
+                                    transformOrigin = TransformOrigin(0f, 0f)
+                                },
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .offset(x = rulerTotalDp.dp, y = rulerTotalDp.dp)
+                                    .size(paperWdp.dp, paperHdp.dp)
+                                    // design: 0 24px 56px -14px rgba(0,0,0,.36) + 0 6px 18px -4px rgba(0,0,0,.22) + 1px hairline
+                                    .shadow(24.dp, RectangleShape, clip = false, ambientColor = Color(0x5C000000), spotColor = Color(0x38000000))
+                                    .shadow(6.dp, RectangleShape, clip = false, ambientColor = Color(0x38000000), spotColor = Color(0x1C000000))
+                                    .clipToBounds()
+                                    .background(sheetBackgroundColor(settings)),
+                            ) {
+                                if (settings.frame.background == com.appprint.studio.core.model.SheetBackground.TRANSPARENT) {
+                                    Canvas(modifier = Modifier.fillMaxSize()) {
+                                        val cell = (8f * DP_PER_MM).dp.toPx()
+                                        val cols = (size.width / cell).toInt() + 1
+                                        val rows = (size.height / cell).toInt() + 1
+                                        for (r in 0 until rows) {
+                                            for (c in 0 until cols) {
+                                                if ((r + c) % 2 == 0) {
+                                                    drawRect(
+                                                        color = Color(0xFFE2E2E2),
+                                                        topLeft = Offset(c * cell, r * cell),
+                                                        size = Size(cell, cell),
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        }
-                        if (settings.frame.guides) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val m = settings.marginMm * DP_PER_MM * density.density * zoom
-                                drawRect(
-                                    color = Color(0xFFB32638).copy(alpha = 0.55f),
-                                    topLeft = Offset(m, m),
-                                    size = Size((size.width - 2 * m).coerceAtLeast(0f), (size.height - 2 * m).coerceAtLeast(0f)),
-                                    style = Stroke(
-                                        width = 1f.coerceAtLeast(1.dp.toPx() * zoom),
-                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f * zoom, 8f * zoom), 0f),
-                                    ),
-                                )
-                            }
-                        }
-                        if (settings.showGrid) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val step = 10f * DP_PER_MM * density.density * zoom
-                                var pos = step
-                                while (pos < size.width) {
-                                    drawLine(Color(0x0D000000), Offset(pos, 0f), Offset(pos, size.height), 1f)
-                                    pos += step
+                                if (settings.frame.guides) {
+                                    Canvas(modifier = Modifier.fillMaxSize()) {
+                                        val m = settings.marginMm * DP_PER_MM * density.density
+                                        drawRect(
+                                            color = Color(0xFFB32638).copy(alpha = 0.55f),
+                                            topLeft = Offset(m, m),
+                                            size = Size((size.width - 2 * m).coerceAtLeast(0f), (size.height - 2 * m).coerceAtLeast(0f)),
+                                            style = Stroke(
+                                                width = (0.45f * DP_PER_MM * density.density).coerceAtLeast(1f),
+                                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f),
+                                            ),
+                                        )
+                                    }
                                 }
-                                pos = step
-                                while (pos < size.height) {
-                                    drawLine(Color(0x0D000000), Offset(0f, pos), Offset(size.width, pos), 1f)
-                                    pos += step
+                                if (settings.showGrid) {
+                                    Canvas(modifier = Modifier.fillMaxSize()) {
+                                        val step = 10f * DP_PER_MM * density.density
+                                        var pos = step
+                                        while (pos < size.width) {
+                                            drawLine(Color(0x0D000000), Offset(pos, 0f), Offset(pos, size.height), 1f)
+                                            pos += step
+                                        }
+                                        pos = step
+                                        while (pos < size.height) {
+                                            drawLine(Color(0x0D000000), Offset(0f, pos), Offset(size.width, pos), 1f)
+                                            pos += step
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        if (settings.frame.sheet && settings.frame.colorHex != 0L && settings.frame.thickness > 0f) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val dash = when (settings.frame.style) {
-                                    com.appprint.studio.core.model.FrameStyle.SOLID -> null
-                                    com.appprint.studio.core.model.FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(16f * zoom, 12f * zoom), 0f)
-                                    com.appprint.studio.core.model.FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5f * zoom, 8f * zoom), 0f)
+                                if (settings.frame.sheet && settings.frame.colorHex != 0L && settings.frame.thickness > 0f) {
+                                    Canvas(modifier = Modifier.fillMaxSize()) {
+                                        val dash = when (settings.frame.style) {
+                                            com.appprint.studio.core.model.FrameStyle.SOLID -> null
+                                            com.appprint.studio.core.model.FrameStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(9f, 7f), 0f)
+                                            com.appprint.studio.core.model.FrameStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(1.5f, 6f), 0f)
+                                        }
+                                        drawRect(
+                                            color = Color(settings.frame.colorHex),
+                                            style = Stroke(width = (settings.frame.thickness * density.density).coerceAtLeast(1f), pathEffect = dash),
+                                        )
+                                    }
                                 }
-                                drawRect(
-                                    color = Color(settings.frame.colorHex),
-                                    style = Stroke(width = (settings.frame.thickness * 1.6f * zoom).coerceAtLeast(1.6f), pathEffect = dash),
-                                )
-                            }
-                        }
-                        // design: 0 0 0 1px rgba(0,0,0,.08) hairline ring around the paper
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            drawRect(
-                                color = Color(0x14000000),
-                                style = Stroke(width = 1.dp.toPx()),
-                            )
-                        }
-                        // design: "A4 • 210 × 297 mm" caption on the paper
-                        Text(
-                            text = "${settings.presetKey} • ${formatCaptionDim(settings.sheetWidthMm)} × ${formatCaptionDim(settings.sheetHeightMm)} mm",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (8f * zoom).coerceAtLeast(6f).sp),
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black.copy(alpha = 0.4f),
-                            modifier = Modifier.align(Alignment.TopEnd).padding(top = (8f * zoom).dp, end = (10f * zoom).dp),
-                        )
-                        if (state.cards.isEmpty()) {
-                            EmptyPaperMessage(
-                                modifier = Modifier.fillMaxSize(),
-                                onPickGallery = onPickGallery,
-                                onCaptureCamera = onCaptureCamera,
-                                onAddDemoCards = onAddDemoCards,
-                            )
-                        }
-                        state.cardsOnPage
-                            .sortedBy { if (it.id == state.selectedCardId) 1 else 0 }
-                            .forEach { card ->
-                                androidx.compose.runtime.key(card.id) {
-                                    CardOnSheet(
-                                        card = card,
-                                        state = state,
-                                        viewModel = viewModel,
-                                        dpPerMm = DP_PER_MM * zoom,
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    drawRect(
+                                        color = Color(0x14000000),
+                                        style = Stroke(width = 1.dp.toPx()),
                                     )
                                 }
+                                Text(
+                                    text = "${settings.presetKey} • ${formatCaptionDim(settings.sheetWidthMm)} × ${formatCaptionDim(settings.sheetHeightMm)} mm",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black.copy(alpha = 0.4f),
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 10.dp),
+                                )
+                                if (state.cards.isEmpty()) {
+                                    EmptyPaperMessage(
+                                        modifier = Modifier.fillMaxSize(),
+                                        onPickGallery = onPickGallery,
+                                        onCaptureCamera = onCaptureCamera,
+                                        onAddDemoCards = onAddDemoCards,
+                                    )
+                                }
+                                state.cardsOnPage
+                                    .sortedBy { if (it.id == state.selectedCardId) 1 else 0 }
+                                    .forEach { card ->
+                                        androidx.compose.runtime.key(card.id) {
+                                            CardOnSheet(
+                                                card = card,
+                                                state = state,
+                                                viewModel = viewModel,
+                                                dpPerMm = DP_PER_MM,
+                                            )
+                                        }
+                                    }
                             }
+                            if (settings.frame.ruler) {
+                                val rulerBg = Color.Transparent
+                                RulerBar(
+                                    vertical = false,
+                                    lengthMm = settings.sheetWidthMm,
+                                    stripDp = paperWdp,
+                                    background = rulerBg,
+                                    modifier = Modifier.offset(x = rulerTotalDp.dp),
+                                )
+                                // design: the page counter is the last item of the top ruler strip
+                                Text(
+                                    text = "صفحة ${state.activePage + 1} / ${state.pageCount}",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                )
+                                RulerBar(
+                                    vertical = true,
+                                    lengthMm = settings.sheetHeightMm,
+                                    stripDp = paperHdp,
+                                    background = rulerBg,
+                                    modifier = Modifier.offset(y = rulerTotalDp.dp),
+                                )
+                            }
+                        }
                     }
-                    // rulers drawn on top like the design's ui-overlay: horizontal above the paper, vertical to its left
-                    if (settings.frame.ruler) {
-                        val rulerBg = androidx.compose.ui.graphics.Color.Transparent
-                        RulerBar(
-                            vertical = false,
-                            lengthMm = settings.sheetWidthMm,
-                            stripDp = paperWdp * zoom,
-                            background = rulerBg,
-                            scale = zoom,
-                            modifier = Modifier.offset(x = (24f * zoom).dp, y = (2f * zoom).dp),
-                        )
-                        // design: "صفحة n / m" at the right end, inside the ruler strip row
-                        Text(
-                            text = "صفحة ${state.activePage + 1} / ${state.pageCount}",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (8f * zoom).coerceAtLeast(6f).sp),
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = (-2f * zoom).dp, y = (2f * zoom).dp),
-                        )
-                        RulerBar(
-                            vertical = true,
-                            lengthMm = settings.sheetHeightMm,
-                            stripDp = paperHdp * zoom,
-                            background = rulerBg,
-                            scale = zoom,
-                            modifier = Modifier.offset(y = (24f * zoom).dp),
-                        )
-                    }
-                }
                 }
             }
         }
     }
 }
 
-/** Ruler bar: tick every 10 mm, long tick + number every 50 mm, small numbers every 10 mm — like the design. */
+/** Millimetre ruler: one small number every 10 mm — like the HTML `ui-overlay` ruler. */
 @Composable
 private fun RulerBar(
     vertical: Boolean,
     lengthMm: Float,
     stripDp: Float,
     background: Color,
-    scale: Float,
     modifier: Modifier = Modifier,
 ) {
     val tick = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
     if (vertical) {
-        Box(modifier = modifier.width((20f * scale).dp).height(stripDp.dp).background(background)) {
+        Box(modifier = modifier.width(20.dp).height(stripDp.dp).background(background)) {
             var mm = 0
             while (mm <= lengthMm) {
-                val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = (if (big) 9f else 8f).let { it * scale }.coerceAtLeast(5f).sp,
-                    fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
                     color = tick,
                     softWrap = false,
                     maxLines = 1,
-                    modifier = Modifier
-                        .offset(y = (mm * DP_PER_MM * scale).dp, x = (2f * scale).dp),
+                    modifier = Modifier.offset(x = 2.dp, y = (mm * DP_PER_MM).dp),
                 )
                 mm += 10
             }
         }
     } else {
-        // no fixed height constraint — a 9dp cap clipped every Text to invisibility
-        Box(modifier = modifier.width(stripDp.dp).background(background)) {
+        Box(modifier = modifier.width(stripDp.dp).height(20.dp).background(background)) {
             var mm = 0
             while (mm <= lengthMm) {
-                val big = mm % 50 == 0
                 Text(
                     text = "$mm",
-                    fontSize = (if (big) 11f else 10f).let { it * scale }.coerceAtLeast(7f).sp,
-                    fontWeight = if (big) FontWeight.Black else FontWeight.Bold,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
                     color = tick,
                     softWrap = false,
                     maxLines = 1,
-                    modifier = Modifier
-                        .offset(x = (mm * DP_PER_MM * scale).dp, y = (1f * scale).dp),
+                    modifier = Modifier.offset(x = (mm * DP_PER_MM).dp),
                 )
                 mm += 10
             }
@@ -361,7 +359,7 @@ private fun sheetBackgroundColor(settings: com.appprint.studio.core.model.SheetS
 private fun formatCaptionDim(v: Float): String =
     "%.1f".format(v).trimEnd('0').trimEnd('.')
 
-/** Design: empty paper state lives inside the sheet — mint icon + caption + action buttons + demo link. */
+/** Design: the empty sheet state lives inside the paper — mint icon, caption, actions, demo link. */
 @Composable
 private fun EmptyPaperMessage(
     modifier: Modifier = Modifier,
@@ -370,14 +368,8 @@ private fun EmptyPaperMessage(
     onAddDemoCards: () -> Unit,
 ) {
     val sheetGreen = Color(0xFF006C47)
-    Box(
-        modifier = modifier.padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
+    Box(modifier = modifier.padding(24.dp), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
                     .size(64.dp)
@@ -385,28 +377,27 @@ private fun EmptyPaperMessage(
                     .background(Color(0xFFE8F5E9)),
                 contentAlignment = Alignment.Center,
             ) {
-                androidx.compose.material3.Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Filled.Collections,
-                    contentDescription = null,
-                    tint = sheetGreen,
-                    modifier = Modifier.size(32.dp),
-                )
+                Icon(Icons.Filled.AddPhotoAlternate, contentDescription = null, tint = sheetGreen, modifier = Modifier.size(32.dp))
             }
             Text(
                 text = "الورقة فارغة — ارفع صور بطاقاتك للبدء",
-                style = MaterialTheme.typography.titleMedium,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF262626),
+                modifier = Modifier.padding(top = 12.dp),
             )
             Text(
                 text = "افتح الاستوديو لاختيار الصور أو التقطها بالكاميرا وسيتم التعرف على أبعادها الحقيقية وترتيبها تلقائياً",
-                style = MaterialTheme.typography.bodySmall,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
                 color = Color(0xFF737373),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.widthIn(max = 240.dp),
+                modifier = Modifier.padding(top = 4.dp).widthIn(max = 240.dp),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 16.dp),
+            ) {
                 val galleryInteraction = remember { MutableInteractionSource() }
                 Row(
                     modifier = Modifier
@@ -418,41 +409,23 @@ private fun EmptyPaperMessage(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Filled.Collections,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = "رفع صور البطاقات",
-                        color = Color.White,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 12.sp,
-                    )
+                    Icon(Icons.Filled.AddPhotoAlternate, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Text("رفع صور البطاقات", color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
                 }
                 val cameraInteraction = remember { MutableInteractionSource() }
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(percent = 50))
                         .background(Color.White)
+                        .border(1.dp, Color(0xFFD4D4D4), RoundedCornerShape(percent = 50))
+                        .pressScale(cameraInteraction)
                         .clickable(interactionSource = cameraInteraction, indication = null, onClick = onCaptureCamera)
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Filled.CameraAlt,
-                        contentDescription = null,
-                        tint = Color(0xFF262626),
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = "الكاميرا",
-                        color = Color(0xFF262626),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                    )
+                    Icon(Icons.Filled.CameraAlt, contentDescription = null, tint = Color(0xFF262626), modifier = Modifier.size(16.dp))
+                    Text("الكاميرا", color = Color(0xFF262626), fontWeight = FontWeight.Black, fontSize = 12.sp)
                 }
             }
             Text(
@@ -461,7 +434,7 @@ private fun EmptyPaperMessage(
                 fontWeight = FontWeight.Bold,
                 color = sheetGreen,
                 textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                modifier = Modifier.clickable(onClick = onAddDemoCards),
+                modifier = Modifier.padding(top = 12.dp).clickable(onClick = onAddDemoCards),
             )
         }
     }

@@ -2,7 +2,7 @@ package com.appprint.studio.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -204,7 +204,11 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                         onSelect = viewModel::setSection,
                         onAdd = { importMenuOpen = true },
                         cardsCount = state.cards.size,
-                        modifier = Modifier.align(Alignment.CenterStart),
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            // keep the whole rail inside the safe area so it can never sit
+                            // over (or under) the floating top bar on tablets/landscape
+                            .padding(top = Chrome.topReserve(), bottom = 16.dp),
                     )
                 }
                 // toast at the top, under the floating bar
@@ -594,7 +598,7 @@ private fun NavPillItem(
     val interaction = remember { MutableInteractionSource() }
     val contentColor by animateColorAsState(
         targetValue = if (selected) scheme.onSecondaryContainer else scheme.onSurfaceVariant,
-        animationSpec = tween(180),
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 460f),
         label = "pillContentColor",
     )
     Column(
@@ -745,7 +749,7 @@ private fun RailItem(
     val interaction = remember { MutableInteractionSource() }
     val contentColor by animateColorAsState(
         targetValue = if (selected) scheme.onSecondaryContainer else scheme.onSurfaceVariant,
-        animationSpec = tween(180),
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 460f),
         label = "railColor",
     )
     Column(

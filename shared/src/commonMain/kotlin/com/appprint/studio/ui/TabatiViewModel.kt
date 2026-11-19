@@ -224,12 +224,11 @@ class TabatiViewModel : ViewModel() {
 
     fun importCapture(source: String) = importImages(listOf(source))
 
-    /** One sample of every official card type — the «أمثلة تعليمية» strip. */
+    /** HTML `addDemoCards`: national + passport + residence, one tap, smart-arranged. */
     fun addSamples() {
         pushUndo()
         val samples = listOf(
-            CardType.NATIONAL, CardType.PASSPORT, CardType.RESIDENCE, CardType.RATION,
-            CardType.DRIVING, CardType.VOTER, CardType.STUDENT,
+            CardType.NATIONAL, CardType.PASSPORT, CardType.RESIDENCE,
         ).map { type ->
             CardItem(
                 id = nextId(),

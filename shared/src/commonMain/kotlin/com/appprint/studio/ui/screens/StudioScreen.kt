@@ -9,7 +9,7 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,6 +72,7 @@ import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
 import com.appprint.studio.ui.strings.Str
+import com.appprint.studio.ui.theme.Motion
 
 /**
  * The Studio — the canvas fills the screen; sections open as a side panel on
@@ -145,8 +146,8 @@ fun StudioScreen(
             // ----------------------------------------- side panel (medium+)
             AnimatedVisibility(
                 visible = showRail && state.section != StudioSection.SHEET,
-                enter = fadeIn(tween(220)) + expandHorizontally(expandFrom = Alignment.End, animationSpec = tween(220)),
-                exit = fadeOut(tween(160)) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = tween(160)),
+                enter = fadeIn(Motion.effects()) + expandHorizontally(expandFrom = Alignment.End, animationSpec = spring(dampingRatio = 0.72f, stiffness = 460f)),
+                exit = fadeOut(Motion.fast()) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = spring(dampingRatio = 0.78f, stiffness = 460f)),
                 modifier = Modifier.fillMaxHeight(),
             ) {
                 Box(
@@ -168,8 +169,8 @@ fun StudioScreen(
         // --------------------------------------- bottom drawer (compact)
         AnimatedVisibility(
             visible = !showRail && state.section != StudioSection.SHEET,
-            enter = fadeIn(tween(180)) + expandVertically(expandFrom = Alignment.Bottom, animationSpec = tween(220)),
-            exit = fadeOut(tween(120)) + shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = tween(160)),
+            enter = fadeIn(Motion.fast()) + expandVertically(expandFrom = Alignment.Bottom, animationSpec = spring(dampingRatio = 0.84f, stiffness = 240f)),
+            exit = fadeOut(Motion.fast()) + shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = spring(dampingRatio = 0.78f, stiffness = 460f)),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             SurfaceDrawer(

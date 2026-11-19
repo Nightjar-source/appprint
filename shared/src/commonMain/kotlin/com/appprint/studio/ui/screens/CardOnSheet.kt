@@ -49,6 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -96,6 +97,7 @@ internal fun CardOnSheet(
 
     Box(
         modifier = modifier
+            .testTag("card-${card.id}")
             .offset {
                 IntOffset(
                     (card.xMm * dpPerMm * density.density).roundToInt(),
