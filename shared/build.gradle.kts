@@ -28,8 +28,7 @@ compose.resources {
 kotlin {
     android {
         namespace = "com.appprint.studio.shared"
-        // Compose 1.13 artifacts require the newer platform SDK.
-        compileSdk = 38
+        compileSdk = 37
         minSdk = 26
         // Enables Compose Multiplatform resources (Res class + accessors) for the androidLibrary target
         androidResources {

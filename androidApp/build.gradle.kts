@@ -12,8 +12,7 @@ plugins {
 android {
     namespace = "com.appprint.studio"
     // Compose 1.13: AndroidX stable through BOM 2026.11.01 (API 37 extension 1).
-    // Compose 1.13 artifacts require the newer platform SDK.
-    compileSdk = 38
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.appprint.studio"

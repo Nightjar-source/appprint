@@ -34,12 +34,6 @@ jobs:
           java-version: '21'
           distribution: 'zulu'
 
-      - name: Install Android SDK 38 (Compose 1.13)
-        run: |
-          SDKMGR=$(find "$ANDROID_SDK_ROOT" -name sdkmanager -type f 2>/dev/null | head -1)
-          echo "sdkmanager: $SDKMGR"
-          echo "y" | "$SDKMGR" --install "platforms;android-38"
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
