@@ -12,7 +12,8 @@ plugins {
 android {
     namespace = "com.appprint.studio"
     // Compose 1.13: AndroidX stable through BOM 2026.11.01 (API 37 extension 1).
-    compileSdk = 37
+    // Compose 1.13 artifacts require the newer platform SDK.
+    compileSdk = 38
 
     defaultConfig {
         applicationId = "com.appprint.studio"
@@ -65,9 +66,6 @@ android {
         buildConfig = true
     }
 }
-
-tasks.matching { it.name.startsWith("check") && it.name.endsWith("AarMetadata") }
-    .configureEach { enabled = false }
 
 // Compose Lives in :shared — this module wires the launcher, edge-to-edge and the splash.
 dependencies {

@@ -28,7 +28,8 @@ compose.resources {
 kotlin {
     android {
         namespace = "com.appprint.studio.shared"
-        compileSdk = 37
+        // Compose 1.13 artifacts require the newer platform SDK.
+        compileSdk = 38
         minSdk = 26
         // Enables Compose Multiplatform resources (Res class + accessors) for the androidLibrary target
         androidResources {
@@ -109,11 +110,6 @@ kotlin {
         }
     }
 }
-
-// Compose 1.13 artifacts declare minCompileSdk 37.1/38; the CI image only ships
-// API 37. The code uses no newer platform APIs, so the metadata guard is skipped.
-tasks.matching { it.name.startsWith("check") && it.name.endsWith("AarMetadata") }
-    .configureEach { enabled = false }
 
 // Full diagnostics for unit tests — assertion messages and stack traces are always printed.
 tasks.withType<Test>().configureEach {
