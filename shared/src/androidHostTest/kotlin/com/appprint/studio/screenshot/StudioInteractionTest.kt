@@ -83,8 +83,7 @@ class StudioInteractionTest {
         }
         rule.onRoot().performTouchInput {
             down(center)
-            moveBy(Offset(60f, -45f))
-            moveBy(Offset(60f, -45f))
+            repeat(6) { moveBy(Offset(12f, -9f), delayMillis = 24) }
             up()
         }
         rule.waitForIdle()
