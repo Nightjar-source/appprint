@@ -28,6 +28,7 @@ compose.resources {
 kotlin {
     android {
         namespace = "com.appprint.studio.shared"
+        compileSdk = 37
         compileSdk {
             release(37) {
                 minorApiLevel = 1
