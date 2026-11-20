@@ -140,7 +140,7 @@ private fun PanelScaffold(
             if (state.cards.isNotEmpty()) {
                 androidx.compose.material3.FilledTonalButton(
                     onClick = viewModel::arrangeSmart,
-                    colors = androidx.compose.material3.FilledTonalButtonDefaults.filledTonalButtonColors(
+                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                         containerColor = scheme.secondaryContainer,
                         contentColor = scheme.onSecondaryContainer,
                     ),
