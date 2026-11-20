@@ -22,8 +22,8 @@ android {
         applicationId = "com.appprint.studio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 41
-        versionName = "2.1.14"
+        versionCode = 42
+        versionName = "2.1.15"
         resourceConfigurations += listOf("ar", "en")
     }
 
@@ -81,4 +81,6 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.activity.ktx)
+    // AdMob (Android-only) — monetization via Google Mobile Ads SDK; TEST ad unit ids until the real units are issued.
+    implementation(libs.play.services.ads)
 }

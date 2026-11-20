@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoFixHigh
+import androidx.compose.material.icons.filled.AutoMode
 import androidx.compose.material.icons.filled.BorderOuter
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.DarkMode
@@ -138,13 +139,22 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
             com.appprint.studio.core.platform.PlatformUi.syncSystemBars(barDark)
         }
 
-        // one-shot toast → global snackbar, auto-expires
+        // one-shot toast → global snackbar, auto-expires; the snackbar itself animates in/out
+        // fluidly (`.m3-float-enter` — scale/lift spring) via its `visible` state, like the
+        // design's M3 Expressive Island motion.
         val toast = state.toast
-        LaunchedEffect(toast?.message) {
-            if (toast != null) {
-                delay(3200)
-                viewModel.consumeToast()
+        var toastVisible by remember { mutableStateOf(false) }
+        var toastMsg by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(toast) {
+            if (toast == null) {
+                toastVisible = false
+                toastMsg = null
+                return@LaunchedEffect
             }
+            toastMsg = toast.message
+            toastVisible = true
+            delay(3200)
+            viewModel.consumeToast()
         }
 
         PlatformBackHandler(enabled = state.section != StudioSection.SHEET) {
@@ -212,17 +222,19 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                             .padding(top = Chrome.topReserve(), bottom = 16.dp),
                     )
                 }
-                // toast at the top, under the floating bar
-                toast?.let { t ->
+                // toast at the top, under the floating bar (design: fixed top-16 = 64dp + safe-top)
+                if (toastMsg != null && toastVisible) {
                     AppSnackbar(
-                        message = t.message,
+                        message = toastMsg ?: "",
                         busy = state.processing,
+                        visible = toastVisible,
                         onDismiss = viewModel::consumeToast,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
+                            .fillMaxWidth()
                             .padding(
-                                top = Chrome.topReserve(),
-                                // the rail occupies the start edge (right in RTL) on medium+
+                                start = 16.dp,
+                                top = statusTopSafe() + 64.dp,
                                 end = if (showRail) Chrome.railWidth() + 24.dp else 0.dp,
                             ),
                     )
@@ -371,7 +383,12 @@ private fun FloatingTopBar(
                 )
             }
         }
-        // theme cycle — تلقائي / فاتح / داكن
+        // theme cycle — تلقائي / فاتح / داكن (dedicated M3 Expressive «Auto» icon per state)
+        val themeIcon = when (state.theme) {
+            AppTheme.SYSTEM -> Icons.Filled.AutoMode
+            AppTheme.DARK -> Icons.Filled.LightMode
+            AppTheme.LIGHT -> Icons.Filled.DarkMode
+        }
         CircleActionButton(
             onClick = onCycleTheme,
             contentDescription = themeDescription(state.theme),
@@ -380,7 +397,7 @@ private fun FloatingTopBar(
             tint = scheme.onSurface,
         ) {
             Icon(
-                if (state.theme == AppTheme.DARK) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                themeIcon,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
             )

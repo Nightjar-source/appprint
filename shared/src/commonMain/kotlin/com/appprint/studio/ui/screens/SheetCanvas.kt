@@ -191,9 +191,20 @@ fun SheetCanvas(
                 availH / contentH,
                 1.35f,
             ).coerceAtLeast(0.2f)
-            val zoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
+            val fitScale = optimal.coerceIn(0.2f, 1.35f)
+            val zoom = if (state.zoomMode == ZoomMode.FIT) fitScale else fitScale * (state.manualZoomPercent / 100f)
             val vScroll = rememberScrollState()
             val hScroll = rememberScrollState()
+
+            // The sheet must NEVER fully disappear (design: fit keeps it inside the viewport,
+            // min zoom 0.2; manual zoom stays within 50%..200% of fit). When the content fits
+            // it is CENTERED (design `items-center justify-center`); when it overflows — e.g.
+            // zoomed in — the scroll container owns it from a safe top-start position. Centering
+            // an overflowing scroll content is what trapped the sheet (it could scroll away and
+            // never come back), so the extra centering space is only applied when content fits.
+            val contentHTotal = contentH + contentTopPad.value + contentBottomPad.value
+            val centerExtra = if (contentHTotal <= maxHeight.value) (maxHeight.value - contentHTotal) / 2f else 0f
+            val horizExtra = if (contentW <= maxWidth.value) (maxWidth.value - contentW) / 2f else 0f
 
             // HTML: canvas is flat md-canvas — no dot grid, no pattern.
             Box(
@@ -201,10 +212,14 @@ fun SheetCanvas(
                     .fillMaxSize()
                     .verticalScroll(vScroll)
                     .horizontalScroll(hScroll),
-                contentAlignment = Alignment.Center,
             ) {
                 Column(
-                    modifier = Modifier.padding(top = contentTopPad, bottom = contentBottomPad),
+                    modifier = Modifier.padding(
+                        start = horizExtra.dp,
+                        end = horizExtra.dp,
+                        top = contentTopPad + centerExtra.dp,
+                        bottom = contentBottomPad + centerExtra.dp,
+                    ),
                 ) {
                     // ONE box: true paper/ruler/card layout at full mm size, scaled once by the
                     // CSS-style zoom layer. requiredSize is essential: a plain size() would be

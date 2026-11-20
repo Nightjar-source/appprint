@@ -7,6 +7,10 @@
          camera for capturing card photos. Downloads go via MediaStore on Android 10+
          (permission-free); the legacy File path below needs WRITE_EXTERNAL_STORAGE on 10 and below. -->
 
+    <!-- AdMob (Google Mobile Ads) — needs the internet permission to load ads / test ads.
+         TEST App ID until the real AdMob publisher unit is issued: ca-app-pub-3940256099942544~3347511713 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Export completion notification (Android 13+ runtime grant) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -30,6 +34,12 @@
         android:theme="@style/Theme.AppPrint.Splash"
         android:enableOnBackInvokedCallback="true"
         android:largeHeap="false">
+
+        <!-- AdMob test App ID (Google's official Android test app) — replace with the real
+             publisher App ID when the AdMob account is set up for this application. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
 
         <activity
             android:name=".MainActivity"

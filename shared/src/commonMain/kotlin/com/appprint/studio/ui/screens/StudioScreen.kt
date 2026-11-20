@@ -136,6 +136,7 @@ fun StudioScreen(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
+                                .fillMaxWidth()
                                 .padding(top = Chrome.topReserve() + 12.dp),
                         ) {
                             SheetPageBar(
@@ -351,7 +352,6 @@ private fun SheetPageBar(
     val scheme = MaterialTheme.colorScheme
     LazyRow(
         modifier = modifier
-            .padding(start = 12.dp, end = 12.dp)
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,

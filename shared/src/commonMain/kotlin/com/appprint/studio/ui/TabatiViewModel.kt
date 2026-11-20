@@ -668,7 +668,7 @@ class TabatiViewModel : ViewModel() {
             } ?: run { setProcessing(false); toast(Str.empty_for_export); return@launch }
             setProcessing(false)
             withContext(Dispatchers.IO) {
-                PlatformActions.shareFile(path, "application/pdf", subject = "طبعتي — ملف جاهز للطباعة")
+                PlatformActions.shareFile(path, "application/pdf", subject = "ورقة طباعة بمقياس حقيقي 1:1 (${s.settings.presetKey})")
             }
         }
     }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlexBox
 import androidx.compose.foundation.layout.FlexWrap
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -114,6 +115,7 @@ private fun PanelScaffold(
     state: TabatiUiState,
     viewModel: TabatiViewModel,
     trailing: @Composable (() -> Unit)? = null,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -179,7 +181,7 @@ private fun PanelScaffold(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,
         )
@@ -1400,9 +1402,18 @@ fun GuidePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
     val activeType = selectedType
     val guide = CardGuides[activeType] ?: CardGuides.getValue(CardType.NATIONAL)
 
-    PanelScaffold(title = Str.guide_title, state = state, viewModel = viewModel) {
+    PanelScaffold(
+        title = Str.guide_title,
+        state = state,
+        viewModel = viewModel,
+        // design edge-to-edge: the card-type strip spans the full width with ZERO side
+        // padding (the user requirement); the inner cards re-add their own breathing room.
+        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 12.dp),
+    ) {
         Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             CardType.PRINTABLE.forEach { type ->
@@ -1426,6 +1437,7 @@ fun GuidePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 14.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(scheme.secondaryContainer)
                 .padding(14.dp),
@@ -1471,6 +1483,7 @@ fun GuidePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 14.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(scheme.surfaceContainer)
                 .padding(14.dp),
@@ -1493,6 +1506,7 @@ fun GuidePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 14.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(scheme.surfaceContainer)
                 .padding(14.dp),
