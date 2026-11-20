@@ -138,15 +138,15 @@ private fun PanelScaffold(
                 modifier = Modifier.weight(1f),
             )
             if (state.cards.isNotEmpty()) {
-                TextButton(
+                androidx.compose.material3.FilledTonalButton(
                     onClick = viewModel::arrangeSmart,
-                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    colors = androidx.compose.material3.FilledTonalButtonDefaults.filledTonalButtonColors(
                         containerColor = scheme.secondaryContainer,
                         contentColor = scheme.onSecondaryContainer,
                     ),
                     shape = RoundedCornerShape(percent = 50),
-                    modifier = Modifier.height(32.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 0.dp),
                 ) {
                     Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer6()
@@ -155,15 +155,15 @@ private fun PanelScaffold(
             }
             trailing?.invoke()
             Spacer6()
-            TextButton(
+            androidx.compose.material3.Button(
                 onClick = { viewModel.setSection(com.appprint.studio.ui.StudioSection.SHEET) },
-                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                     containerColor = scheme.primary,
                     contentColor = scheme.onPrimary,
                 ),
                 shape = RoundedCornerShape(percent = 50),
-                modifier = Modifier.height(32.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                modifier = Modifier.height(36.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp, vertical = 0.dp),
             ) {
                 Text(Str.done, fontWeight = FontWeight.Bold)
             }

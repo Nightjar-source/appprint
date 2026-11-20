@@ -130,16 +130,16 @@ fun SheetCanvas(
                         })
                 },
         ) {
-            // HTML: availW = clientWidth - 32, availH = clientHeight - (116|124),
-            // sheet = (paper + 8mm ruler) * 3.7795, optimal = min(w, h, 1.35) clamped ≥ 0.2.
+            // Fit the paper to the available width (the design's physical 1:1 sheet),
+            // keeping a 3% breathing margin so the ruler never clips at the edges.
             val padH = if (Chrome.isExpanded()) 116f else 124f
-            val availW = (maxWidth.value - 32f).coerceAtLeast(150f)
+            val availW = maxWidth.value
             val availH = (maxHeight.value - padH).coerceAtLeast(170f)
             val optimal = minOf(
-                availW / ((settings.sheetWidthMm + 8f) * DP_PER_MM),
-                availH / ((settings.sheetHeightMm + 8f) * DP_PER_MM),
+                availW / paperWdp,
+                availH / paperHdp,
                 1.35f,
-            ).coerceAtLeast(0.2f)
+            ).coerceAtLeast(0.2f) * 0.97f
             val zoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
             val vScroll = rememberScrollState()
             val hScroll = rememberScrollState()
