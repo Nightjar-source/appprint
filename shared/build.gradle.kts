@@ -11,6 +11,15 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Keep Material 3 on the expressive line everywhere; the Compose plugin would
+// otherwise pull the stable material3 back in and expressive theming APIs break.
+// AndroidX M3 1.5.0 has no iOS target, so it cannot replace the KMP artifact here.
+configurations.all {
+    resolutionStrategy {
+        force(libs.material3.expressive.get().toString())
+    }
+}
+
 // Deterministic generated-Res package — never depends on gradle's default naming.
 compose.resources {
     packageOfResClass = "com.appprint.studio.generated.resources"
