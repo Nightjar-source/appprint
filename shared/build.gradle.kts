@@ -11,15 +11,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-// Keep Material 3 on the expressive (alpha) line everywhere — the Compose
-// plugin would otherwise pull the stable material3 back in and the expressive
-// theming APIs would not resolve.
-configurations.all {
-    resolutionStrategy {
-        force(libs.material3.expressive.get().toString())
-    }
-}
-
 // Deterministic generated-Res package — never depends on gradle's default naming.
 compose.resources {
     packageOfResClass = "com.appprint.studio.generated.resources"
