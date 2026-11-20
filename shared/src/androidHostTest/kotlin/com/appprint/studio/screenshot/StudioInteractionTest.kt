@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
 import com.appprint.studio.core.platform.AndroidPlatform
@@ -16,6 +17,8 @@ import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.ZoomMode
 import com.appprint.studio.ui.strings.Str
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -94,6 +97,54 @@ class StudioInteractionTest {
             moved.xMm > before.xMm,
         )
         assertTrue("drag up must decrease y (was ${before.yMm}, now ${moved.yMm})", moved.yMm < before.yMm)
+    }
+
+    /**
+     * Regression for the "paper is tiny" bug: the scaled footprint wrapper used to clamp
+     * the true-size sheet to half of its width. The visible paper must fill the viewport.
+     */
+    @Test
+    fun paperFillsTheViewportWidth() {
+        studio()
+        val root = rule.onRoot().getBoundsInRoot()
+        val paper = rule.onNodeWithTag("sheet-paper").getBoundsInRoot()
+        val rootWidth = (root.right - root.left).value
+        val paperWidth = (paper.right - paper.left).value
+        assertTrue(
+            "paper must fill the canvas width (paper=$paperWidth dp, root=$rootWidth dp)",
+            paperWidth / rootWidth > 0.85f,
+        )
+    }
+
+    @Test
+    fun pinchOutIncreasesManualZoom() {
+        val vm = studio()
+        rule.runOnIdle { vm.zoomFit() }
+        rule.waitForIdle()
+        rule.onRoot().performTouchInput {
+            val c = center
+            down(0, c + Offset(-60f, 0f))
+            down(1, c + Offset(60f, 0f))
+            moveTo(0, c + Offset(-140f, 0f))
+            moveTo(1, c + Offset(140f, 0f))
+            up(0)
+            up(1)
+        }
+        rule.waitForIdle()
+        assertEquals(ZoomMode.MANUAL, vm.state.value.zoomMode)
+        assertTrue(
+            "pinch-out must zoom past fit, got ${vm.state.value.manualZoomPercent}",
+            vm.state.value.manualZoomPercent > 100f,
+        )
+    }
+
+    @Test
+    fun tappingSnackbarDismissesIt() {
+        val vm = studio()
+        assertNotNull(vm.state.value.toast)
+        rule.onNodeWithTag("app-toast").performClick()
+        rule.waitForIdle()
+        assertNull("snackbar must be dismissed by a tap, got ${vm.state.value.toast}", vm.state.value.toast)
     }
 
     @Test

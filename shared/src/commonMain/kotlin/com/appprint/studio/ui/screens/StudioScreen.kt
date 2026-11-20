@@ -17,7 +17,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,9 +31,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -39,8 +41,14 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -60,11 +68,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.appprint.studio.ui.components.pressScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.ui.StudioSection
 import com.appprint.studio.ui.TabatiViewModel
@@ -345,104 +353,107 @@ private fun SheetPageBar(
         modifier = modifier
             .padding(start = 12.dp, end = 12.dp)
             .fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // M3 Expressive page tabs — real FilterChips, selected state from the color scheme.
         items((0 until state.pageCount).toList(), key = { it }) { page ->
             val selected = state.activePage == page
-            val pageInteraction = remember { MutableInteractionSource() }
             val cardsOnPage = state.cards.count { it.page == page }
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(
-                        if (selected) scheme.primary
-                        else scheme.surfaceContainerHighest.copy(alpha = 0.78f),
+            FilterChip(
+                selected = selected,
+                onClick = { onSelectPage(page) },
+                label = {
+                    Text(
+                        text = "ورقة ${page + 1} (${cardsOnPage})",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                        fontSize = 11.sp,
+                        maxLines = 1,
                     )
-                    .then(
-                        if (selected) Modifier.border(1.dp, scheme.primary, RoundedCornerShape(percent = 50))
-                        else Modifier.border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50)),
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.Description,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
                     )
-                    .pressScale(pageInteraction)
-                    .clickable(interactionSource = pageInteraction, indication = null) { onSelectPage(page) }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = "ورقة ${page + 1} (${cardsOnPage})",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
-                    fontSize = 11.sp,
-                    color = if (selected) scheme.onPrimary else scheme.onSurface,
-                    maxLines = 1,
-                )
-                if (state.pageCount > 1) {
-                    IconButton(
-                        onClick = { onRequestDelete(page) },
-                        modifier = Modifier.size(18.dp),
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = null, tint = if (selected) scheme.onPrimary else scheme.onSurfaceVariant, modifier = Modifier.size(13.dp))
+                },
+                trailingIcon = if (state.pageCount > 1) {
+                    {
+                        // Plain 18dp hit area, like the HTML's pl-2/pr-1 close button.
+                        // (IconButton would expand to the 48dp minimum touch target and
+                        // stretch the 36dp chip.)
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .clickable { onRequestDelete(page) }
+                                .semantics {
+                                    role = Role.Button
+                                    contentDescription = "حذف الورقة"
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(13.dp))
+                        }
                     }
-                }
-            }
+                } else null,
+                shape = RoundedCornerShape(percent = 50),
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = scheme.surfaceContainerHigh,
+                    labelColor = scheme.onSurface,
+                    selectedContainerColor = scheme.primary,
+                    selectedLabelColor = scheme.onPrimary,
+                ),
+                modifier = Modifier.height(36.dp),
+            )
         }
 
-        // add sheet — secondary-container circle with outline, like the design
+        // M3 filled-tonal icon button — add sheet.
         item(key = "add-sheet") {
-            val addInteraction = remember { MutableInteractionSource() }
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.secondaryContainer.copy(alpha = 0.88f))
-                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                    .pressScale(addInteraction)
-                    .clickable(interactionSource = addInteraction, indication = null, onClick = onAddSheet)
-                    .semantics { role = Role.Button },
-                contentAlignment = Alignment.Center,
+            FilledTonalIconButton(
+                onClick = onAddSheet,
+                shape = CircleShape,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = scheme.secondaryContainer,
+                    contentColor = scheme.onSecondaryContainer,
+                ),
+                modifier = Modifier.size(36.dp),
             ) {
-                Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, tint = scheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
+                Icon(Icons.Filled.Add, contentDescription = Str.add_sheet, modifier = Modifier.size(18.dp))
             }
         }
 
-        // ترتيب ذكي — smart arrange (primary-container translucent pill + border)
+        // M3 filled-tonal button — smart arrange.
         item(key = "arrange") {
-            val arrangeInteraction = remember { MutableInteractionSource() }
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.primaryContainer.copy(alpha = 0.92f))
-                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                    .pressScale(arrangeInteraction)
-                    .clickable(interactionSource = arrangeInteraction, indication = null, onClick = onArrange)
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                    .semantics { role = Role.Button },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            FilledTonalButton(
+                onClick = onArrange,
+                shape = RoundedCornerShape(percent = 50),
+                contentPadding = PaddingValues(horizontal = 14.dp),
+                modifier = Modifier.height(36.dp),
             ) {
-                Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(13.dp))
-                Text("ترتيب ذكي", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = scheme.onPrimaryContainer)
+                Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.size(5.dp))
+                Text("ترتيب ذكي", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1)
             }
         }
 
-        // البدء من جديد — tertiary-container translucent pill, resets workspace
+        // M3 filled-tonal button (tertiary) — reset the workspace.
         item(key = "reset-all") {
-            val resetInteraction = remember { MutableInteractionSource() }
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.tertiaryContainer.copy(alpha = 0.88f))
-                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                    .pressScale(resetInteraction)
-                    .clickable(interactionSource = resetInteraction, indication = null, onClick = onResetAll)
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                    .semantics { role = Role.Button },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            FilledTonalButton(
+                onClick = onResetAll,
+                shape = RoundedCornerShape(percent = 50),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = scheme.tertiaryContainer,
+                    contentColor = scheme.onTertiaryContainer,
+                ),
+                contentPadding = PaddingValues(horizontal = 14.dp),
+                modifier = Modifier.height(36.dp),
             ) {
-                Icon(Icons.Filled.RotateRight, contentDescription = null, tint = scheme.onTertiaryContainer, modifier = Modifier.size(13.dp))
-                Text("البدء من جديد", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = scheme.onTertiaryContainer)
+                Icon(Icons.Filled.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.size(5.dp))
+                Text("البدء من جديد", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1)
             }
         }
     }

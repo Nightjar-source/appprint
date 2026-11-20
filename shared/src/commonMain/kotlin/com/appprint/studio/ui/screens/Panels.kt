@@ -68,6 +68,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -1013,7 +1014,16 @@ private fun TypeGridChip(type: CardType, active: Boolean, onClick: () -> Unit) {
 @Composable
 fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
     val scheme = MaterialTheme.colorScheme
-    val selected = state.selectedCard
+    // The panel must never be a dead end. If the current selection is missing or is a
+    // demo card without a photo, fall back to any real image card (current page first)
+    // and keep the ViewModel selection in sync so every action has a target.
+    val selected = state.selectedCard?.takeIf { it.imageUri != null }
+        ?: state.cardsOnPage.firstOrNull { it.imageUri != null }
+        ?: state.cards.firstOrNull { it.imageUri != null }
+    val selectedId = selected?.id
+    LaunchedEffect(selectedId) {
+        if (selectedId != null && state.selectedCardId != selectedId) viewModel.selectCard(selectedId)
+    }
     val imageCount = state.cards.count { it.imageUri != null }
 
     PanelScaffold(title = Str.section_enhance, state = state, viewModel = viewModel) {
@@ -1077,25 +1087,14 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
             }
         }
 
-        when {
-            selected == null -> {
-                Text(
-                    Str.enhance_not_selected,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 32.dp),
-                )
-                return@PanelScaffold
-            }
-            selected.imageUri == null -> {
-                Text(
-                    Str.enhance_no_image,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 32.dp),
-                )
-                return@PanelScaffold
-            }
+        if (selected == null) {
+            Text(
+                Str.enhance_no_image,
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 32.dp),
+            )
+            return@PanelScaffold
         }
 
         FlexBox(config = { wrap(FlexWrap.Wrap); rowGap(6.dp); columnGap(6.dp) }) {

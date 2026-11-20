@@ -217,6 +217,7 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                     AppSnackbar(
                         message = t.message,
                         busy = state.processing,
+                        onDismiss = viewModel::consumeToast,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(

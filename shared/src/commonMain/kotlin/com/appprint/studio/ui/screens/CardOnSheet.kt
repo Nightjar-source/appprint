@@ -4,6 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,6 +66,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.time.TimeSource
 
 private const val DP_PER_MM = 3.7795276f
 
@@ -91,14 +94,17 @@ internal fun CardOnSheet(
     val density = LocalDensity.current
     val selected = card.id == state.selectedCardId
     val currentCard by rememberUpdatedState(card)
-    // Unrotated layout coordinates of the card box — used for the screen-space rotate maths.
-    var cardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    // Coordinates of the pointer-input node itself. Pointer positions are LOCAL to a node
-    // that MOVES with the card, so deltas must be mapped to window space before accumulating.
-    var pointerCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     // HTML: transform rotate(card.freeRotation + (compareBefore ? 0 : enhance.tilt))
     val outerAngle = card.freeRotation + if (state.compareBefore) 0f else card.enhance.tilt
+
+    // Gesture closures live for the whole pointerInput lifetime, so live values must be
+    // read through State — otherwise a zoom/rotation change leaves the drag maths stale.
+    val currentZoom by rememberUpdatedState(zoom)
+    val currentAngle by rememberUpdatedState(outerAngle)
+    val currentDpPerMm by rememberUpdatedState(dpPerMm)
+    // Unrotated layout coordinates of the card box — used for the screen-space rotate maths.
+    var cardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     Box(
         modifier = modifier
@@ -127,57 +133,72 @@ internal fun CardOnSheet(
             // Coordinates BEFORE the rotation layer = stable, unrotated card rect in window space.
             .onGloballyPositioned { cardCoordinates = it }
             .graphicsLayer { rotationZ = outerAngle }
-            .onGloballyPositioned { pointerCoordinates = it }
-            // ONE unified per-card gesture set. Tap selects (on press, like HTML), long-press
-            // opens the context sheet, drag moves. Both handlers live on this card only, so a
-            // selected card's neighbours can never receive its gestures.
+            // ONE unified per-card gesture set, copied from the HTML `startPointerAction`:
+            //  • pointer-down selects immediately (the HTML does `setSelectedId(card.id)`);
+            //  • a 430 ms hold without moving opens the context sheet;
+            //  • movement past 5 screen px starts a 1:1 drag.
+            // Deltas are in the card's local (rotated, pre-zoom) frame, so they are rotated
+            // back with `outerAngle` and divided by the true dp/mm. This avoids the moving-node
+            // feedback that made the old window-space maths lag or reverse direction.
             .pointerInput(card.id) {
-                // ONE gesture set per card: press selects (like HTML), long-press opens the
-                // context sheet, every move is applied 1:1 in millimetres. Keeping all three
-                // in a single pointerInput avoids detectors stealing each other's events.
-                awaitPointerEventScope {
-                    var down = awaitPointerEvent(PointerEventPass.Initial)
-                        .changes.firstOrNull { it.pressed && !it.previousPressed }
-                    while (down == null) {
-                        down = awaitPointerEvent(PointerEventPass.Initial)
-                            .changes.firstOrNull { it.pressed && !it.previousPressed }
-                    }
+                // awaitEachGesture matters: a bare awaitPointerEventScope runs once and
+                // completes, after which the card ignores all further taps/drags.
+                awaitEachGesture {
+                    val down = awaitFirstDown(
+                        requireUnconsumed = false,
+                        pass = PointerEventPass.Initial,
+                    )
                     val pointerId = down.id
+                    viewModel.selectCard(card.id)
                     val startX = currentCard.xMm
                     val startY = currentCard.yMm
-                    var previous = pointerCoordinates?.localToWindow(down.position) ?: down.position
                     var movedX = 0f
                     var movedY = 0f
+                    var accumulated = Offset.Zero
                     var moved = false
                     var longPressSent = false
+                    val startedAt = TimeSource.Monotonic.markNow()
+                    // 5 CSS px on screen == 5/zoom local px (local coords are pre-zoom).
+                    val moveThreshold = 5f / currentZoom.coerceAtLeast(0.01f)
                     while (true) {
-                        // withTimeoutOrNull is a member of AwaitPointerEventScope, so it is
-                        // legal inside its restricted suspension scope.
-                        val event = withTimeoutOrNull(if (longPressSent) Long.MAX_VALUE else 500L) {
+                        // One absolute deadline, so touch jitter cannot postpone the long press.
+                        val remaining = 430L - startedAt.elapsedNow().inWholeMilliseconds
+                        val timeout = if (moved || longPressSent) Long.MAX_VALUE
+                        else remaining.coerceAtLeast(1L)
+                        val event = withTimeoutOrNull(timeout) {
                             awaitPointerEvent(PointerEventPass.Main)
                         }
                         if (event == null) {
-                            if (!moved && !longPressSent) {
-                                longPressSent = true
-                                viewModel.openLongPressSheet(card.id)
-                            }
+                            longPressSent = true
+                            viewModel.openLongPressSheet(card.id)
                             continue
                         }
                         val change = event.changes.firstOrNull { it.id == pointerId } ?: break
-                        if (!change.pressed) break
-                        val screen = pointerCoordinates?.localToWindow(change.position) ?: change.position
-                        val delta = screen - previous
-                        previous = screen
-                        if (delta.x != 0f || delta.y != 0f) moved = true
-                        // Window space is already screen-aligned — no inverse rotation needed.
-                        // px-per-mm includes the sheet's CSS-style zoom layer.
-                        val scale = DP_PER_MM * zoom * density.density
-                        movedX += delta.x / scale
-                        movedY += delta.y / scale
+                        // Rotate/resize handles are children: when they consume the event,
+                        // this card-drag gesture must stay out of the way.
+                        if (change.isConsumed) break
+                        // Pinch has priority — stop the drag as soon as a second finger lands.
+                        if (event.changes.count { it.pressed } > 1) break
+                        if (!change.pressed) {
+                            // Consume the up so the canvas' empty-area tap cannot deselect
+                            // the card right after a press.
+                            change.consume()
+                            break
+                        }
+                        val localDelta = change.position - change.previousPosition
+                        accumulated += localDelta
+                        if (!moved && accumulated.getDistance() > moveThreshold) moved = true
+                        if (moved && !longPressSent) {
+                            val rad = currentAngle * PI / 180.0
+                            val cosA = cos(rad).toFloat()
+                            val sinA = sin(rad).toFloat()
+                            val scale = currentDpPerMm * density.density
+                            movedX += (localDelta.x * cosA - localDelta.y * sinA) / scale
+                            movedY += (localDelta.x * sinA + localDelta.y * cosA) / scale
+                            viewModel.moveCard(card.id, startX + movedX, startY + movedY)
+                        }
                         change.consume()
-                        viewModel.moveCard(currentCard.id, startX + movedX, startY + movedY)
                     }
-                    if (!moved) viewModel.selectCard(card.id)
                 }
             },
     ) {

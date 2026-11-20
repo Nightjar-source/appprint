@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -26,8 +30,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -48,9 +55,11 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
@@ -116,30 +125,72 @@ fun SheetCanvas(
                         // Cards consume their own tap, so this only fires on empty canvas.
                         onTap = { viewModel.selectCard(null) },
                         onDoubleTap = {
-                            when (state.zoomMode) {
+                            // Read the live state — a pointerInput block captures its
+                            // composition values once and would otherwise use stale zoom.
+                            val snapshot = viewModel.state.value
+                            when (snapshot.zoomMode) {
                                 ZoomMode.FIT -> {
                                     viewModel.setZoomMode(ZoomMode.MANUAL)
                                     viewModel.setManualZoom(115f)
                                 }
                                 else -> {
-                                    val next = state.manualZoomPercent + 15f
+                                    val next = snapshot.manualZoomPercent + 15f
                                     if (next > 200f) viewModel.zoomFit()
                                     else viewModel.setManualZoom(next)
                                 }
                             }
                         })
+                }
+                // Two-finger pinch zoom — continuous, anchored to the fit scale so 100%
+                // always means "fits the screen", exactly like the zoom buttons.
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        // Pointer order is not guaranteed — sort by id so the two fingers
+                        // we measure are always the same pair.
+                        var pointers = emptyList<androidx.compose.ui.input.pointer.PointerInputChange>()
+                        // Wait for the second finger; a normal one-finger tap/drag is
+                        // left untouched for the canvas scroll and the cards.
+                        while (pointers.size < 2) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val pressed = event.changes.filter { it.pressed }.sortedBy { it.id.value }
+                            if (pressed.isEmpty()) return@awaitEachGesture
+                            pointers = pressed
+                        }
+                        val startSpan = (pointers[1].position - pointers[0].position)
+                            .getDistance()
+                            .coerceAtLeast(1f)
+                        val snapshot = viewModel.state.value
+                        val basePercent = if (snapshot.zoomMode == ZoomMode.FIT) 100f else snapshot.manualZoomPercent
+                        viewModel.setZoomMode(ZoomMode.MANUAL)
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val pressed = event.changes.filter { it.pressed }.sortedBy { it.id.value }
+                            if (pressed.size < 2) {
+                                // Consume the lift so the tap detector cannot turn the
+                                // end of a pinch into an empty-canvas deselect.
+                                event.changes.forEach { it.consume() }
+                                break
+                            }
+                            val span = (pressed[1].position - pressed[0].position)
+                                .getDistance()
+                                .coerceAtLeast(1f)
+                            // Multiplicative factor → every frame follows the fingers 1:1.
+                            viewModel.setManualZoom(basePercent * (span / startSpan))
+                            pressed.forEach { it.consume() }
+                        }
+                    }
                 },
         ) {
-            // Fit the paper to the available width (the design's physical 1:1 sheet),
-            // keeping a 3% breathing margin so the ruler never clips at the edges.
-            val padH = if (Chrome.isExpanded()) 116f else 124f
-            val availW = maxWidth.value
+            // Fit the complete physical sheet (paper + ruler) to the viewport. The few dp
+            // of breathing room keep the sheet border visible without shrinking it.
+            val padH = if (Chrome.isExpanded()) 108f else 116f
+            val availW = (maxWidth.value - 8f).coerceAtLeast(150f)
             val availH = (maxHeight.value - padH).coerceAtLeast(170f)
             val optimal = minOf(
-                availW / paperWdp,
-                availH / paperHdp,
+                availW / contentW,
+                availH / contentH,
                 1.35f,
-            ).coerceAtLeast(0.2f) * 0.97f
+            ).coerceAtLeast(0.2f)
             val zoom = if (state.zoomMode == ZoomMode.FIT) optimal else optimal * (state.manualZoomPercent / 100f)
             val vScroll = rememberScrollState()
             val hScroll = rememberScrollState()
@@ -155,20 +206,21 @@ fun SheetCanvas(
                 Column(
                     modifier = Modifier.padding(top = contentTopPad, bottom = contentBottomPad),
                 ) {
-                    // Outer box reserves the SCALED footprint for scrolling/centering, the
-                    // inner box carries the true mm layout and one uniform scale, CSS-style.
-                    Box(modifier = Modifier.size((contentW * zoom).dp, (contentH * zoom).dp)) {
+                    // ONE box: true paper/ruler/card layout at full mm size, scaled once by the
+                    // CSS-style zoom layer. requiredSize is essential: a plain size() would be
+                    // clamped to the parent's bounds and halve the sheet.
+                    Box(
+                        modifier = Modifier
+                            .requiredSize(contentW.dp, contentH.dp)
+                            .graphicsLayer {
+                                scaleX = zoom
+                                scaleY = zoom
+                                transformOrigin = TransformOrigin(0f, 0f)
+                            },
+                    ) {
                         Box(
-                            modifier = Modifier
-                                .size(contentW.dp, contentH.dp)
-                                .graphicsLayer {
-                                    scaleX = zoom
-                                    scaleY = zoom
-                                    transformOrigin = TransformOrigin(0f, 0f)
-                                },
-                        ) {
-                            Box(
                                 modifier = Modifier
+                                    .testTag("sheet-paper")
                                     .offset(x = rulerTotalDp.dp, y = rulerTotalDp.dp)
                                     .size(paperWdp.dp, paperHdp.dp)
                                     // design: 0 24px 56px -14px rgba(0,0,0,.36) + 0 6px 18px -4px rgba(0,0,0,.22) + 1px hairline
@@ -303,10 +355,8 @@ fun SheetCanvas(
             }
         }
     }
-}
 
-/** Millimetre ruler: one small number every 10 mm — like the HTML `ui-overlay` ruler. */
-@Composable
+/** Millimetre ruler: one small number every 10 mm — like the HTML `ui-overlay` ruler. */@Composable
 private fun RulerBar(
     vertical: Boolean,
     lengthMm: Float,
@@ -396,37 +446,35 @@ private fun EmptyPaperMessage(
                 modifier = Modifier.padding(top = 4.dp).widthIn(max = 240.dp),
             )
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                modifier = Modifier.padding(top = 16.dp).widthIn(max = 300.dp).fillMaxWidth(),
             ) {
-                val galleryInteraction = remember { MutableInteractionSource() }
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(sheetGreen)
-                        .pressScale(galleryInteraction)
-                        .clickable(interactionSource = galleryInteraction, indication = null, onClick = onPickGallery)
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                // M3 Expressive filled action — the sheet's primary empty-state affordance.
+                Button(
+                    onClick = onPickGallery,
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(containerColor = sheetGreen, contentColor = Color.White),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    modifier = Modifier.weight(1f),
                 ) {
-                    Icon(Icons.Filled.AddPhotoAlternate, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Text("رفع صور البطاقات", color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Icon(Icons.Filled.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(16.dp))
+                    androidx.compose.foundation.layout.Spacer(Modifier.width(5.dp))
+                    Text("رفع الصور", fontWeight = FontWeight.Black, fontSize = 11.sp, maxLines = 1)
                 }
-                val cameraInteraction = remember { MutableInteractionSource() }
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(Color.White)
-                        .border(1.dp, Color(0xFFD4D4D4), RoundedCornerShape(percent = 50))
-                        .pressScale(cameraInteraction)
-                        .clickable(interactionSource = cameraInteraction, indication = null, onClick = onCaptureCamera)
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                // M3 outlined secondary action.
+                OutlinedButton(
+                    onClick = onCaptureCamera,
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF262626),
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    modifier = Modifier.weight(1f),
                 ) {
-                    Icon(Icons.Filled.CameraAlt, contentDescription = null, tint = Color(0xFF262626), modifier = Modifier.size(16.dp))
-                    Text("الكاميرا", color = Color(0xFF262626), fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Icon(Icons.Filled.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                    androidx.compose.foundation.layout.Spacer(Modifier.width(5.dp))
+                    Text("الكاميرا", fontWeight = FontWeight.Black, fontSize = 11.sp, maxLines = 1)
                 }
             }
             Text(

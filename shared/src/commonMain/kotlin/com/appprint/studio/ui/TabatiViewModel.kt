@@ -331,7 +331,9 @@ class TabatiViewModel : ViewModel() {
 
     // ------------------------------------------------------------------ selection & editing
 
-    fun selectCard(id: Long?) = _state.update { it.copy(selectedCardId = id, longPressSheetCardId = null) }
+    // Selecting/deselecting must NOT dismiss the long-press quick sheet: an empty-canvas
+    // tap can race the card's pointer-up. The dialog dismisses itself explicitly.
+    fun selectCard(id: Long?) = _state.update { it.copy(selectedCardId = id) }
     /** Direct card patch by id (border / guides toggles — no undo per tap). */
     fun updateCard(id: Long, transform: (CardItem) -> CardItem) = _state.update { s ->
         s.copy(cards = s.cards.map { if (it.id == id) transform(it) else it })
