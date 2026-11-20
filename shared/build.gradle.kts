@@ -29,6 +29,7 @@ kotlin {
     android {
         namespace = "com.appprint.studio.shared"
         compileSdk = 37
+        compileSdkMinor = 1
         minSdk = 26
         // Enables Compose Multiplatform resources (Res class + accessors) for the androidLibrary target
         androidResources {

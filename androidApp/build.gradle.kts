@@ -13,13 +13,14 @@ android {
     namespace = "com.appprint.studio"
     // Compose 1.13: AndroidX stable through BOM 2026.11.01 (API 37 extension 1).
     compileSdk = 37
+    compileSdkMinor = 1
 
     defaultConfig {
         applicationId = "com.appprint.studio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 38
-        versionName = "2.1.11"
+        versionCode = 39
+        versionName = "2.1.12"
         resourceConfigurations += listOf("ar", "en")
     }
 
@@ -69,6 +70,9 @@ android {
 // Compose Lives in :shared — this module wires the launcher, edge-to-edge and the splash.
 dependencies {
     implementation(project(":shared"))
+    // Jetpack Compose November '26 stable BOM (Compose 1.13.0 / Material 3 1.5.0).
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.material3)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.activity)

@@ -1,7 +1,4 @@
-﻿@file:OptIn(
-    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
-    androidx.compose.foundation.layout.ExperimentalFlexBoxApi::class,
-)
+﻿@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package com.appprint.studio.ui.screens
 
