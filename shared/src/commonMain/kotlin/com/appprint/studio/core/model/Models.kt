@@ -118,8 +118,15 @@ enum class FrameStyle { SOLID, DASHED, DOTTED }
 
 enum class SheetBackground { WHITE, OFFWHITE, TRANSPARENT }
 
-/** Enhancement mode — from DEFAULT_ENHANCE (color / gray / bw document modes). */
-enum class EnhanceMode { COLOR, GRAY, BW }
+/** Enhancement filters — بدون / نظيف / طبيعي / رمادي / أبيض وأسود (نفس ترتيب نافذة «Filter»). */
+enum class EnhanceMode {
+    NONE, CLEAN, NATURAL, GRAYSCALE, BW;
+
+    companion object {
+        /** بطاقات الفلتر بترتيب العرض في نافذة التحسين. */
+        val FILTERS = listOf(NONE, CLEAN, NATURAL, GRAYSCALE, BW)
+    }
+}
 
 /**
  * Scanner-like enhance, values in *percent of identity* (100 = untouched) —
@@ -130,7 +137,7 @@ data class EnhanceSettings(
     val contrast: Float = 100f,
     val saturation: Float = 100f,
     val sharpness: Float = 100f,
-    val mode: EnhanceMode = EnhanceMode.COLOR,
+    val mode: EnhanceMode = EnhanceMode.NONE,
     val shadowLift: Boolean = false,
     /** Small tilt/deskew, degrees. */
     val tilt: Float = 0f,
@@ -139,12 +146,22 @@ data class EnhanceSettings(
 ) {
     val isIdentity: Boolean get() =
         brightness == 100f && contrast == 100f && saturation == 100f && sharpness == 100f &&
-            mode == EnhanceMode.COLOR && !shadowLift && tilt == 0f && cropPercent == 0
+            mode == EnhanceMode.NONE && !shadowLift && tilt == 0f && cropPercent == 0
 
     companion object {
         val IDENTITY = EnhanceSettings()
+
         /** «تحسين تلقائي» scanner preset from the design (brightness 108 / contrast 118 / saturation 105 / sharpness 135 / shadow-lift). */
-        val AUTO = EnhanceSettings(brightness = 108f, contrast = 118f, saturation = 105f, sharpness = 135f, mode = EnhanceMode.COLOR, shadowLift = true)
+        val AUTO = EnhanceSettings(brightness = 108f, contrast = 118f, saturation = 105f, sharpness = 135f, mode = EnhanceMode.NONE, shadowLift = true)
+
+        /** إعدادات الفلتر كاملة — تُطبق كباقة عند اختيار البطاقة من نافذة الفلتر. */
+        fun preset(mode: EnhanceMode): EnhanceSettings = when (mode) {
+            EnhanceMode.NONE -> EnhanceSettings()
+            EnhanceMode.CLEAN -> EnhanceSettings(brightness = 106f, contrast = 112f, saturation = 104f, sharpness = 120f, mode = EnhanceMode.NONE, shadowLift = true)
+            EnhanceMode.NATURAL -> EnhanceSettings(brightness = 103f, contrast = 106f, saturation = 112f, sharpness = 110f, mode = EnhanceMode.NONE)
+            EnhanceMode.GRAYSCALE -> EnhanceSettings(brightness = 104f, contrast = 112f, saturation = 100f, sharpness = 118f, mode = EnhanceMode.GRAYSCALE)
+            EnhanceMode.BW -> EnhanceSettings(brightness = 104f, contrast = 120f, saturation = 100f, sharpness = 122f, mode = EnhanceMode.BW)
+        }
     }
 }
 

@@ -1150,10 +1150,20 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
             onCheckedChange = { v -> viewModel.updateSelectedEnhance { it.copy(shadowLift = v) } },
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            PanelChoiceChip(Str.mode_color, selected = selected.enhance.mode == EnhanceMode.COLOR, onClick = { viewModel.updateSelectedEnhance { it.copy(mode = EnhanceMode.COLOR) } }, modifier = Modifier.weight(1f))
-            PanelChoiceChip(Str.mode_bw, selected = selected.enhance.mode == EnhanceMode.BW, onClick = { viewModel.updateSelectedEnhance { it.copy(mode = EnhanceMode.BW) } }, modifier = Modifier.weight(1f))
-            PanelChoiceChip(Str.mode_gray, selected = selected.enhance.mode == EnhanceMode.GRAY, onClick = { viewModel.updateSelectedEnhance { it.copy(mode = EnhanceMode.GRAY) } }, modifier = Modifier.weight(1f))
+        // فلاتر التحسين السريعة — نفس نمط أيقونات نافذة «Filter» (صورة + سطور) وبأسماء عربية
+        PanelSectionHeader(Str.filter_title)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            EnhanceMode.FILTERS.forEach { mode ->
+                FilterCard(
+                    label = filterLabel(mode),
+                    selected = selected.enhance.mode == mode,
+                    onClick = { viewModel.updateSelectedEnhance { com.appprint.studio.core.model.EnhanceSettings.preset(mode) } },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
 
         SectionBox {
@@ -1177,6 +1187,86 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                 .clickable { viewModel.resetSelectedEnhanceOriginal() }
                 .padding(vertical = 10.dp),
         )
+    }
+}
+
+/** اسم الفلتر بالعربية — نفس أسماء نافذة «Filter». */
+private fun filterLabel(mode: EnhanceMode): String = when (mode) {
+    EnhanceMode.NONE -> Str.filter_none
+    EnhanceMode.CLEAN -> Str.filter_clean
+    EnhanceMode.NATURAL -> Str.filter_natural
+    EnhanceMode.GRAYSCALE -> Str.filter_grayscale
+    EnhanceMode.BW -> Str.filter_bw
+}
+
+/**
+ * بطاقة فلتر التحسين — نفس تصميم أيقونات «Filter»: إطار مستدير بأيقونة صورة + سطور،
+ * والاسم العربي تحتها؛ المحدد بإطار ملوّن وخلفية ثانوية.
+ */
+@Composable
+private fun FilterCard(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val interaction = remember { MutableInteractionSource() }
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) scheme.secondaryContainer else scheme.surfaceContainerHigh)
+            .border(2.dp, if (selected) scheme.primary else scheme.outlineVariant, RoundedCornerShape(14.dp))
+            .pressScale(interaction)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        FilterGlyph(selected = selected)
+        Text(
+            text = label,
+            fontSize = 9.sp,
+            lineHeight = 11.sp,
+            fontWeight = FontWeight.ExtraBold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            maxLines = 2,
+            color = if (selected) scheme.onSecondaryContainer else scheme.onSurface,
+        )
+    }
+}
+
+/** أيقونة الفلتر — صورة (جبل وشمس) مع سطور نصية بجانبها، كما في نافذة Filter. */
+@Composable
+private fun FilterGlyph(selected: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    val tint = if (selected) scheme.primary else scheme.onSurfaceVariant
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Icon(
+            Icons.Filled.Image,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(15.dp),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(1.5.dp)) {
+            Box(
+                modifier = Modifier
+                    .width(9.dp)
+                    .height(1.5.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(tint),
+            )
+            Box(
+                modifier = Modifier
+                    .width(6.dp)
+                    .height(1.5.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(tint.copy(alpha = 0.65f)),
+            )
+        }
     }
 }
 

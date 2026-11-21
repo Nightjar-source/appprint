@@ -54,7 +54,8 @@ object EnhanceMath {
         }
 
         when (settings.mode) {
-            EnhanceMode.COLOR -> {
+            // بدون / نظيف / طبيعي — مسار الألوان نفسه (الفرق في قيم البطاقة).
+            EnhanceMode.NONE, EnhanceMode.CLEAN, EnhanceMode.NATURAL -> {
                 // mix saturation towards luma with factor sf
                 val satR = rs * (1 - sf); val satG = gs * (1 - sf); val satB = bs * (1 - sf)
                 row(satR + sf, satG, satB, 128f * (1f - cf), 0)
@@ -62,7 +63,7 @@ object EnhanceMath {
                 row(satR, satG, satB + sf, 128f * (1f - cf), 10)
                 m[18] = 1f
             }
-            EnhanceMode.GRAY -> {
+            EnhanceMode.GRAYSCALE -> {
                 row(rs * cf * b, gs * cf * b, bs * cf * b, 128f * (1f - cf), 0)
                 row(rs * cf * b, gs * cf * b, bs * cf * b, 128f * (1f - cf), 5)
                 row(rs * cf * b, gs * cf * b, bs * cf * b, 128f * (1f - cf), 10)
@@ -79,7 +80,6 @@ object EnhanceMath {
         }
         return m
     }
-
     /**
      * Exact per-pixel pipeline, in-place on an ARGB int array (row-major, [stride] = width).
      * [sharpnessPercent] > 100 applies the design's 1-ring unsharp mask pass (requires full image).
@@ -93,7 +93,7 @@ object EnhanceMath {
         val brightF = brightnessFactor(settings.brightness, settings.shadowLift)
         val cf = contrastFactor(settings.contrast)
         val sf = saturationFactor(settings.saturation)
-        val grayish = settings.mode != EnhanceMode.COLOR
+        val grayish = settings.mode == EnhanceMode.GRAYSCALE || settings.mode == EnhanceMode.BW
 
         for (i in pixels.indices) {
             var r = (pixels[i] shr 16) and 0xFF
