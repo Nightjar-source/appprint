@@ -104,7 +104,7 @@ import kotlinx.coroutines.delay
 fun AppRoot(
     viewModel: TabatiViewModel = viewModel(),
     // AdMob banner slot (Android-only implementation supplied by the launcher activity).
-    adBanner: @Composable () -> Unit = {},
+    adBanner: @Composable (Modifier) -> Unit = {},
     // Shows a full-screen interstitial, then runs the action when the ad is closed.
     showInterstitial: ((onClosed: () -> Unit) -> Unit)? = null,
 ) {

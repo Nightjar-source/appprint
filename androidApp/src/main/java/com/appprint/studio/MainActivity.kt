@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
             // AdMob: test banner slot + test interstitial on PDF save / share.
             val adController = remember { AdMobController(this) }
             AppRoot(
-                adBanner = { AdMobBanner() },
+                adBanner = { modifier -> AdMobBanner(modifier) },
                 showInterstitial = { onClosed -> adController.show(onClosed) },
             )
         }

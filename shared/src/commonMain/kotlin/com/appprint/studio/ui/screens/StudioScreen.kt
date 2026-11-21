@@ -94,7 +94,7 @@ fun StudioScreen(
     onPickGallery: () -> Unit = onImportMenu,
     onCaptureCamera: () -> Unit = onImportMenu,
     // AdMob banner slot — rendered above the canvas but below every dialog/sheet.
-    adBanner: @Composable () -> Unit = {},
+    adBanner: @Composable (Modifier) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val showRail = Chrome.railVisible()
