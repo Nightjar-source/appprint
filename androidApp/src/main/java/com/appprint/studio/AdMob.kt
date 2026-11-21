@@ -1,7 +1,6 @@
 package com.appprint.studio
 
 import android.content.Context
-import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
@@ -25,7 +24,7 @@ object AdMob {
     const val TEST_REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/6464366343"
 
     fun initialize(context: Context) {
-        MobileAds.initialize(context, AdRequest.Builder().build())
+        MobileAds.initialize(context) { _ -> }
     }
 
     /** Creates a test adaptive/inline banner AdView — wrap in an AndroidView to host it. */
