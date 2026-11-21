@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.appprint.studio.core.platform.AndroidPlatform
 import com.appprint.studio.ui.AppRoot
@@ -40,7 +41,12 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            AppRoot()
+            // AdMob: test banner slot + test interstitial on PDF save / share.
+            val adController = remember { AdMobController(this) }
+            AppRoot(
+                adBanner = { AdMobBanner() },
+                showInterstitial = { onClosed -> adController.show(onClosed) },
+            )
         }
     }
 

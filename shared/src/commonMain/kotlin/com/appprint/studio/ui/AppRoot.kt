@@ -101,7 +101,13 @@ import kotlinx.coroutines.delay
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
+fun AppRoot(
+    viewModel: TabatiViewModel = viewModel(),
+    // AdMob banner slot (Android-only implementation supplied by the launcher activity).
+    adBanner: @Composable () -> Unit = {},
+    // Shows a full-screen interstitial, then runs the action when the ad is closed.
+    showInterstitial: ((onClosed: () -> Unit) -> Unit)? = null,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     TabatiTheme(theme = state.theme) {
         val pickImages = com.appprint.studio.core.platform.rememberImagePickerLauncher(maxItems = 100) { uris ->
@@ -174,19 +180,32 @@ fun AppRoot(viewModel: TabatiViewModel = viewModel()) {
                         else com.appprint.studio.ui.theme.TabatiCanvasLight,
                     ),
             ) {
-        StudioScreen(
+                // interstitial helper — the action always runs exactly once: after the ad closes
+                // (or immediately when no interstitial is wired, e.g. desktop/iOS/tests).
+                val withInterstitial: (() -> Unit) -> Unit = { action ->
+                    val show = showInterstitial
+                    if (show != null) show(action) else action()
+                }
+
+                StudioScreen(
                     viewModel = viewModel,
                     onImportMenu = { importMenuOpen = true },
                     onReplaceImage = onReplaceImage,
                     onPickGallery = pickImages,
                     onCaptureCamera = onCamera,
+                    adBanner = adBanner,
                 )
                 FloatingTopBar(
                     state = state,
                     onBackToSheet = { viewModel.setSection(StudioSection.SHEET) },
                     onCycleTheme = viewModel::cycleTheme,
-                    onShare = { shareSheetOpen = true },
-                    onExportPdf = { notificationPermissionRequester(); viewModel.downloadPdf() },
+                    onShare = { withInterstitial { shareSheetOpen = true } },
+                    onExportPdf = {
+                        withInterstitial {
+                            notificationPermissionRequester()
+                            viewModel.downloadPdf()
+                        }
+                    },
                     onZoomIn = { viewModel.zoomStep(+15f) },
                     onZoomOut = { viewModel.zoomStep(-15f) },
                     onZoomFit = viewModel::zoomFit,

@@ -93,6 +93,8 @@ fun StudioScreen(
     onReplaceImage: (Long) -> Unit,
     onPickGallery: () -> Unit = onImportMenu,
     onCaptureCamera: () -> Unit = onImportMenu,
+    // AdMob banner slot — rendered above the canvas but below every dialog/sheet.
+    adBanner: @Composable () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val showRail = Chrome.railVisible()
@@ -188,6 +190,18 @@ fun StudioScreen(
                 onReplaceImage = onReplaceImage,
                 onClearAllRequest = { clearAllOpen = true },
                 onRequestSwap = { id -> swapFromId = id },
+            )
+        }
+
+        // --------------------------------------- AdMob banner (canvas view only)
+        // Below the nav pill on compact phones, at the bottom on large screens.
+        // Every dialog/sheet below is composed AFTER this, so their scrims always cover
+        // the banner — it can never sit on top of a window.
+        if (state.section == StudioSection.SHEET) {
+            adBanner(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = if (showRail) 16.dp else Chrome.bottomReserve()),
             )
         }
 
