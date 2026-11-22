@@ -222,6 +222,20 @@ actual object PlatformActions {
         }.getOrDefault(false)
     }
 
+    actual fun previewFile(path: String, mimeType: String): Boolean {
+        val context = AndroidPlatform.appContext
+        return runCatching {
+            val file = File(path)
+            if (!file.exists()) return false
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_VIEW)
+                .setDataAndType(uri, mimeType)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            true
+        }.getOrDefault(false)
+    }
+
     actual fun downloadToDownloads(fileName: String, bytes: ByteArray): Boolean {
         val context = AndroidPlatform.appContext
         val displayName = fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_")

@@ -735,14 +735,12 @@ class TabatiViewModel : ViewModel() {
             val name = "طبعتي-معاينة-${s.activePage + 1}.png"
             val path = withContext(Dispatchers.IO) { PlatformActions.writeExport(name, bytes) }
             setProcessing(false)
-            if (path == null) { toast(Str.empty_for_export); return@launch }
-            withContext(Dispatchers.IO) {
-                PlatformActions.shareFile(
-                    path,
-                    "image/png",
-                    subject = "معاينة ورقة بمقياس حقيقي 1:1 (${s.settings.presetKey})",
-                )
+            if (path == null) { setProcessing(false); toast(Str.empty_for_export); return@launch }
+            val opened = withContext(Dispatchers.IO) {
+                PlatformActions.previewFile(path, "image/png")
             }
+            setProcessing(false)
+            toast(if (opened) Str.preview_opened else Str.preview_failed)
         }
     }
 

@@ -48,6 +48,7 @@ actual object PlatformActions {
     ): Boolean = false
 
     actual fun shareFile(path: String, mimeType: String, subject: String?): Boolean = false
+    actual fun previewFile(path: String, mimeType: String): Boolean = false
 
     actual fun writeExport(fileName: String, bytes: ByteArray): String? = null
 

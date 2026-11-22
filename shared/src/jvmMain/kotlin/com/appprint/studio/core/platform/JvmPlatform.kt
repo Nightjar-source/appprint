@@ -174,6 +174,8 @@ actual object PlatformActions {
         }.getOrDefault(false)
     }
 
+    actual fun previewFile(path: String, mimeType: String): Boolean = shareFile(path, mimeType, null)
+
     actual fun writeExport(fileName: String, bytes: ByteArray): String? {
         return runCatching {
             val dir = File(privateDir("exports"))

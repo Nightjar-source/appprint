@@ -55,6 +55,9 @@ expect object PlatformActions {
     /** Shares a file from private storage via the platform share flow (FileProvider on Android). */
     fun shareFile(path: String, mimeType: String, subject: String?): Boolean
 
+    /** Opens a private file in the system viewer (image preview before printing). */
+    fun previewFile(path: String, mimeType: String): Boolean
+
     /**
      * Writes [bytes] directly to the user's public Downloads collection (scoped storage,
      * no storage permission needed on Android 10+). True on success.
