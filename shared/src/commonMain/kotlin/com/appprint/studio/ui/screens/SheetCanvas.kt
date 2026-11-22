@@ -202,9 +202,14 @@ fun SheetCanvas(
             // zoomed in — the scroll container owns it from a safe top-start position. Centering
             // an overflowing scroll content is what trapped the sheet (it could scroll away and
             // never come back), so the extra centering space is only applied when content fits.
-            val contentHTotal = contentH + contentTopPad.value + contentBottomPad.value
+            // Layout size MUST be the scaled size: graphicsLayer does not change layout
+            // bounds. If the unscaled paper size were used, the scroll area would extend far
+            // beyond the visible (zoomed-out) sheet and it could be scrolled fully off-screen.
+            val scaledW = (contentW * zoom).coerceAtLeast(1f)
+            val scaledH = (contentH * zoom).coerceAtLeast(1f)
+            val contentHTotal = scaledH + contentTopPad.value + contentBottomPad.value
             val centerExtra = if (contentHTotal <= maxHeight.value) (maxHeight.value - contentHTotal) / 2f else 0f
-            val horizExtra = if (contentW <= maxWidth.value) (maxWidth.value - contentW) / 2f else 0f
+            val horizExtra = if (scaledW <= maxWidth.value) (maxWidth.value - scaledW) / 2f else 0f
 
             // HTML: canvas is flat md-canvas — no dot grid, no pattern.
             Box(
@@ -221,18 +226,23 @@ fun SheetCanvas(
                         bottom = contentBottomPad + centerExtra.dp,
                     ),
                 ) {
-                    // ONE box: true paper/ruler/card layout at full mm size, scaled once by the
-                    // CSS-style zoom layer. requiredSize is essential: a plain size() would be
-                    // clamped to the parent's bounds and halve the sheet.
+                    // The scrollable layout box has the SCALED size (visual bounds == layout
+                    // bounds), so no empty/oversized area can be scrolled into view and the
+                    // sheet can never fully disappear at any zoom or screen size.
                     Box(
-                        modifier = Modifier
-                            .requiredSize(contentW.dp, contentH.dp)
-                            .graphicsLayer {
-                                scaleX = zoom
-                                scaleY = zoom
-                                transformOrigin = TransformOrigin(0f, 0f)
-                            },
+                        modifier = Modifier.requiredSize(scaledW.dp, scaledH.dp),
                     ) {
+                        // ONE box at true mm size, scaled once by the CSS-style zoom layer.
+                        // requiredSize keeps card art, fonts, rulers and handles in proportion.
+                        Box(
+                            modifier = Modifier
+                                .requiredSize(contentW.dp, contentH.dp)
+                                .graphicsLayer {
+                                    scaleX = zoom
+                                    scaleY = zoom
+                                    transformOrigin = TransformOrigin(0f, 0f)
+                                },
+                        ) {
                         Box(
                                 modifier = Modifier
                                     .testTag("sheet-paper")
@@ -370,6 +380,7 @@ fun SheetCanvas(
             }
         }
     }
+}
 
 /** Millimetre ruler: one small number every 10 mm — like the HTML `ui-overlay` ruler. */@Composable
 private fun RulerBar(

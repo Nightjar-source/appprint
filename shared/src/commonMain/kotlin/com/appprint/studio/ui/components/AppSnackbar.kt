@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,13 +38,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.Role
 import com.appprint.studio.ui.theme.Motion
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 /**
  * Island-style toast — the design's `.m3-float-enter` pill:
@@ -73,20 +70,21 @@ fun AppSnackbar(
     LaunchedEffect(visible) {
         progress.animateTo(
             targetValue = if (visible) 1f else 0f,
-            animationSpec = if (visible) Motion.default() else Motion.effects(),
+            animationSpec = if (visible) Motion.fast() else Motion.effects(),
         )
     }
     val floatProgress = progress.value
-    // design fluidFloatEnter: scale(0.72) translateY(-10px) → scale(1.04) translateY(1px) → scale(1) translateY(0)
-    val floatScale = 0.72f + 0.32f * floatProgress
     Row(
         modifier = modifier
             .testTag("app-toast")
-            .offset { IntOffset(dragX.roundToInt(), 0) }
             .alpha(floatProgress)
+            // Dynamic-Island style: expands horizontally, settles vertically and lifts in.
+            // translationX is in raw pixels (unlike the RTL-aware Modifier.offset), which
+            // fixes the reversed swipe direction in Arabic.
             .graphicsLayer {
-                scaleX = floatScale
-                scaleY = floatScale
+                translationX = dragX
+                scaleX = 0.62f + 0.38f * floatProgress
+                scaleY = 0.78f + 0.22f * floatProgress
                 translationY = (1f - floatProgress) * -10f
             }
             .height(36.dp)

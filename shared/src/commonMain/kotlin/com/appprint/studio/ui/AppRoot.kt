@@ -282,6 +282,7 @@ fun AppRoot(
                 onSaveAllPngs = { notificationPermissionRequester(); viewModel.downloadAllPngs() },
                 onSaveHtml = { notificationPermissionRequester(); viewModel.downloadHtml() },
                 onSharePdf = viewModel::sharePdf,
+                onSharePreview = { notificationPermissionRequester(); viewModel.sharePreview() },
                 onDismiss = { shareSheetOpen = false },
             )
         }

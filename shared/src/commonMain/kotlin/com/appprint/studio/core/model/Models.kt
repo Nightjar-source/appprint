@@ -157,8 +157,8 @@ data class EnhanceSettings(
         /** إعدادات الفلتر كاملة — تُطبق كباقة عند اختيار البطاقة من نافذة الفلتر. */
         fun preset(mode: EnhanceMode): EnhanceSettings = when (mode) {
             EnhanceMode.NONE -> EnhanceSettings()
-            EnhanceMode.CLEAN -> EnhanceSettings(brightness = 106f, contrast = 112f, saturation = 104f, sharpness = 120f, mode = EnhanceMode.NONE, shadowLift = true)
-            EnhanceMode.NATURAL -> EnhanceSettings(brightness = 103f, contrast = 106f, saturation = 112f, sharpness = 110f, mode = EnhanceMode.NONE)
+            EnhanceMode.CLEAN -> EnhanceSettings(brightness = 106f, contrast = 112f, saturation = 104f, sharpness = 120f, mode = EnhanceMode.CLEAN, shadowLift = true)
+            EnhanceMode.NATURAL -> EnhanceSettings(brightness = 103f, contrast = 106f, saturation = 112f, sharpness = 110f, mode = EnhanceMode.NATURAL)
             EnhanceMode.GRAYSCALE -> EnhanceSettings(brightness = 104f, contrast = 112f, saturation = 100f, sharpness = 118f, mode = EnhanceMode.GRAYSCALE)
             EnhanceMode.BW -> EnhanceSettings(brightness = 104f, contrast = 120f, saturation = 100f, sharpness = 122f, mode = EnhanceMode.BW)
         }

@@ -631,7 +631,7 @@ class TabatiViewModel : ViewModel() {
                 pageCount = s.pageCount,
                 sheetWidthMm = s.settings.sheetWidthMm,
                 sheetHeightMm = s.settings.sheetHeightMm,
-                jobName = "طبعتي-${s.settings.presetKey}",
+                jobName = "طبعتي-${s.settings.presetKey} (${s.pageCount} أوراق PDF)",
             )
             setProcessing(false)
             if (accepted) {
@@ -669,6 +669,30 @@ class TabatiViewModel : ViewModel() {
             setProcessing(false)
             withContext(Dispatchers.IO) {
                 PlatformActions.shareFile(path, "application/pdf", subject = "ورقة طباعة بمقياس حقيقي 1:1 (${s.settings.presetKey})")
+            }
+        }
+    }
+
+    /** «مشاركة معاينة الورقة» — يشارك صورة الورقة الحالية قبل الطباعة عبر تطبيقات التواصل. */
+    fun sharePreview() {
+        viewModelScope.launch {
+            val s = _state.value
+            if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
+            setProcessing(true)
+            val bytes = withContext(Dispatchers.IO) {
+                PlatformActions.exportPng(s.activePage, s.cards, s.settings)
+            }
+            if (bytes == null) { setProcessing(false); toast(Str.empty_for_export); return@launch }
+            val name = "طبعتي-معاينة-${s.activePage + 1}.png"
+            val path = withContext(Dispatchers.IO) { PlatformActions.writeExport(name, bytes) }
+            setProcessing(false)
+            if (path == null) { toast(Str.empty_for_export); return@launch }
+            withContext(Dispatchers.IO) {
+                PlatformActions.shareFile(
+                    path,
+                    "image/png",
+                    subject = "معاينة ورقة بمقياس حقيقي 1:1 (${s.settings.presetKey})",
+                )
             }
         }
     }

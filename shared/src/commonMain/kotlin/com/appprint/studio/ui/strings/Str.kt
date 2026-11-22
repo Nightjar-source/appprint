@@ -175,6 +175,8 @@ object Str {
     const val share_html_sub = "نسخة ويب مستقلة 100%"
     const val share_apps = "مشاركة للتطبيقات"
     const val share_apps_sub = "واتساب، تيليجرام، بريد"
+    const val share_preview = "مشاركة معاينة الورقة"
+    const val share_preview_sub = "الورقة الحالية قبل الطباعة"
     const val print_accepted = "تم إرسال مهمة الطباعة إلى الطابعة"
     const val print_fallback = "تعذرت الطباعة — حُفظ الملف في التنزيلات بدلاً منها"
     const val empty_for_export = "الورقة فارغة — أضف بطاقة أولاً"
