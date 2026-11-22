@@ -39,6 +39,7 @@ object AppDataStore {
     private const val LEGACY_PREFS = "tabati_prefs"
     private const val LEGACY_THEME_KEY = "theme"
     private val THEME_KEY = stringPreferencesKey("theme")
+    private val UI_STATE_KEY = stringPreferencesKey("ui_state")
 
     /** Synchronous in-memory cache — atomic reads, no coroutine needed on the UI thread. */
     private val cache = ConcurrentHashMap<String, String>()
@@ -60,12 +61,29 @@ object AppDataStore {
                     else cache.putIfAbsent(THEME_KEY.name, AppTheme.SYSTEM.name)
                 }
         }
+        scope.launch {
+            ds.data
+                .map { it[UI_STATE_KEY] }
+                .distinctUntilChanged()
+                .collect { json -> if (json != null) cache[UI_STATE_KEY.name] = json }
+        }
         // Prime the cache synchronously-async: first read populates, then the collector keeps it fresh.
         scope.launch {
             val first = ds.data.first()[THEME_KEY] ?: AppTheme.SYSTEM.name
             cache[THEME_KEY.name] = first
         }
     }
+
+    /** Full session snapshot — persisted JSON (cards + settings + UI state). */
+    fun saveUiState(json: String) {
+        scope.launch {
+            AndroidPlatform.appContext.settingsDataStore.edit { it[UI_STATE_KEY] = json }
+        }
+        cache[UI_STATE_KEY.name] = json
+    }
+
+    /** Synchronous read from the in-memory mirror (null when no snapshot saved yet). */
+    fun loadUiStateSync(): String? = cache[UI_STATE_KEY.name]
 
     /** 0-cost synchronous read from the in-memory mirror. */
     fun loadThemeSync(): AppTheme {

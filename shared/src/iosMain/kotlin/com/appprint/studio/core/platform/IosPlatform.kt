@@ -12,6 +12,9 @@ actual object PlatformActions {
 
     actual fun saveTheme(theme: AppTheme) = Unit
 
+    actual fun saveUiSnapshot(json: String) = Unit
+    actual fun loadUiSnapshot(): String? = null
+
     actual fun privateDir(name: String): String {
         val base = NSTemporaryDirectory().removeSuffix("/")
         val dir = "$base/$name"

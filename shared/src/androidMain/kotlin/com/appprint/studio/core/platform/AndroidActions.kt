@@ -47,6 +47,9 @@ actual object PlatformActions {
 
     actual fun saveTheme(theme: AppTheme) = AppDataStore.saveTheme(theme)
 
+    actual fun saveUiSnapshot(json: String) = AppDataStore.saveUiState(json)
+    actual fun loadUiSnapshot(): String? = AppDataStore.loadUiStateSync()
+
     // ------------------------------------------------------------- filesystem
 
     actual fun privateDir(name: String): String =

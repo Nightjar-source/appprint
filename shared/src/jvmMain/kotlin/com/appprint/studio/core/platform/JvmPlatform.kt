@@ -24,6 +24,14 @@ actual object PlatformActions {
         runCatching { Preferences.userRoot().node(PREF_NODE).put(KEY_THEME, theme.name) }
     }
 
+    // Desktop verification target: persist the snapshot through java.util.prefs too.
+    actual fun saveUiSnapshot(json: String) {
+        runCatching { Preferences.userRoot().node(PREF_NODE).put("ui_state", json) }
+    }
+
+    actual fun loadUiSnapshot(): String? =
+        runCatching { Preferences.userRoot().node(PREF_NODE).get("ui_state", null) }.getOrNull()
+
     actual fun privateDir(name: String): String {
         val base = File(System.getProperty("user.home"), ".tabati/$name")
         base.mkdirs()

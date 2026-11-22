@@ -27,6 +27,10 @@ expect object PlatformActions {
     fun loadTheme(): AppTheme
     fun saveTheme(theme: AppTheme)
 
+    /** Full session snapshot persistence (cards + settings + UI state) —survives process death. */
+    fun saveUiSnapshot(json: String)
+    fun loadUiSnapshot(): String?
+
     /** Private directory inside the app sandbox; created on demand. Absolute path. */
     fun privateDir(name: String): String
 

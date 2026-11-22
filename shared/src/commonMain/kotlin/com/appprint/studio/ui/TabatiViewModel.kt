@@ -14,7 +14,9 @@ import com.appprint.studio.core.model.PaperPreset
 import com.appprint.studio.core.model.SheetBackground
 import com.appprint.studio.core.model.SheetFrame
 import com.appprint.studio.core.model.SheetSettings
+import com.appprint.studio.core.model.UiSnapshot
 import com.appprint.studio.core.platform.PlatformActions
+import kotlinx.serialization.json.Json
 import com.appprint.studio.ui.strings.Str
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,6 +85,53 @@ class TabatiViewModel : ViewModel() {
     private val undoStack = ArrayDeque<TabatiUiState>()
     private val _canUndo = MutableStateFlow(false)
     val canUndo: StateFlow<Boolean> = _canUndo.asStateFlow()
+
+    init {
+        restoreSnapshot()
+    }
+
+    /** Restore the exact previous session (images already imported, placement, zoom, section). */
+    private fun restoreSnapshot() {
+        val json = PlatformActions.loadUiSnapshot() ?: return
+        runCatching {
+            val snap = Json.decodeFromString<UiSnapshot>(json)
+            if (snap.version != 1) return
+            idCounter = snap.nextId.coerceAtLeast(100L)
+            _state.value = TabatiUiState(
+                theme = snap.theme,
+                section = runCatching { StudioSection.valueOf(snap.section) }.getOrDefault(StudioSection.SHEET),
+                settings = snap.settings,
+                cards = snap.cards,
+                selectedCardId = snap.selectedCardId,
+                activePage = snap.activePage.coerceAtLeast(0),
+                forcedPages = snap.forcedPages.coerceAtLeast(0),
+                zoomMode = runCatching { ZoomMode.valueOf(snap.zoomMode) }.getOrDefault(ZoomMode.FIT),
+                manualZoomPercent = snap.manualZoomPercent.coerceIn(50f, 200f),
+                enhanceScope = runCatching { EnhanceScope.valueOf(snap.enhanceScope) }.getOrDefault(EnhanceScope.SINGLE),
+                compareBefore = snap.compareBefore,
+            )
+        }
+    }
+
+    /** Persist everything the user changed — called debounced from AppRoot. */
+    fun persistState() {
+        val s = _state.value
+        val snap = UiSnapshot(
+            theme = s.theme,
+            section = s.section.name,
+            settings = s.settings,
+            cards = s.cards,
+            selectedCardId = s.selectedCardId,
+            activePage = s.activePage,
+            forcedPages = s.forcedPages,
+            zoomMode = s.zoomMode.name,
+            manualZoomPercent = s.manualZoomPercent,
+            enhanceScope = s.enhanceScope.name,
+            compareBefore = s.compareBefore,
+            nextId = idCounter,
+        )
+        runCatching { PlatformActions.saveUiSnapshot(Json.encodeToString(snap)) }
+    }
 
     private fun pushUndo() {
         undoStack.addLast(_state.value.copy(toast = null))

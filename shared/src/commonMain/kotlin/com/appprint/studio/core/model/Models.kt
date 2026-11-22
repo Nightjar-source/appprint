@@ -1,5 +1,7 @@
 ﻿package com.appprint.studio.core.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Core models for «طبعتي — استوديو الطباعة الذكي» — UI-free, pure Kotlin,
  * ported 1:1 from the approved HTML design (CARD_TYPES / PAPER_SIZES /
@@ -132,6 +134,7 @@ enum class EnhanceMode {
  * Scanner-like enhance, values in *percent of identity* (100 = untouched) —
  * matches the HTML DEFAULT_ENHANCE contract exactly.
  */
+@Serializable
 data class EnhanceSettings(
     val brightness: Float = 100f,
     val contrast: Float = 100f,
@@ -166,6 +169,7 @@ data class EnhanceSettings(
 }
 
 /** Frame + print chrome of the sheet (from DEFAULT_FRAME). */
+@Serializable
 data class SheetFrame(
     val sheet: Boolean = true,
     val card: Boolean = true,
@@ -182,6 +186,7 @@ data class SheetFrame(
 }
 
 /** A single card placed (or to place) on a sheet. Coordinates in millimetres. */
+@Serializable
 data class CardItem(
     val id: Long,
     val typeKey: String,
@@ -226,6 +231,7 @@ data class CardItem(
 }
 
 /** Sheet (paper) configuration. */
+@Serializable
 data class SheetSettings(
     val presetKey: String = PaperPreset.A4.key,
     val customWidthMm: Float = 210f,

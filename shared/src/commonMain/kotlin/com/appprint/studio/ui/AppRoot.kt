@@ -109,6 +109,17 @@ fun AppRoot(
     showInterstitial: ((onClosed: () -> Unit) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Persist the full session (settings, cards, placement, zoom) after any change — the
+    // debounce keeps DataStore writes cheap while guaranteeing a sudden exit restores it.
+    LaunchedEffect(
+        state.settings, state.cards, state.activePage, state.section, state.theme,
+        state.zoomMode, state.manualZoomPercent, state.selectedCardId, state.forcedPages,
+        state.enhanceScope, state.compareBefore,
+    ) {
+        delay(400)
+        viewModel.persistState()
+    }
     TabatiTheme(theme = state.theme) {
         val pickImages = com.appprint.studio.core.platform.rememberImagePickerLauncher(maxItems = 100) { uris ->
             viewModel.importImages(uris)
