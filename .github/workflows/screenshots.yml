@@ -79,6 +79,7 @@ jobs:
               for tc in root.iter('testcase'):
                   for err in list(tc.iter('error')) + list(tc.iter('failure')):
                       out.append('TEST ' + tc.get('classname', '') + '.' + tc.get('name', ''))
+                      out.append('MESSAGE ' + str(err.get('message', ''))[:1200])
                       text = (err.text or '') + '\n' + (err.get('message', '') or '')
                       lines = [l.strip() for l in text.splitlines()]
                       exceptions = [l for l in lines if re.match(r'^[A-Za-z_.$][\w.$]*(Exception|Error|Cause)', l)]
