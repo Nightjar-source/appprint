@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -36,8 +37,8 @@ object AdMob {
     const val TEST_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/6617462939"
     const val TEST_REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/6464366343"
 
-    /** Banner height cap — strictly below the 48dp navigation/pill clearance. */
-    const val BANNER_HEIGHT_DP = 40
+    /** Banner height — exactly 48dp as required (inline adaptive, max height 48dp). */
+    const val BANNER_HEIGHT_DP = 48
 
     fun initialize(context: Context) {
         MobileAds.initialize(context) { _ -> }
@@ -48,6 +49,15 @@ object AdMob {
         adUnitId = TEST_BANNER_AD_UNIT_ID
         setAdSize(AdSize.getInlineAdaptiveBannerAdSize(320, BANNER_HEIGHT_DP))
         setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        adListener = object : AdListener() {
+            override fun onAdLoaded() {
+                android.util.Log.d("AdMob", "TEST BANNER LOADED — ${adSize?.height ?: BANNER_HEIGHT_DP}dp")
+            }
+
+            override fun onAdFailedToLoad(error: com.google.android.gms.ads.LoadAdError) {
+                android.util.Log.w("AdMob", "TEST BANNER FAILED: ${error.message} (code ${error.code})")
+            }
+        }
     }
 }
 

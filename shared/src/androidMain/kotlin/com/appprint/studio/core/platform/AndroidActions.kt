@@ -179,23 +179,24 @@ actual object PlatformActions {
         return runCatching {
             val printManager = context.getSystemService(android.content.Context.PRINT_SERVICE) as? PrintManager
                 ?: return false
-            val file = File(context.cacheDir, "$jobName.pdf")
-            FileOutputStream(file).use { it.write(pdfBytes) }
+            val safeFile = File(context.cacheDir, "tabati-print.pdf")
+            FileOutputStream(safeFile).use { it.write(pdfBytes) }
 
+            // A standard media size works with every system print service/printer. Custom
+            // millimetre sizes are rejected by many drivers, which made "الطباعة" fail.
+            val media = when {
+                sheetWidthMm in 210f..212f && sheetHeightMm in 296f..298f -> PrintAttributes.MediaSize.ISO_A4
+                sheetWidthMm in 215f..216f && sheetHeightMm in 278f..280f -> PrintAttributes.MediaSize.NA_LETTER
+                sheetWidthMm in 148f..149f && sheetHeightMm in 209f..210f -> PrintAttributes.MediaSize.ISO_A5
+                else -> PrintAttributes.MediaSize.ISO_A4
+            }
             val attrs = PrintAttributes.Builder()
-                .setMediaSize(
-                    PrintAttributes.MediaSize(
-                        "custom_${sheetWidthMm}x$sheetHeightMm",
-                        "Custom ${sheetWidthMm} x ${sheetHeightMm} mm",
-                        mmToMil(sheetWidthMm),
-                        mmToMil(sheetHeightMm),
-                    ),
-                )
+                .setMediaSize(media)
                 .setResolution(PrintAttributes.Resolution("pdf300", "300 dpi", 300, 300))
                 .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
                 .build()
 
-            printManager.print(jobName, PdfBytesPrintAdapter(file, pageCount, jobName), attrs)
+            printManager.print(jobName, PdfBytesPrintAdapter(safeFile, pageCount, jobName), attrs)
             true
         }.getOrDefault(false)
     }

@@ -2,6 +2,8 @@ package com.appprint.studio
 
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,7 +17,12 @@ import java.io.File
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        // Original native splash screen — keep the Android 12+ SplashScreen visible for a
+        // full 3 seconds as requested (brand glyph on ink, then cross-fade into the app).
+        val splash = installSplashScreen()
+        var keepSplash = true
+        splash.setKeepOnScreenCondition { keepSplash }
+        Handler(Looper.getMainLooper()).postDelayed({ keepSplash = false }, 3000L)
         AndroidPlatform.set(applicationContext)
         AndroidPlatform.setWindow(window)
         // AdMob — Google Mobile Ads SDK init (TEST App ID until the real AdMob publisher unit

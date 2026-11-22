@@ -4,7 +4,7 @@
     <style name="Theme.AppPrint.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/brand_ink</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="windowSplashScreenAnimationDuration">450</item>
+        <item name="windowSplashScreenAnimationDuration">3000</item>
         <item name="postSplashScreenTheme">@style/Theme.AppPrint</item>
     </style>
 

@@ -204,16 +204,19 @@ fun SheetCanvas(
             // inside the viewport in every direction.
             val scaledW = contentW * zoom
             val scaledH = contentH * zoom
-            val maxHScroll = (maxWidth.value - 0.2f * scaledW).coerceAtLeast(0f)
-            val maxVScroll = (maxHeight.value - 0.2f * scaledH).coerceAtLeast(0f)
-            LaunchedEffect(maxHScroll) {
+            // Keep at least 20% of the SHEET itself visible (not of the viewport — the sheet
+            // may be smaller than the screen when zoomed out), in both scroll directions.
+            // ScrollState.value is in PIXELS, so convert the dp limit explicitly.
+            val maxHScrollPx = with(density) { (0.8f * contentW * zoom).dp.toPx().toInt() }
+            val maxVScrollPx = with(density) { (0.8f * contentH * zoom).dp.toPx().toInt() }
+            LaunchedEffect(maxHScrollPx) {
                 snapshotFlow { hScroll.value }.collect { v ->
-                    if (v > maxHScroll) hScroll.scrollTo(maxHScroll.toInt())
+                    if (v > maxHScrollPx) hScroll.scrollTo(maxHScrollPx)
                 }
             }
-            LaunchedEffect(maxVScroll) {
+            LaunchedEffect(maxVScrollPx) {
                 snapshotFlow { vScroll.value }.collect { v ->
-                    if (v > maxVScroll) vScroll.scrollTo(maxVScroll.toInt())
+                    if (v > maxVScrollPx) vScroll.scrollTo(maxVScrollPx)
                 }
             }
             // The sheet must NEVER fully disappear (design: fit keeps it inside the viewport,
