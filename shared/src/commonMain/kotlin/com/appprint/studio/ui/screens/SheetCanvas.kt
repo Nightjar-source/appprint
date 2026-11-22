@@ -202,26 +202,16 @@ fun SheetCanvas(
             // zoomed in — the scroll container owns it from a safe top-start position. Centering
             // an overflowing scroll content is what trapped the sheet (it could scroll away and
             // never come back), so the extra centering space is only applied when content fits.
-            // Layout size MUST be the scaled size: graphicsLayer does not change layout
-            // bounds. If the unscaled paper size were used, the scroll area would extend far
-            // beyond the visible (zoomed-out) sheet and it could be scrolled fully off-screen.
-            val scaledW = (contentW * zoom).coerceAtLeast(1f)
-            val scaledH = (contentH * zoom).coerceAtLeast(1f)
-            val contentHTotal = scaledH + contentTopPad.value + contentBottomPad.value
+            val contentHTotal = contentH + contentTopPad.value + contentBottomPad.value
             val centerExtra = if (contentHTotal <= maxHeight.value) (maxHeight.value - contentHTotal) / 2f else 0f
-            val horizExtra = if (scaledW <= maxWidth.value) (maxWidth.value - scaledW) / 2f else 0f
-
-            // Never enable a scroll axis while the zoomed sheet still fits that axis — an
-            // oversized scroll range was what let the user scroll the whole sheet off-screen.
-            val canScrollV = contentHTotal > maxHeight.value
-            val canScrollH = scaledW > maxWidth.value
+            val horizExtra = if (contentW <= maxWidth.value) (maxWidth.value - contentW) / 2f else 0f
 
             // HTML: canvas is flat md-canvas — no dot grid, no pattern.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (canScrollV) Modifier.verticalScroll(vScroll) else Modifier)
-                    .then(if (canScrollH) Modifier.horizontalScroll(hScroll) else Modifier),
+                    .verticalScroll(vScroll)
+                    .horizontalScroll(hScroll),
             ) {
                 Column(
                     modifier = Modifier.padding(
@@ -232,7 +222,8 @@ fun SheetCanvas(
                     ),
                 ) {
                     // ONE box: true paper/ruler/card layout at full mm size, scaled once by the
-                    // CSS-style zoom layer (layout bounds stay unscaled — matching the tests).
+                    // CSS-style zoom layer. requiredSize is essential: a plain size() would be
+                    // clamped to the parent's bounds and halve the sheet.
                     Box(
                         modifier = Modifier
                             .requiredSize(contentW.dp, contentH.dp)
