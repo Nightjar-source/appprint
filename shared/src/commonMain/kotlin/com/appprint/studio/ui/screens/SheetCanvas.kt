@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -196,6 +197,24 @@ fun SheetCanvas(
             val vScroll = rememberScrollState()
             val hScroll = rememberScrollState()
 
+            // The sheet must never fully disappear: graphicsLayer scales the drawing but NOT
+            // the scrollable layout size, so without a clamp the user can scroll far past the
+            // visible (zoomed-out) paper. Clamp each axis so at least 20% of the sheet stays
+            // inside the viewport in every direction.
+            val scaledW = contentW * zoom
+            val scaledH = contentH * zoom
+            val maxHScroll = (maxWidth.value - 0.2f * scaledW).coerceAtLeast(0f)
+            val maxVScroll = (maxHeight.value - 0.2f * scaledH).coerceAtLeast(0f)
+            LaunchedEffect(maxHScroll) {
+                snapshotFlow { hScroll.value }.collect { v ->
+                    if (v > maxHScroll) hScroll.scrollTo(maxHScroll.toInt())
+                }
+            }
+            LaunchedEffect(maxVScroll) {
+                snapshotFlow { vScroll.value }.collect { v ->
+                    if (v > maxVScroll) vScroll.scrollTo(maxVScroll.toInt())
+                }
+            }
             // The sheet must NEVER fully disappear (design: fit keeps it inside the viewport,
             // min zoom 0.2; manual zoom stays within 50%..200% of fit). When the content fits
             // it is CENTERED (design `items-center justify-center`); when it overflows — e.g.
