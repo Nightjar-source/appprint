@@ -193,6 +193,7 @@ fun SheetCanvas(
             ).coerceAtLeast(0.2f)
             val fitScale = optimal.coerceIn(0.2f, 1.35f)
             val zoom = if (state.zoomMode == ZoomMode.FIT) fitScale else fitScale * (state.manualZoomPercent / 100f)
+            println("SHEETDBG mode=${state.zoomMode} zoom=$zoom contentW=$contentW contentH=$contentH maxW=${maxWidth.value} maxH=${maxHeight.value} fit=$fitScale")
             val vScroll = rememberScrollState()
             val hScroll = rememberScrollState()
 
