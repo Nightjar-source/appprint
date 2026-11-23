@@ -15,10 +15,12 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
+        // Kotlin/Wasm downloads Node.js from here for the browser toolchain.
+        ivy { url = uri("https://nodejs.org/dist") }
     }
 }
 
