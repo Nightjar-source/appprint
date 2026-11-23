@@ -9,6 +9,7 @@ import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import org.khronos.webgl.Int8Array
+import org.khronos.webgl.Uint8ClampedArray
 import org.khronos.webgl.toInt8Array
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
@@ -350,7 +351,7 @@ private fun autoCropEntry(entry: WebFileEntry, id: Long): WebFileEntry? {
     source.height = h
     val ctx = source.getContext("2d") as? CanvasRenderingContext2D ?: return null
     ctx.drawImage(image, 0.0, 0.0, w.toDouble(), h.toDouble())
-    val pixels = ctx.getImageData(0.0, 0.0, w.toDouble(), h.toDouble()).data
+    val pixels = ctx.getImageData(0.0, 0.0, w.toDouble(), h.toDouble()).data as Uint8ClampedArray
 
     var sumR = 0.0
     var sumG = 0.0

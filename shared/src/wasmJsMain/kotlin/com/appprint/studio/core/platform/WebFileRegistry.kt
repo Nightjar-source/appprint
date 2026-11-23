@@ -83,7 +83,7 @@ internal object WebFileRegistry {
             entry.image = element
             done()
         }
-        element.onerror = { done() }
+        element.addEventListener("error", { done() })
         // Decoding the object URL keeps the HTMLImageElement usable for canvas crops/exports.
         element.src = entry.objectUrl
 
