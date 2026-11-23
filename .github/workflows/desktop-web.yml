@@ -1,0 +1,85 @@
+name: Desktop & Web Delivery
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: desktop-web
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify desktop + web compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { java-version: '21', distribution: 'zulu' }
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew
+      - name: Compile native desktop + browser targets
+        run: ./gradlew :desktopApp:classes :webApp:wasmJsBrowserDistribution --stacktrace --no-daemon
+
+  windows:
+    name: Build Windows installer (EXE + MSI)
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { java-version: '21', distribution: 'zulu' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build EXE + MSI
+        shell: pwsh
+        run: ./gradlew :desktopApp:packageExe :desktopApp:packageMsi --stacktrace --no-daemon
+      - name: Collect installers
+        id: collect
+        shell: pwsh
+        run: |
+          $dir = "desktopApp/build/compose/binaries/main"
+          $files = @()
+          $files += Get-ChildItem -Recurse -Filter "*.exe" -Path $dir -ErrorAction SilentlyContinue | Select-Object -First 1
+          $files += Get-ChildItem -Recurse -Filter "*.msi" -Path $dir -ErrorAction SilentlyContinue | Select-Object -First 1
+          $out = "artifacts"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          foreach ($f in $files) { if ($f) { Copy-Item $f.FullName $out; "asset=$($f.Name)" | Out-File -Append $env:GITHUB_OUTPUT } }
+          Get-ChildItem $out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appprint-windows
+          path: artifacts/*
+      - name: Attach installers to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+
+  web:
+    name: Build & deploy PWA
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { java-version: '21', distribution: 'zulu' }
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew
+      - name: Build Wasm web distribution
+        run: ./gradlew :webApp:wasmJsBrowserDistribution --stacktrace --no-daemon
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: webApp/build/dist/wasmJs/productionExecutable
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
