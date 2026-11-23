@@ -15,12 +15,13 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    // Kotlin/Wasm adds a specially laid-out Ivy repository for its Node.js
+    // distribution at configuration time. PREFER_SETTINGS/FAIL_ON_PROJECT_REPOS
+    // reject it, and declaring a plain Ivy repo here uses the wrong layout.
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
         google()
         mavenCentral()
-        // Kotlin/Wasm downloads Node.js from here for the browser toolchain.
-        ivy { url = uri("https://nodejs.org/dist") }
     }
 }
 
