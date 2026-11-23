@@ -44,10 +44,16 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
+          $lines = @()
           Get-ChildItem -Recurse -Path desktopApp\build\compose\logs -Filter "*err.txt" -ErrorAction SilentlyContinue | ForEach-Object {
-            "=== $($_.FullName)"
-            Get-Content -Path $_.FullName
+            $lines += "### $($_.Name)"
+            $lines += "```text"
+            $lines += Get-Content -Path $_.FullName
+            $lines += "```"
           }
+          if ($lines.Count -eq 0) { $lines += "No jpackage error logs were produced." }
+          $lines | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
+          $lines | ForEach-Object { Write-Output "::error::$_" }
       - name: Collect installers
         id: collect
         shell: pwsh
