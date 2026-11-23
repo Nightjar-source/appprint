@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-kotlin { jvmToolchain(21) }
+java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
 dependencies {
     implementation(project(":shared"))
