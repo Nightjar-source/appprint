@@ -37,6 +37,16 @@ jobs:
       - uses: actions/setup-java@v4
         with: { java-version: '21', distribution: 'zulu' }
       - uses: gradle/actions/setup-gradle@v4
+      - name: Use the runner's WiX 3 toolset
+        shell: pwsh
+        run: |
+          $candle = Get-ChildItem -Path "C:\Program Files (x86)\WiX Toolset v3.*\bin\candle.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($candle) {
+            "WIX_PATH=$($candle.DirectoryName)" | Out-File -Append $env:GITHUB_ENV
+            "Using WiX from $($candle.DirectoryName)"
+          } else {
+            "WiX 3 not found; letting the Compose plugin fetch its bundled copy."
+          }
       - name: Build EXE + MSI
         shell: pwsh
         run: ./gradlew :desktopApp:packageExe :desktopApp:packageMsi --stacktrace --no-daemon --no-parallel

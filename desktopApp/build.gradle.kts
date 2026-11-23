@@ -25,11 +25,13 @@ compose.desktop {
             )
             packageName = "AppPrint"
             packageVersion = "2.1.21"
-            description = "طبعتي — استوديو الطباعة الذكي 1:1"
+            // jpackage/MSI metadata must stay ASCII: non-ASCII values break
+            // jpackage's args-file decoding on GitHub-hosted Windows runners.
+            description = "AppPrint Studio"
             vendor = "Nightjar"
-            copyright = "© 2026 Nightjar"
+            copyright = "Copyright 2026 Nightjar"
             windows {
-                menuGroup = "طبعتي"
+                menuGroup = "AppPrint"
                 // Must be a valid 8-4-4-4-12 hexadecimal UUID; jpackage/MSI rejects anything else.
                 upgradeUuid = "8F3C2A1E-6D4B-4F0A-9C21-2026AABBCCDD"
             }
