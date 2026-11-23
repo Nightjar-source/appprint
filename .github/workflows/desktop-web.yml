@@ -39,7 +39,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Build EXE + MSI
         shell: pwsh
-        run: ./gradlew :desktopApp:packageExe :desktopApp:packageMsi --stacktrace --no-daemon
+        run: ./gradlew :desktopApp:packageExe :desktopApp:packageMsi --stacktrace --no-daemon --no-parallel
+      - name: Dump jpackage diagnostics
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse -Path desktopApp\build\compose\logs -Filter "*err.txt" -ErrorAction SilentlyContinue | ForEach-Object {
+            "=== $($_.FullName)"
+            Get-Content -Path $_.FullName
+          }
       - name: Collect installers
         id: collect
         shell: pwsh
