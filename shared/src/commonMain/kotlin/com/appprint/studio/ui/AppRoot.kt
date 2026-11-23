@@ -35,7 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.AutoMode
 import androidx.compose.material.icons.filled.BorderOuter
@@ -336,7 +336,7 @@ private fun FloatingTopBar(
                 container = scheme.secondaryContainer,
                 tint = scheme.onSecondaryContainer,
             ) {
-                Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(19.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(19.dp))
             }
         }
 

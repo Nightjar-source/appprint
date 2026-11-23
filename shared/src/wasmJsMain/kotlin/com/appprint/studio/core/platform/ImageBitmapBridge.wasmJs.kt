@@ -5,8 +5,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
 
 /**
- * Browser file names arrive as object-URL-like tokens. Web canvas decode is done by the
- * launcher; here we attempt a best-effort decode from a data URI when present, else null.
+ * Compose's Kotlin/Wasm `ImageBitmap` construction API is not exposed by the verified public
+ * surface, so on-screen previews keep the shared placeholder. Browser-side canvas crops and PNG
+ * export decode the real HTML `img` elements cached by [WebFileRegistry] instead.
  */
 @Composable
 actual fun rememberCardBitmap(imageUri: String): ImageBitmap? = remember(imageUri) { null }

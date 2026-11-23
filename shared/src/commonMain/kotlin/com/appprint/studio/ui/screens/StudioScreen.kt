@@ -2,6 +2,8 @@
 
 package com.appprint.studio.ui.screens
 
+import com.appprint.studio.core.text.fmt
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -38,7 +40,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Description
@@ -235,9 +237,9 @@ fun StudioScreen(
         deletePageIdx?.let { idx ->
             val count = state.cards.count { it.page == idx }
             com.appprint.studio.ui.components.HtmlDialog(maxWidth = 384.dp, onDismiss = { deletePageIdx = null }) {
-                com.appprint.studio.ui.components.HtmlDialogHeader(Str.delete_page_title.format(idx + 1), { deletePageIdx = null })
+                com.appprint.studio.ui.components.HtmlDialogHeader(Str.delete_page_title.fmt(idx + 1), { deletePageIdx = null })
                 Text(
-                    text = Str.delete_page_body.format(count),
+                    text = Str.delete_page_body.fmt(count),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 17.sp,
@@ -465,7 +467,7 @@ private fun SheetPageBar(
                 contentPadding = PaddingValues(horizontal = 14.dp),
                 modifier = Modifier.height(36.dp),
             ) {
-                Icon(Icons.Filled.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Filled.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.size(5.dp))
                 Text("البدء من جديد", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1)
             }
@@ -551,6 +553,6 @@ private fun HtmlDialogButton(
 }
 
 private fun formatDim(v: Float): String =
-    "%.1f".format(v).trimEnd('0').trimEnd('.')
+    "%.1f".fmt(v).trimEnd('0').trimEnd('.')
 
 

@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -89,11 +90,16 @@ fun PanelSliderRow(
                 color = scheme.onSurface,
             )
         }
-        Slider(
+        val sliderState = rememberSliderState(
             value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
             steps = steps,
+            trackRange = valueRange,
+        )
+        // Parent state remains the source of truth; sync it into the stateful slider.
+        sliderState.value = value
+        Slider(
+            state = sliderState,
+            onValueChange = onValueChange,
             colors = androidx.compose.material3.SliderDefaults.colors(
                 thumbColor = androidx.compose.ui.graphics.Color(0xFF006C47),
                 activeTrackColor = androidx.compose.ui.graphics.Color(0xFF006C47),

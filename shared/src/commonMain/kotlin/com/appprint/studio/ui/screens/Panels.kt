@@ -2,6 +2,8 @@
 
 package com.appprint.studio.ui.screens
 
+import com.appprint.studio.core.text.fmt
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,15 +48,15 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.PhotoSizeSelectLarge
 import androidx.compose.material3.Button
@@ -67,6 +69,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -341,7 +344,7 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
                     Text(
-                        if (state.pageCount > 1) Str.pages_many.format(state.pageCount) else Str.pages_one,
+                        if (state.pageCount > 1) Str.pages_many.fmt(state.pageCount) else Str.pages_one,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -369,7 +372,7 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                     modifier = Modifier.weight(1f).height(44.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                 ) {
-                    Icon(Icons.Filled.Sort, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null, modifier = Modifier.size(15.dp))
                     Spacer6()
                     Text(Str.arrange_by_size, fontWeight = FontWeight.ExtraBold, maxLines = 1)
                 }
@@ -400,7 +403,7 @@ fun PaperPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                             )
                             Spacer8()
                             Text(
-                                Str.cluster_line.format("$key مم", items.size),
+                                Str.cluster_line.fmt("$key مم", items.size),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -510,9 +513,9 @@ private fun PaperSizeChip(preset: PaperPreset, sub: String, selected: Boolean, o
     val interaction = remember { MutableInteractionSource() }
     val icon = when (preset) {
         PaperPreset.A4 -> Icons.Filled.Description
-        PaperPreset.A5 -> Icons.Filled.MenuBook
+        PaperPreset.A5 -> Icons.AutoMirrored.Filled.MenuBook
         PaperPreset.A3 -> Icons.Filled.PhotoSizeSelectLarge
-        PaperPreset.LETTER -> Icons.Filled.Article
+        PaperPreset.LETTER -> Icons.AutoMirrored.Filled.Article
         PaperPreset.LEGAL -> Icons.Filled.Gavel
         PaperPreset.CUSTOM -> Icons.Filled.Tune
     }
@@ -633,7 +636,7 @@ fun CardsPanel(
         // ── بطاقاتك على الورقة (n) — كل البطاقات مع تعديل مباشر ───────────
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(
-                Str.your_cards.format(state.cards.size),
+                Str.your_cards.fmt(state.cards.size),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier.weight(1f),
@@ -690,6 +693,11 @@ private fun CardEditorRow(
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
     val totalDeg = SheetArranger.totalRotation(card).toInt()
+    val angleSliderState = rememberSliderState(
+        value = totalDeg.toFloat(),
+        trackRange = 0f..360f,
+    )
+    angleSliderState.value = totalDeg.toFloat()
 
     Column(
         modifier = Modifier
@@ -821,9 +829,8 @@ private fun CardEditorRow(
                 }
             }
             Slider(
-                value = totalDeg.toFloat(),
+                state = angleSliderState,
                 onValueChange = { v -> viewModel.setCardAngle360(card.id, v, magneticSnap = false) },
-                valueRange = 0f..360f,
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(
@@ -894,7 +901,7 @@ private fun CardEditorRow(
 }
 
 private fun formatDim(v: Float): String =
-    "%.1f".format(v).trimEnd('0').trimEnd('.')
+    "%.1f".fmt(v).trimEnd('0').trimEnd('.')
 
 @Composable
 private fun MiniTogglePill(label: String, onClick: () -> Unit) {
@@ -1038,7 +1045,7 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                     modifier = Modifier.weight(1f),
                 )
                 PanelChoiceChip(
-                    Str.enhance_scope_all.format(imageCount),
+                    Str.enhance_scope_all.fmt(imageCount),
                     selected = state.enhanceScope == com.appprint.studio.ui.EnhanceScope.ALL,
                     onClick = { viewModel.setEnhanceScope(com.appprint.studio.ui.EnhanceScope.ALL) },
                     modifier = Modifier.weight(1f),
@@ -1058,7 +1065,7 @@ fun EnhancePanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    Str.bulk_question.format(imageCount),
+                    Str.bulk_question.fmt(imageCount),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = scheme.onSecondaryContainer,
@@ -1356,7 +1363,7 @@ fun BordersPanel(state: TabatiUiState, viewModel: TabatiViewModel) {
                 value = frame.thickness,
                 valueRange = 0f..3f,
                 onValueChange = viewModel::setFrameThickness,
-                valueText = "${"%.1f".format(frame.thickness)} px",
+                valueText = "${"%.1f".fmt(frame.thickness)} px",
                 steps = 5,
             )
         }

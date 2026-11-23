@@ -10,9 +10,9 @@ composeMultiplatform = "1.13.0-rc01"  # JetBrains Compose Multiplatform 1.13 RC 
 composeBom = "2026.11.01"     # AndroidX Compose stable BOM → 1.13.0
 material3Android = "1.5.0"    # Material 3 1.5.0 stable
 
-# BOM 2026.11.01 is announced but NOT yet published on Google Maven (verified
-# 2026-11-19). The KMP 1.13 RC supplies AndroidX Compose 1.13.0-rc01 to all
-# targets until the stable BOM appears.
+# BOM 2026.11.01 is published on Google Maven (verified 2026-11-23) and maps to
+# AndroidX Compose 1.13.0 / Material 3 1.5.0. JetBrains Compose Multiplatform
+# artifacts remain on the 1.13.0-rc01 line until JetBrains publishes stable.
 navigation3 = "1.2.2"   # androidx.navigation3 (multiplatform artifacts, klibs latestStableVersion=1.2.2)
 adaptive = "1.3.0"   # org.jetbrains.compose.material3.adaptive — Compose Adaptive API (multiplatform, latestStableVersion=1.3.0)
 navigation3Multiplatform = "1.2.0"  # org.jetbrains.androidx.navigation3:navigation3-ui — KMP UI variant (klibs stable=1.2.0)

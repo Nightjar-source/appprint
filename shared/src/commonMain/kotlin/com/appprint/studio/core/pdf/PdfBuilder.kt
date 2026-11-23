@@ -11,21 +11,18 @@ object PdfBuilder {
 
     const val MM_TO_PT: Float = 2.83464567f
 
-    data class Page(
+    class Page(
         val jpegBytes: ByteArray,
         val pixelWidth: Int,
         val pixelHeight: Int,
         val widthPt: Float,
         val heightPt: Float,
-    ) {
-        override fun equals(other: Any?): Boolean = this === other
-        override fun hashCode(): Int = System.identityHashCode(this)
-    }
+    )
 
     fun build(pages: List<Page>, title: String = "tabati-print"): ByteArray {
         val buffer = ByteArrayBuilder()
 
-        fun pushString(s: String) = buffer.write(s.toByteArray(Charsets.US_ASCII))
+        fun pushString(s: String) = buffer.write(s.encodeToByteArray())
 
         buffer.write(byteArrayOf(0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34, 0x0A, 0x25, 0xE2.toByte(), 0xE3.toByte(), 0xCF.toByte(), 0xD3.toByte(), 0x0A))
 
@@ -49,7 +46,7 @@ object PdfBuilder {
             val contentObj = 5 + idx * 3
             reserveObject(); reserveObject(); reserveObject()
 
-            val stream = "q ${format(page.widthPt)} 0 0 ${format(page.heightPt)} 0 0 cm /Im$idx Do Q".toByteArray(Charsets.US_ASCII)
+            val stream = "q ${format(page.widthPt)} 0 0 ${format(page.heightPt)} 0 0 cm /Im$idx Do Q".encodeToByteArray()
 
             objects.add(
                 Obj(
@@ -109,15 +106,15 @@ object PdfBuilder {
             private set
 
         fun write(chunk: ByteArray) {
-            ensure(bytes.size + chunk.size)
-            System.arraycopy(chunk, 0, bytes, size, chunk.size)
+            ensure(size + chunk.size)
+            chunk.copyInto(bytes, destinationOffset = size)
             size += chunk.size
         }
 
         private fun ensure(min: Int) {
             if (bytes.size < min) {
                 val grown = ByteArray((bytes.size * 2).coerceAtLeast(min))
-                System.arraycopy(bytes, 0, grown, 0, bytes.size)
+                bytes.copyInto(grown)
                 bytes = grown
             }
         }

@@ -1,5 +1,7 @@
 ﻿package com.appprint.studio.ui.components
 
+import com.appprint.studio.core.text.fmt
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -67,14 +69,14 @@ fun ShareSheet(
             GridAction(
                 icon = Icons.Filled.Image,
                 title = Str.share_png_one,
-                sub = Str.share_png_one_sub.format(currentPage + 1),
+                sub = Str.share_png_one_sub.fmt(currentPage + 1),
                 onClick = { onDismiss(); onSavePngCurrent() },
                 modifier = Modifier.weight(1f),
             )
             GridAction(
                 icon = Icons.Filled.Collections,
                 title = Str.share_png_all,
-                sub = Str.share_png_all_sub.format(pageCount),
+                sub = Str.share_png_all_sub.fmt(pageCount),
                 onClick = { onDismiss(); onSaveAllPngs() },
                 modifier = Modifier.weight(1f),
             )

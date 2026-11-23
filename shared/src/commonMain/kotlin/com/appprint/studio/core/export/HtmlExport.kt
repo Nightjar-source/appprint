@@ -1,5 +1,7 @@
 ﻿package com.appprint.studio.core.export
 
+import com.appprint.studio.core.text.fmt
+
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.model.FrameStyle
 import com.appprint.studio.core.model.SheetBackground
@@ -31,7 +33,7 @@ object HtmlExport {
             FrameStyle.DASHED -> "dashed"
             FrameStyle.DOTTED -> "dotted"
         }
-        return "border:${frame.thickness.toInt().coerceAtLeast(1)}px $styleName #%06x;".format(frame.colorHex and 0xFFFFFF)
+        return "border:${frame.thickness.toInt().coerceAtLeast(1)}px $styleName #%06x;".fmt(frame.colorHex and 0xFFFFFF)
     }
 
     fun build(
@@ -60,7 +62,7 @@ object HtmlExport {
         val html = """
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>طبعتي — ملف الطباعة</title><style>@page{size:${paperWidthMm}mm ${paperHeightMm}mm;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff}.sheet{width:${paperWidthMm}mm;height:${paperHeightMm}mm;position:relative;overflow:hidden}.sheet:not(:last-child){page-break-after:always;break-after:page}.card{position:absolute;overflow:hidden}@media print{body{margin:0}}</style></head><body>$sheets</body></html>
         """.trimIndent()
-        return html.toByteArray(Charsets.UTF_8)
+        return html.encodeToByteArray()
     }
 
     private fun cardHtml(card: CardItem, frame: SheetFrame, imageSource: (CardItem) -> String): String {
@@ -75,7 +77,7 @@ object HtmlExport {
                 FrameStyle.DASHED -> "dashed"
                 FrameStyle.DOTTED -> "dotted"
             }
-            "border:${frame.thickness.toInt().coerceAtLeast(1)}px $styleName #%06x;".format(frame.colorHex and 0xFFFFFF)
+            "border:${frame.thickness.toInt().coerceAtLeast(1)}px $styleName #%06x;".fmt(frame.colorHex and 0xFFFFFF)
         } else ""
         val guide = if (frame.guides && card.guides) {
             "<div style=\"position:absolute;inset:-1.2mm;border:0.4mm dashed rgba(179,38,56,.7)\"></div>"

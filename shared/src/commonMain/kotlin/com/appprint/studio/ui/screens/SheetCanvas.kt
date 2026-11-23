@@ -1,5 +1,7 @@
 package com.appprint.studio.ui.screens
 
+import com.appprint.studio.core.text.fmt
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -446,7 +448,7 @@ private fun sheetBackgroundColor(settings: com.appprint.studio.core.model.SheetS
     }
 
 private fun formatCaptionDim(v: Float): String =
-    "%.1f".format(v).trimEnd('0').trimEnd('.')
+    "%.1f".fmt(v).trimEnd('0').trimEnd('.')
 
 /** Design: the empty sheet state lives inside the paper — mint icon, caption, actions, demo link. */
 @Composable

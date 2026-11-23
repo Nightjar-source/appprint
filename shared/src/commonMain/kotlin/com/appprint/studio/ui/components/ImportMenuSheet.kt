@@ -1,5 +1,7 @@
 package com.appprint.studio.ui.components
 
+import com.appprint.studio.core.text.fmt
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -31,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -183,7 +186,7 @@ fun CardBadges(
 }
 
 private fun formatDim(v: Float): String =
-    "%.1f".format(v).trimEnd('0').trimEnd('.')
+    "%.1f".fmt(v).trimEnd('0').trimEnd('.')
 
 @Composable
 private fun BadgeLabel(
@@ -222,6 +225,11 @@ fun QuickActionsSheet(
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
     val totalDeg = SheetArranger.totalRotation(card).toInt()
+    val angleSliderState = rememberSliderState(
+        value = totalDeg.toFloat(),
+        trackRange = 0f..360f,
+    )
+    angleSliderState.value = totalDeg.toFloat()
 
     HtmlDialog(maxWidth = 448.dp, onDismiss = onDismiss) {
         // header — name + meta + close
@@ -282,9 +290,8 @@ fun QuickActionsSheet(
                 )
             }
             Slider(
-                value = totalDeg.toFloat(),
+                state = angleSliderState,
                 onValueChange = { v -> viewModel.setCardAngle360(card.id, v, magneticSnap = false) },
-                valueRange = 0f..360f,
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(

@@ -325,8 +325,10 @@ object SheetArranger {
             }
 
             fun findSmartSlot(pageItems: List<CardItem>, cw: Float, ch: Float): PlacedSlot? {
-                val xs = sortedSetOf(margin)
-                val ys = sortedSetOf(margin)
+                // Mutable sets are common stdlib; sorting at read time gives the same
+                // deterministic ascending candidate order as the JVM-only sortedSetOf.
+                val xs = mutableSetOf(margin)
+                val ys = mutableSetOf(margin)
                 for (p in pageItems) {
                     xs.add((p.xMm + p.widthMm + minGap).round(1))
                     xs.add(p.xMm.round(1))
@@ -340,8 +342,8 @@ object SheetArranger {
                 for ((ow, oh) in orientations) {
                     if (ow > printableW + 0.05f || oh > printableH + 0.05f) continue
                     val rotated = ow != cw
-                    val xSeq = if (scanAxis == "row") xs.toList() else xs.toList()
-                    val ySeq = if (scanAxis == "row") ys.toList() else ys.toList()
+                    val xSeq = xs.sorted()
+                    val ySeq = ys.sorted()
                     if (scanAxis == "row") {
                         for (y in ySeq) {
                             if (y < margin - 0.01f || y + oh > paperH - margin + 0.05f) continue

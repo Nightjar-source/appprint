@@ -1,8 +1,11 @@
 ﻿package com.appprint.studio.ui
 
+import com.appprint.studio.core.text.fmt
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appprint.studio.core.arrange.SheetArranger
+import com.appprint.studio.core.coroutines.AppDispatchers
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.core.model.ArrangeMode
 import com.appprint.studio.core.model.CardItem
@@ -18,7 +21,6 @@ import com.appprint.studio.core.model.UiSnapshot
 import com.appprint.studio.core.platform.PlatformActions
 import kotlinx.serialization.json.Json
 import com.appprint.studio.ui.strings.Str
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -231,7 +233,7 @@ class TabatiViewModel : ViewModel() {
         pushUndo()
         viewModelScope.launch {
             setProcessing(true)
-            val imported = withContext(Dispatchers.IO) {
+            val imported = withContext(AppDispatchers.io) {
                 sources.mapNotNull { source -> PlatformActions.importImage(source) }
             }
             if (imported.isEmpty()) {
@@ -265,7 +267,7 @@ class TabatiViewModel : ViewModel() {
                     activePage = arranged.lastOrNull()?.page ?: 0,
                     section = StudioSection.SHEET,
                     processing = false,
-                    toast = TabatiToast(Str.added_images.format(newCards.size)),
+                    toast = TabatiToast(Str.added_images.fmt(newCards.size)),
                 )
             }
         }
@@ -331,7 +333,7 @@ class TabatiViewModel : ViewModel() {
         val path = _state.value.cards.firstOrNull { it.id == id }?.imageUri ?: return
         viewModelScope.launch {
             setProcessing(true)
-            val newPath = withContext(Dispatchers.IO) { PlatformActions.autoCropImage(path, id) }
+            val newPath = withContext(AppDispatchers.io) { PlatformActions.autoCropImage(path, id) }
             setProcessing(false)
             if (newPath != null) {
                 _state.update { s ->
@@ -523,7 +525,7 @@ class TabatiViewModel : ViewModel() {
                 },
                 activePage = b.page,
                 longPressSheetCardId = null,
-                toast = TabatiToast(Str.swapped.format(b.name, (b.page) + 1)),
+                toast = TabatiToast(Str.swapped.fmt(b.name, (b.page) + 1)),
             )
         }
     }
@@ -540,7 +542,7 @@ class TabatiViewModel : ViewModel() {
                 cards = s.cards.map { if (it.id == id) it.copy(page = target, xMm = s.settings.marginMm, yMm = nextY, manualPlacement = true) else it },
                 activePage = target,
                 longPressSheetCardId = null,
-                toast = TabatiToast(Str.moved_page.format(target + 1)),
+                toast = TabatiToast(Str.moved_page.fmt(target + 1)),
             )
         }
     }
@@ -585,7 +587,7 @@ class TabatiViewModel : ViewModel() {
         _state.update { it.copy(pendingBulkPatch = null) }
         _state.update { s -> s.copy(cards = s.cards.map { if (it.imageUri != null) it.copy(enhance = patch, bulkEnhanced = true) else it }) }
         // Real pixel pass happens on export; the preview ColorFilter approximates it instantly.
-        toast(Str.enhance_applied_all.format(_state.value.cards.count { it.imageUri != null }))
+        toast(Str.enhance_applied_all.fmt(_state.value.cards.count { it.imageUri != null }))
     }
 
     fun dismissPendingBulk() = _state.update { it.copy(pendingBulkPatch = null) }
@@ -647,7 +649,7 @@ class TabatiViewModel : ViewModel() {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
             setProcessing(true)
-            val bytes = withContext(Dispatchers.IO) {
+            val bytes = withContext(AppDispatchers.io) {
                 PlatformActions.exportPdf(s.cards, s.settings, s.pageCount)
             }
             setProcessing(false)
@@ -655,11 +657,11 @@ class TabatiViewModel : ViewModel() {
                 toast(Str.empty_for_export)
                 return@launch
             }
-            toast(Str.pdf_saved.format(s.pageCount, s.settings.sheetWidthMm.toInt(), s.settings.sheetHeightMm.toInt()))
+            toast(Str.pdf_saved.fmt(s.pageCount, s.settings.sheetWidthMm.toInt(), s.settings.sheetHeightMm.toInt()))
             // export-completion notification (permission gate lives inside the platform action)
             PlatformActions.showExportNotification(
                 title = Str.export_notif_title,
-                body = Str.pdf_saved.format(s.pageCount, s.settings.sheetWidthMm.toInt(), s.settings.sheetHeightMm.toInt()),
+                body = Str.pdf_saved.fmt(s.pageCount, s.settings.sheetWidthMm.toInt(), s.settings.sheetHeightMm.toInt()),
                 path = "طبعتي-${s.settings.presetKey}.pdf",
             )
         }
@@ -671,7 +673,7 @@ class TabatiViewModel : ViewModel() {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
             setProcessing(true)
-            val bytes = withContext(Dispatchers.IO) {
+            val bytes = withContext(AppDispatchers.io) {
                 PlatformActions.exportPdf(s.cards, s.settings, s.pageCount)
             }
             if (bytes == null) { setProcessing(false); toast(Str.empty_for_export); return@launch }
@@ -687,7 +689,7 @@ class TabatiViewModel : ViewModel() {
                 toast(Str.print_accepted)
             } else {
                 // print service unavailable — save instead so the user still gets the file
-                val saved = withContext(Dispatchers.IO) {
+                val saved = withContext(AppDispatchers.io) {
                     PlatformActions.downloadToDownloads("طبعتي-${s.settings.presetKey}.pdf", bytes)
                 }
                 toast(Str.print_fallback)
@@ -708,15 +710,15 @@ class TabatiViewModel : ViewModel() {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
             setProcessing(true)
-            val bytes = withContext(Dispatchers.IO) {
+            val bytes = withContext(AppDispatchers.io) {
                 PlatformActions.exportPdf(s.cards, s.settings, s.pageCount)
             }
             if (bytes == null) { setProcessing(false); toast(Str.empty_for_export); return@launch }
-            val path = withContext(Dispatchers.IO) {
+            val path = withContext(AppDispatchers.io) {
                 PlatformActions.writeExport("طبعتي-${s.settings.presetKey}.pdf", bytes)
             } ?: run { setProcessing(false); toast(Str.empty_for_export); return@launch }
             setProcessing(false)
-            withContext(Dispatchers.IO) {
+            withContext(AppDispatchers.io) {
                 PlatformActions.shareFile(path, "application/pdf", subject = "ورقة طباعة بمقياس حقيقي 1:1 (${s.settings.presetKey})")
             }
         }
@@ -728,15 +730,15 @@ class TabatiViewModel : ViewModel() {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
             setProcessing(true)
-            val bytes = withContext(Dispatchers.IO) {
+            val bytes = withContext(AppDispatchers.io) {
                 PlatformActions.exportPng(s.activePage, s.cards, s.settings)
             }
             if (bytes == null) { setProcessing(false); toast(Str.empty_for_export); return@launch }
             val name = "طبعتي-معاينة-${s.activePage + 1}.png"
-            val path = withContext(Dispatchers.IO) { PlatformActions.writeExport(name, bytes) }
+            val path = withContext(AppDispatchers.io) { PlatformActions.writeExport(name, bytes) }
             setProcessing(false)
             if (path == null) { setProcessing(false); toast(Str.empty_for_export); return@launch }
-            val opened = withContext(Dispatchers.IO) {
+            val opened = withContext(AppDispatchers.io) {
                 PlatformActions.previewFile(path, "image/png")
             }
             setProcessing(false)
@@ -750,12 +752,12 @@ class TabatiViewModel : ViewModel() {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
             setProcessing(true)
-            val bytes = withContext(Dispatchers.IO) {
+            val bytes = withContext(AppDispatchers.io) {
                 PlatformActions.exportPng(page, s.cards, s.settings)
             }
             setProcessing(false)
             if (bytes == null) { toast(Str.png_saved); return@launch }
-            val ok = withContext(Dispatchers.IO) {
+            val ok = withContext(AppDispatchers.io) {
                 PlatformActions.downloadToDownloads("طبعتي-ورقة-${page + 1}.png", bytes)
             }
             toast(if (ok) Str.png_saved else Str.empty_for_export)
@@ -777,20 +779,20 @@ class TabatiViewModel : ViewModel() {
             setProcessing(true)
             var saved = 0
             for (page in 0 until s.pageCount) {
-                val bytes = withContext(Dispatchers.IO) {
+                val bytes = withContext(AppDispatchers.io) {
                     PlatformActions.exportPng(page, s.cards, s.settings)
                 } ?: continue
-                val ok = withContext(Dispatchers.IO) {
+                val ok = withContext(AppDispatchers.io) {
                     PlatformActions.downloadToDownloads("طبعتي-ورقة-${page + 1}.png", bytes)
                 }
                 if (ok) saved++
             }
             setProcessing(false)
-            toast(if (saved > 0) Str.png_all_saved.format(saved) else Str.empty_for_export)
+            toast(if (saved > 0) Str.png_all_saved.fmt(saved) else Str.empty_for_export)
             if (saved > 0) {
                 PlatformActions.showExportNotification(
                     title = Str.export_notif_title,
-                    body = Str.png_all_saved.format(saved),
+                    body = Str.png_all_saved.fmt(saved),
                     path = "طبعتي-ورقة-1.png",
                 )
             }
@@ -802,13 +804,13 @@ class TabatiViewModel : ViewModel() {
         viewModelScope.launch {
             val s = _state.value
             if (s.cards.isEmpty()) { toast(Str.empty_for_export); return@launch }
-            val html = withContext(Dispatchers.IO) {
+            val html = withContext(AppDispatchers.io) {
                 val pages = (0 until s.pageCount).map { p -> s.cards.filter { it.page == p } }
                 com.appprint.studio.core.export.HtmlExport.build(pages, s.settings.sheetWidthMm, s.settings.sheetHeightMm, s.settings.marginMm, s.settings.frame) { card ->
                     card.imageUri?.let { PlatformActions.imageAsDataUri(it) } ?: ""
                 }
             }
-            val ok = withContext(Dispatchers.IO) {
+            val ok = withContext(AppDispatchers.io) {
                 PlatformActions.downloadToDownloads("طبعتي-للطباعة.html", html)
             }
             toast(if (ok) Str.html_saved else Str.empty_for_export)
@@ -848,7 +850,7 @@ class TabatiViewModel : ViewModel() {
                 s.copy(
                     cards = repacked,
                     activePage = if (target <= s.activePage) maxOf(0, s.activePage - 1) else s.activePage,
-                    toast = TabatiToast(Str.deleted_page_keep.format(countOnPage)),
+                    toast = TabatiToast(Str.deleted_page_keep.fmt(countOnPage)),
                 )
             }
         }
@@ -867,7 +869,7 @@ class TabatiViewModel : ViewModel() {
                 forcedPages = if (remaining.isEmpty()) 0 else s.forcedPages,
                 activePage = if (target <= s.activePage) maxOf(0, s.activePage - 1) else s.activePage.coerceAtLeast(0),
                 selectedCardId = null,
-                toast = TabatiToast(Str.deleted_page_cards.format(countOnPage)),
+                toast = TabatiToast(Str.deleted_page_cards.fmt(countOnPage)),
             )
         }
     }
@@ -894,7 +896,7 @@ class TabatiViewModel : ViewModel() {
             if (s.cards.isEmpty()) s.copy(toast = TabatiToast(Str.empty_for_export))
             else {
                 val arranged = SheetArranger.arrange(s.cards, s.settings, "smart", preserveManual = false).cards
-                s.copy(cards = arranged, toast = TabatiToast(Str.arrange_done.format(arranged.maxOf { it.page } + 1)))
+                s.copy(cards = arranged, toast = TabatiToast(Str.arrange_done.fmt(arranged.maxOf { it.page } + 1)))
             }
         }
     }
@@ -926,7 +928,7 @@ class TabatiViewModel : ViewModel() {
             if (s.cards.isEmpty()) s.copy(toast = TabatiToast(Str.empty_for_export))
             else {
                 val arranged = SheetArranger.arrange(s.cards, s.settings, "size", preserveManual = false).cards
-                s.copy(cards = arranged, toast = TabatiToast(Str.arrange_size.format(arranged.maxOf { it.page } + 1)))
+                s.copy(cards = arranged, toast = TabatiToast(Str.arrange_size.fmt(arranged.maxOf { it.page } + 1)))
             }
         }
     }
