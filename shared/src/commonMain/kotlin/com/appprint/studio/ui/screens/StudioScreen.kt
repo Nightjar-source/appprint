@@ -423,7 +423,7 @@ private fun SheetPageBar(
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = scheme.surfaceContainerHigh,
                     labelColor = scheme.onSurface,
-                    leadingIconColor = scheme.onSurface,
+                    iconColor = scheme.onSurface,
                     selectedContainerColor = scheme.primary,
                     selectedLabelColor = scheme.onPrimary,
                     selectedLeadingIconColor = scheme.onPrimary,
