@@ -184,6 +184,7 @@ actual object PlatformActions {
                 ?: return false
             val safeFile = File(context.cacheDir, "tabati-print.pdf")
             FileOutputStream(safeFile).use { it.write(pdfBytes) }
+            val safePageCount = pageCount.coerceAtLeast(1)
 
             // A standard media size works with every system print service/printer. Custom
             // millimetre sizes are rejected by many drivers, which made "الطباعة" fail.
@@ -199,7 +200,7 @@ actual object PlatformActions {
                 .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
                 .build()
 
-            printManager.print(jobName, PdfBytesPrintAdapter(safeFile, pageCount, jobName), attrs)
+            printManager.print(jobName, PdfBytesPrintAdapter(safeFile, safePageCount, jobName), attrs)
             true
         }.getOrDefault(false)
     }
@@ -460,9 +461,11 @@ actual object PlatformActions {
             }
             try {
                 FileInputStream(file).use { input ->
-                    java.io.FileOutputStream(destination?.fileDescriptor).use { output ->
-                        input.copyTo(output)
-                    }
+                    // Do NOT close the destination stream: the print service owns this
+                    // ParcelFileDescriptor. Closing it made onWrite fail on many devices.
+                    val output = java.io.FileOutputStream(destination?.fileDescriptor)
+                    input.copyTo(output)
+                    output.flush()
                 }
                 callback.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES))
             } catch (e: Exception) {

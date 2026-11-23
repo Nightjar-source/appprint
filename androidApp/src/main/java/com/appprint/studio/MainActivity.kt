@@ -20,6 +20,7 @@ class MainActivity : ComponentActivity() {
         // Original native splash screen — keep the Android 12+ SplashScreen visible for a
         // full 3 seconds as requested (brand glyph on ink, then cross-fade into the app).
         val splash = installSplashScreen()
+        super.onCreate(savedInstanceState)
         var keepSplash = true
         splash.setKeepOnScreenCondition { keepSplash }
         Handler(Looper.getMainLooper()).postDelayed({ keepSplash = false }, 3000L)
@@ -31,8 +32,8 @@ class MainActivity : ComponentActivity() {
         // Compose-First: initialize Jetpack DataStore (with legacy SharedPreferences migration)
         // before any UI reads settings — the in-memory mirror then serves 0-cost sync reads.
         com.appprint.studio.core.platform.AppDataStore.init(applicationContext)
+        // Must run after super.onCreate so the window/decor view exists; before setContent.
         enableEdgeToEdge()
-        super.onCreate(savedInstanceState)
 
         // Android 17 memory-budget diagnostics — observability without collecting anything.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

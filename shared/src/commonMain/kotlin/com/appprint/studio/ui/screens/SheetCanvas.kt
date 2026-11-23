@@ -2,13 +2,13 @@ package com.appprint.studio.ui.screens
 
 import com.appprint.studio.core.text.fmt
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -26,9 +26,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CameraAlt
@@ -40,12 +38,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,6 +71,7 @@ import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.ZoomMode
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.pressScale
+import com.appprint.studio.ui.theme.Motion
 
 /** Compose dp per millimetre (96 dp/inch). */
 private const val DP_PER_MM = 3.7795276f
@@ -185,67 +182,36 @@ fun SheetCanvas(
                     }
                 },
         ) {
-            // Fit the complete physical sheet (paper + ruler) to the viewport. The few dp
-            // of breathing room keep the sheet border visible without shrinking it.
-            val padH = if (Chrome.isExpanded()) 108f else 116f
-            val availW = (maxWidth.value - 8f).coerceAtLeast(150f)
-            val availH = (maxHeight.value - padH).coerceAtLeast(170f)
-            val optimal = minOf(
+            // Fit the complete physical sheet (paper + ruler) into the SAFE viewport. The
+            // top/bottom reserves keep it clear of the status bar, camera cutout, navigation
+            // bar and the floating chrome on phones, tablets and unfolded foldables.
+            val availW = (maxWidth.value - Chrome.EdgeInset.value * 2f).coerceAtLeast(150f)
+            val availH = (maxHeight.value - contentTopPad.value - contentBottomPad.value - 8f).coerceAtLeast(170f)
+            val fitScale = minOf(
                 availW / contentW,
                 availH / contentH,
                 1.35f,
-            ).coerceAtLeast(0.2f)
-            val fitScale = optimal.coerceIn(0.2f, 1.35f)
-            val zoom = if (state.zoomMode == ZoomMode.FIT) fitScale else fitScale * (state.manualZoomPercent / 100f)
-            val vScroll = rememberScrollState()
-            val hScroll = rememberScrollState()
+            ).coerceIn(0.2f, 1.35f)
+            val targetZoom = if (state.zoomMode == ZoomMode.FIT) fitScale else fitScale * (state.manualZoomPercent / 100f)
+            // Zoom settles with a spring instead of snapping — no hard/harsh motion.
+            val zoom by animateFloatAsState(targetValue = targetZoom, animationSpec = Motion.default())
 
-            // The sheet must never fully disappear: graphicsLayer scales the drawing but NOT
-            // the scrollable layout size, so without a clamp the user can scroll far past the
-            // visible (zoomed-out) paper. Clamp each axis so at least 20% of the sheet stays
-            // inside the viewport in every direction.
-            val scaledW = contentW * zoom
-            val scaledH = contentH * zoom
-            // Keep at least 20% of the SHEET itself visible (not of the viewport — the sheet
-            // may be smaller than the screen when zoomed out), in both scroll directions.
-            // ScrollState.value is in PIXELS, so convert the dp limit explicitly.
-            val maxHScrollPx = with(density) { (0.8f * contentW * zoom).dp.toPx().toInt() }
-            val maxVScrollPx = with(density) { (0.8f * contentH * zoom).dp.toPx().toInt() }
-            LaunchedEffect(maxHScrollPx) {
-                snapshotFlow { hScroll.value }.collect { v ->
-                    if (v > maxHScrollPx) hScroll.scrollTo(maxHScrollPx)
-                }
-            }
-            LaunchedEffect(maxVScrollPx) {
-                snapshotFlow { vScroll.value }.collect { v ->
-                    if (v > maxVScrollPx) vScroll.scrollTo(maxVScrollPx)
-                }
-            }
-            // The sheet must NEVER fully disappear (design: fit keeps it inside the viewport,
-            // min zoom 0.2; manual zoom stays within 50%..200% of fit). When the content fits
-            // it is CENTERED (design `items-center justify-center`); when it overflows — e.g.
-            // zoomed in — the scroll container owns it from a safe top-start position. Centering
-            // an overflowing scroll content is what trapped the sheet (it could scroll away and
-            // never come back), so the extra centering space is only applied when content fits.
-            val contentHTotal = contentH + contentTopPad.value + contentBottomPad.value
-            val centerExtra = if (contentHTotal <= maxHeight.value) (maxHeight.value - contentHTotal) / 2f else 0f
-            val horizExtra = if (contentW <= maxWidth.value) (maxWidth.value - contentW) / 2f else 0f
-
+            // DESIGN RULE: the sheet is a physical object. It is NEVER panned by a one-finger
+            // drag and can never slide off-screen. It stays centered in the safe area at every
+            // size and zoom; pinch/double-tap only change scale. This removes the old scroll
+            // trap where the paper could be dragged to the left edge and never return.
             // HTML: canvas is flat md-canvas — no dot grid, no pattern.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(vScroll)
-                    .horizontalScroll(hScroll),
-            ) {
-                Column(
-                    modifier = Modifier.padding(
-                        start = horizExtra.dp,
-                        end = horizExtra.dp,
-                        top = contentTopPad + centerExtra.dp,
-                        bottom = contentBottomPad + centerExtra.dp,
+                    .padding(
+                        start = Chrome.EdgeInset,
+                        end = Chrome.EdgeInset,
+                        top = contentTopPad,
+                        bottom = contentBottomPad,
                     ),
-                ) {
+                contentAlignment = Alignment.Center,
+            ) {
                     // ONE box: true paper/ruler/card layout at full mm size, scaled once by the
                     // CSS-style zoom layer. requiredSize is essential: a plain size() would be
                     // clamped to the parent's bounds and halve the sheet.
@@ -255,7 +221,7 @@ fun SheetCanvas(
                             .graphicsLayer {
                                 scaleX = zoom
                                 scaleY = zoom
-                                transformOrigin = TransformOrigin(0f, 0f)
+                                transformOrigin = TransformOrigin.Center
                             },
                     ) {
                         Box(
@@ -391,7 +357,6 @@ fun SheetCanvas(
                             }
                         }
                     }
-                }
             }
         }
     }

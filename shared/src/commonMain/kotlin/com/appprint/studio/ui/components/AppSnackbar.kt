@@ -23,10 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -42,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.Role
 import com.appprint.studio.ui.theme.Motion
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
@@ -64,7 +64,9 @@ fun AppSnackbar(
     val scheme = MaterialTheme.colorScheme
     val density = LocalDensity.current
     val dismiss by rememberUpdatedState(onDismiss)
-    var dragX by remember { mutableFloatStateOf(0f) }
+    val drag = remember { Animatable(0f) }
+    val dragScope = rememberCoroutineScope()
+    val dragX = drag.value
     val dismissThreshold = with(density) { 56.dp.toPx() }
     val progress = remember { Animatable(0f) }
     LaunchedEffect(visible) {
@@ -102,14 +104,21 @@ fun AppSnackbar(
                         ) { dismiss?.invoke() }
                         .pointerInput(Unit) {
                             detectDragGestures(
-                                onDrag = { change, drag ->
+                                onDrag = { change, amount ->
                                     change.consume()
-                                    dragX += drag.x
+                                    dragScope.launch { drag.snapTo(drag.value + amount.x) }
                                 },
                                 onDragEnd = {
-                                    if (abs(dragX) >= dismissThreshold) dismiss?.invoke() else dragX = 0f
+                                    if (abs(drag.value) >= dismissThreshold) {
+                                        dismiss?.invoke()
+                                    } else {
+                                        // Snap back with a spring — never a hard jump.
+                                        dragScope.launch { drag.animateTo(0f, animationSpec = Motion.default()) }
+                                    }
                                 },
-                                onDragCancel = { dragX = 0f },
+                                onDragCancel = {
+                                    dragScope.launch { drag.animateTo(0f, animationSpec = Motion.default()) }
+                                },
                             )
                         }
                 } else {

@@ -64,17 +64,25 @@ jobs:
           if ($lines.Count -eq 0) { $lines += "No jpackage error logs were produced." }
           $lines | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
           $lines | ForEach-Object { Write-Output "::error::$_" }
-      - name: Collect installers
+      - name: Collect installers and portable app
         id: collect
         shell: pwsh
         run: |
           $dir = "desktopApp/build/compose/binaries/main"
-          $files = @()
-          $files += Get-ChildItem -Recurse -Filter "*.exe" -Path $dir -ErrorAction SilentlyContinue | Select-Object -First 1
-          $files += Get-ChildItem -Recurse -Filter "*.msi" -Path $dir -ErrorAction SilentlyContinue | Select-Object -First 1
           $out = "artifacts"
           New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $files = @()
+          $files += Get-ChildItem -Recurse -Filter "*.exe" -Path $dir -ErrorAction SilentlyContinue | Where-Object { $_.DirectoryName -notlike "*\app\*" } | Select-Object -First 1
+          $files += Get-ChildItem -Recurse -Filter "*.msi" -Path $dir -ErrorAction SilentlyContinue | Select-Object -First 1
           foreach ($f in $files) { if ($f) { Copy-Item $f.FullName $out; "asset=$($f.Name)" | Out-File -Append $env:GITHUB_OUTPUT } }
+          # The small AppPrint.exe is an MSI bootstrapper, not the app itself. Ship the full
+          # app image as a portable ZIP so Windows users can run it without installing.
+          $appDir = Get-ChildItem -Path (Join-Path $dir "app") -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($appDir) {
+            $zip = Join-Path $out "AppPrint-portable.zip"
+            Compress-Archive -Path (Join-Path $appDir.FullName "*") -DestinationPath $zip -Force
+            "asset=AppPrint-portable.zip" | Out-File -Append $env:GITHUB_OUTPUT
+          }
           Get-ChildItem $out
       - uses: actions/upload-artifact@v4
         with:

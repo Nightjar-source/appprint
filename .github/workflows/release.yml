@@ -142,13 +142,16 @@ jobs:
 
             ## التنزيلات المباشرة
             - [Android APK (موقّع)](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/appprint-release.apk)
-            - [Windows EXE](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint.exe)
+            - [Windows EXE (مثبّت)](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint.exe)
             - [Windows MSI](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint-${{ env.VERSION }}.msi)
+            - [Windows محمول ZIP (يعمل بدون تثبيت)](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint-portable.zip)
             - [PWA / إصدار الويب](https://nightjar-source.github.io/appprint/)
             - [أرشيف PWA](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/appprint-pwa.zip)
 
             ## ما الجديد
-            - إصلاحات توافق Kotlin/Wasm للويب والتخزين المحلي والمشاركة والطباعة.
-            - تحديثات Compose 1.13 / Material 3 1.5 مع الحفاظ على تصميم 1:1.
-            - حزمة Windows ببيانات ASCII متوافقة مع jpackage/MSI.
+            - الورقة لم تعد تُسحب أو تختفي: تبقى دائماً في وسط المساحة الآمنة مع تكبير ناعم.
+            - حماية المحتوى من شريط الحالة والكاميرات والحواف على الهاتف والأجهزة الكبيرة والمطويات.
+            - ارتداد التوست بنابض بدل القفز، وإصلاح كتابة ملف الطباعة لأنظمة أندرويد.
+            - إصلاح عامل خدمة PWA (الملفات المجزّأة .wasm) وإضافة معرّف التطبيق.
+            - حزمة Windows محمولة كاملة إلى جانب المثبّت MSI.
 

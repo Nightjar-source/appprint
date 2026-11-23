@@ -2,6 +2,7 @@
   "name": "طبعتي — استوديو الطباعة الذكي 1:1",
   "short_name": "طبعتي",
   "description": "ترتيب البطاقات والهويات على ورقة طباعة بمقياس حقيقي 1:1",
+  "id": "./",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#161D19",

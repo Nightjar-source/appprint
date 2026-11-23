@@ -206,6 +206,9 @@ fun AppRoot(
                     onCaptureCamera = onCamera,
                     adBanner = adBanner,
                 )
+                // Legibility protection for the status bar / camera cutout: a soft surface
+                // gradient over the edge-to-edge canvas, drawn under the floating chrome.
+                StatusBarProtection(color = if (barDark) com.appprint.studio.ui.theme.TabatiCanvasDark else com.appprint.studio.ui.theme.TabatiCanvasLight)
                 FloatingTopBar(
                     state = state,
                     onBackToSheet = { viewModel.setSection(StudioSection.SHEET) },
@@ -323,7 +326,7 @@ private fun FloatingTopBar(
     Row(
         modifier = modifier
             .widthIn(max = 1024.dp)
-            .padding(start = Chrome.EdgeInset, top = statusTopSafe() + Chrome.TopBarGapDp, end = Chrome.EdgeInset)
+            .padding(start = Chrome.EdgeInset + cutoutStartPadding(), top = statusTopSafe() + Chrome.TopBarGapDp, end = Chrome.EdgeInset)
             .height(barHeight),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -465,6 +468,26 @@ private fun FloatingTopBar(
 @Composable
 private fun statusTopSafe(): androidx.compose.ui.unit.Dp =
     androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+/** Soft gradient that keeps status-bar icons and cutout-adjacent content legible. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun StatusBarProtection(color: androidx.compose.ui.graphics.Color) {
+    val top = WindowInsets.statusBars
+        .union(WindowInsets.displayCutout)
+        .asPaddingValues()
+        .calculateTopPadding()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(top + 12.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(color, color.copy(alpha = 0.82f), androidx.compose.ui.graphics.Color.Transparent),
+                ),
+            ),
+    )
+}
 
 /**
  * DESIGN glass pill: CSS `color-mix(surface-low 90%, transparent)` + `backdrop-filter: blur(22px)`
