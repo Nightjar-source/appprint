@@ -2,6 +2,7 @@
 // Uses the exact same shared/src/jvmMain PlatformActions actuals (file I/O, AWT picker,
 // javax.print fallback) — no WebView, no browser wrapper.
 plugins {
+    java
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose)
 }
@@ -30,7 +31,6 @@ compose.desktop {
             windows {
                 menuGroup = "طبعتي"
                 upgradeUuid = "8F3C2A1E-6D4B-4F0A-9C21-APPPRINT2026"
-                iconFile.set(project.file("../artwork/icon-1024.png"))
             }
         }
     }
