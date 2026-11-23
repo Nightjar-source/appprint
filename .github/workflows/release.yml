@@ -123,6 +123,10 @@ jobs:
             ${{ steps.find_apk.outputs.apk_path }}
             ${{ steps.find_apk.outputs.named_apk }}
 
+      - name: Compute release version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
@@ -139,8 +143,9 @@ jobs:
             ## التنزيلات المباشرة
             - [Android APK (موقّع)](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/appprint-release.apk)
             - [Windows EXE](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint.exe)
-            - [Windows MSI](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint-${{ github.ref_name }}.msi)
+            - [Windows MSI](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint-${{ env.VERSION }}.msi)
             - [PWA / إصدار الويب](https://nightjar-source.github.io/appprint/)
+            - [أرشيف PWA](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/appprint-pwa.zip)
 
             ## ما الجديد
             - إصلاحات توافق Kotlin/Wasm للويب والتخزين المحلي والمشاركة والطباعة.
