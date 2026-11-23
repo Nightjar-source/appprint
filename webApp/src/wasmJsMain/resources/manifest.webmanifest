@@ -1,0 +1,16 @@
+{
+  "name": "طبعتي — استوديو الطباعة الذكي 1:1",
+  "short_name": "طبعتي",
+  "description": "ترتيب البطاقات والهويات على ورقة طباعة بمقياس حقيقي 1:1",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#161D19",
+  "theme_color": "#161D19",
+  "orientation": "any",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

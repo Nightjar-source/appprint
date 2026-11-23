@@ -48,6 +48,12 @@ kotlin {
 
     jvm()
 
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        binaries.executable()
+    }
+
     // iosX64 غير مدعوم من Compose/Navigation3 في هذه التركيبة — arm64 فقط حتى تُدعم
     listOf(
         iosArm64(),
@@ -100,6 +106,9 @@ kotlin {
         }
         jvmMain.dependencies {
             // Skia-backed Compose for Desktop comes transitively via the Compose plugin
+        }
+        wasmJsMain.dependencies {
+            // Web target: IndexedDB-free localStorage persistence + canvas export are in wasmJsMain.
         }
         named("androidHostTest") {
             dependencies {

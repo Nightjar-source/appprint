@@ -25,3 +25,5 @@ dependencyResolutionManagement {
 rootProject.name = "AppPrint"
 include(":androidApp")
 include(":shared")
+include(":desktopApp")
+include(":webApp")
