@@ -2,7 +2,6 @@
 // Uses the exact same shared/src/jvmMain PlatformActions actuals (file I/O, AWT picker,
 // javax.print fallback) — no WebView, no browser wrapper.
 plugins {
-    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose)
 }
