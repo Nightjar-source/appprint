@@ -30,7 +30,8 @@ compose.desktop {
             copyright = "© 2026 Nightjar"
             windows {
                 menuGroup = "طبعتي"
-                upgradeUuid = "8F3C2A1E-6D4B-4F0A-9C21-APPPRINT2026"
+                // Must be a valid 8-4-4-4-12 hexadecimal UUID; jpackage/MSI rejects anything else.
+                upgradeUuid = "8F3C2A1E-6D4B-4F0A-9C21-2026AABBCCDD"
             }
         }
     }
