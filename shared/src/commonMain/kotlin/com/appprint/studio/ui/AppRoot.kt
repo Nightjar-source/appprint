@@ -86,6 +86,7 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.components.AppSnackbar
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.ShareSheet
+import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
 import com.appprint.studio.ui.screens.StudioScreen
@@ -125,7 +126,7 @@ fun AppRoot(
             viewModel.importImages(uris)
         }
         val onCamera = com.appprint.studio.core.platform.rememberCameraCaptureLauncher { path ->
-            path?.let(viewModel::importCapture)
+            if (path != null) viewModel.importCapture(path) else viewModel.toastCameraUnavailable()
         }
         val replaceRequest = remember { mutableStateOf<Long?>(null) }
         val replaceLauncher = com.appprint.studio.core.platform.rememberImagePickerLauncher(maxItems = 1) { uris ->
@@ -458,7 +459,7 @@ private fun FloatingTopBar(
             Icon(
                 Icons.Filled.PictureAsPdf,
                 contentDescription = null,
-                tint = scheme.primary.copy(alpha = if (state.processing) 0.35f else 1f),
+                tint = scheme.onPrimary.copy(alpha = if (state.processing) 0.35f else 1f),
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -556,8 +557,9 @@ private fun CircleActionButton(
                 },
             )
             .clip(RoundedCornerShape(percent = 50))
-            // 100% transparent buttons — icons float with no dry color block (including PDF).
-            .background(androidx.compose.ui.graphics.Color.Transparent)
+            // Glass icons float on the bar; a primary container is a real selected/primary
+            // state and must actually paint, otherwise its onPrimary icon disappears.
+            .background(if (elevated || container == MaterialTheme.colorScheme.primary) container else androidx.compose.ui.graphics.Color.Transparent)
             .border(
                 1.dp,
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
@@ -743,14 +745,18 @@ private fun FloatingRail(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val railWidth = Chrome.railWidth()
     val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
-    val maxHeightDp = with(androidx.compose.ui.platform.LocalDensity.current) { windowInfo.containerSize.height.toDp() } - 12.dp
+    // Padding must be OUTSIDE the size: width(72).padding(start = cutout) used to leave a
+    // 2dp "thread" on rotated devices where the display cutout inset is ~58dp.
+    val startInset = Chrome.EdgeInset + cutoutStartPadding()
+    val safeMaxH = with(androidx.compose.ui.platform.LocalDensity.current) {
+        windowInfo.containerSize.height.toDp()
+    } - Chrome.topReserve() - 16.dp
     Box(
         modifier = modifier
-            .width(railWidth)
-            .heightInRail(maxHeightDp)
-            .padding(start = Chrome.EdgeInset + cutoutStartPadding(), top = 0.dp, end = 0.dp, bottom = 0.dp),
+            .padding(start = startInset)
+            .widthIn(min = Chrome.railWidth())
+            .heightInRail(safeMaxH.coerceAtLeast(240.dp)),
     ) {
         Surface(
             shape = RoundedCornerShape(32.dp),
@@ -758,13 +764,15 @@ private fun FloatingRail(
             shadowElevation = 14.dp,
             modifier = Modifier
                 .fillMaxSize()
-                .background(androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(32.dp))
+                .background(glassBrush(scheme.surfaceContainerLow), RoundedCornerShape(32.dp))
                 .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
         ) {
+            val railScroll = rememberScrollState()
             Column(
                 modifier = Modifier
                     .padding(horizontal = 2.dp, vertical = 8.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(railScroll)
+                    .overlayVerticalScrollbar(railScroll),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {

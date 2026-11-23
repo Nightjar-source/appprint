@@ -59,6 +59,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -79,6 +80,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.ui.StudioSection
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.components.Chrome
+import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
 import com.appprint.studio.ui.strings.Str
@@ -210,13 +212,15 @@ fun StudioScreen(
         // --------------------------------------- long-press quick sheet
         val longPressedId = state.longPressSheetCardId
         if (longPressedId != null) {
-            com.appprint.studio.ui.components.QuickActionsSheet(
-                state = state,
-                viewModel = viewModel,
-                onReplaceImage = onReplaceImage,
-                onRequestSwap = { swapFromId = longPressedId },
-                onDismiss = viewModel::dismissLongPressSheet,
-            )
+            key(longPressedId) {
+                com.appprint.studio.ui.components.QuickActionsSheet(
+                    state = state,
+                    viewModel = viewModel,
+                    onReplaceImage = onReplaceImage,
+                    onRequestSwap = { swapFromId = longPressedId },
+                    onDismiss = viewModel::dismissLongPressSheet,
+                )
+            }
         }
 
         // ------------------------------------------ swap picker sheet
@@ -419,8 +423,10 @@ private fun SheetPageBar(
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = scheme.surfaceContainerHigh,
                     labelColor = scheme.onSurface,
+                    leadingIconColor = scheme.onSurface,
                     selectedContainerColor = scheme.primary,
                     selectedLabelColor = scheme.onPrimary,
+                    selectedLeadingIconColor = scheme.onPrimary,
                 ),
                 modifier = Modifier.height(36.dp),
             )
@@ -485,11 +491,13 @@ private fun SwapPickerSheet(
 ) {
     com.appprint.studio.ui.components.HtmlDialog(maxWidth = 384.dp, onDismiss = onDismiss) {
         com.appprint.studio.ui.components.HtmlDialogHeader(Str.swap_with, onDismiss)
+        val swapScroll = rememberScrollState()
         Column(
             verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
                 .heightIn(max = 240.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(swapScroll)
+                .overlayVerticalScrollbar(swapScroll),
         ) {
             state.cards.filter { it.id != fromId }.forEach { card ->
                 val swapInteraction = remember(card.id) { MutableInteractionSource() }

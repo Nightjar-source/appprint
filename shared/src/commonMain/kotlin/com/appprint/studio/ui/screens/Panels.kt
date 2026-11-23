@@ -105,6 +105,7 @@ import com.appprint.studio.ui.components.PanelChoiceChip
 import com.appprint.studio.ui.components.PanelSectionHeader
 import com.appprint.studio.ui.components.PanelSliderRow
 import com.appprint.studio.ui.components.PanelToggleRow
+import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.strings.Str
 
@@ -180,10 +181,12 @@ private fun PanelScaffold(
                 .height(1.dp)
                 .background(scheme.outlineVariant.copy(alpha = 0.6f)),
         )
+        val panelScroll = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(panelScroll)
+                .overlayVerticalScrollbar(panelScroll)
                 .padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,

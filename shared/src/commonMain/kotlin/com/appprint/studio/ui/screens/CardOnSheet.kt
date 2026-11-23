@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -280,35 +281,39 @@ internal fun CardOnSheet(
         }
 
         if (selected) {
-            // rotate handle — floats 36dp above the card with a 2dp × 8dp stem (design: -top-9 + stem)
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-36).dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                RotateHandle(
+            // A reused composition slot must never inherit card #2's captured centre/angle.
+            key(card.id) {
+                // rotate handle — floats 36dp above the card with a 2dp × 8dp stem
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-36).dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    RotateHandle(
+                        card = card,
+                        selectedCardId = state.selectedCardId,
+                        viewModel = viewModel,
+                        dpPerMm = dpPerMm,
+                        cardCoordinates = { cardCoordinates },
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .height(8.dp)
+                            .background(MaterialTheme.colorScheme.secondary),
+                    )
+                }
+                ResizeHandle(
                     card = card,
                     viewModel = viewModel,
                     dpPerMm = dpPerMm,
-                    cardCoordinates = { cardCoordinates },
-                )
-                Box(
+                    compareBefore = state.compareBefore,
                     modifier = Modifier
-                        .width(2.dp)
-                        .height(8.dp)
-                        .background(MaterialTheme.colorScheme.secondary),
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 8.dp, y = 8.dp),
                 )
             }
-            ResizeHandle(
-                card = card,
-                viewModel = viewModel,
-                dpPerMm = dpPerMm,
-                compareBefore = state.compareBefore,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 8.dp, y = 8.dp),
-            )
         }
     }
 }
@@ -321,6 +326,7 @@ internal fun CardOnSheet(
 @Composable
 private fun RotateHandle(
     card: CardItem,
+    selectedCardId: Long?,
     viewModel: TabatiViewModel,
     dpPerMm: Float,
     cardCoordinates: () -> LayoutCoordinates?,
@@ -328,6 +334,8 @@ private fun RotateHandle(
 ) {
     val density = LocalDensity.current
     val currentCard by rememberUpdatedState(card)
+    // Read the target at drag time; never trust a captured card id from a reused slot.
+    val targetId by rememberUpdatedState(selectedCardId ?: card.id)
     val scheme = MaterialTheme.colorScheme
     var liveAngle by remember { mutableStateOf<String?>(null) }
     var handleCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -391,7 +399,7 @@ private fun RotateHandle(
                                     atan2((py - centerY).toDouble(), (px - centerX).toDouble()) * 180.0 / PI
                                     ).toFloat() + 90f
                             }
-                            val applied = viewModel.setCardAngle360(c.id, raw, magneticSnap = true)
+                            val applied = viewModel.setCardAngle360(targetId, raw, magneticSnap = true)
                             liveAngle = "${applied.toInt()}°"
                         },
                     )

@@ -71,6 +71,7 @@ object Str {
     // ---------------- البطاقات
     const val add_images = "ارفع صور بطاقاتك"
     const val add_camera = "الكاميرا"
+    const val camera_unavailable = "تعذر فتح الكاميرا — استخدم معرض الصور بدلاً منها"
     const val add_sheet = "إضافة ورقة جديدة"
     const val empty_upload = "رفع صور البطاقات"
     const val empty_title = "الورقة فارغة — ارفع صور بطاقاتك للبدء"

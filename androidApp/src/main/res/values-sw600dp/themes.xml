@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tablets / unfolded foldables: roomier M3 tonal canvas behind the same animated mark. -->
+    <style name="Theme.AppPrint.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_surface</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_animated</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/brand_green</item>
+        <item name="windowSplashScreenAnimationDuration">3000</item>
+        <item name="postSplashScreenTheme">@style/Theme.AppPrint</item>
+    </style>
+</resources>

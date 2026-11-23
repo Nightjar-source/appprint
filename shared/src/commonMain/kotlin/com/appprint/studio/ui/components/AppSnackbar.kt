@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -89,6 +90,7 @@ fun AppSnackbar(
                 scaleY = 0.78f + 0.22f * floatProgress
                 translationY = (1f - floatProgress) * -10f
             }
+            .widthIn(max = 420.dp)
             .height(36.dp)
             .shadow(10.dp, RoundedCornerShape(percent = 50), clip = false)
             .clip(RoundedCornerShape(percent = 50))

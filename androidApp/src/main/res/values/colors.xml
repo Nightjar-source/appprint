@@ -10,4 +10,7 @@
     <color name="brand_gold">#D9A51F</color>
     <color name="brand_paper">#FDFAF1</color>
     <color name="brand_paper_soft">#F4F1EA</color>
+    <!-- Material 3 Expressive splash tones -->
+    <color name="brand_splash_icon_bg">#1B3B2B</color>
+    <color name="brand_splash_icon_bg_dark">#0D2A1D</color>
 </resources>

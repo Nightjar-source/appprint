@@ -151,6 +151,7 @@ class TabatiViewModel : ViewModel() {
 
     private fun setProcessing(value: Boolean) = _state.update { it.copy(processing = value) }
     private fun toast(message: String) = _state.update { it.copy(toast = TabatiToast(message)) }
+    fun toastCameraUnavailable() = toast(Str.camera_unavailable)
     fun consumeToast() = _state.update { it.copy(toast = null) }
 
     private fun repack(cards: List<CardItem>, strategy: String = "smart", preserveManual: Boolean = true): List<CardItem> =
