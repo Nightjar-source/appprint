@@ -87,12 +87,9 @@ jobs:
           files: artifacts/*
 
   web:
-    name: Build & deploy PWA
+    name: Build PWA
     needs: verify
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -101,9 +98,32 @@ jobs:
       - run: chmod +x gradlew
       - name: Build Wasm web distribution
         run: ./gradlew :webApp:wasmJsBrowserDistribution --stacktrace --no-daemon
+      - name: Package PWA archive
+        run: |
+          cd webApp/build/dist/wasmJs/productionExecutable
+          zip -r ../../../appprint-pwa.zip .
       - uses: actions/upload-pages-artifact@v3
         with:
           path: webApp/build/dist/wasmJs/productionExecutable
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appprint-pwa
+          path: webApp/build/appprint-pwa.zip
+      - name: Attach PWA archive to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: webApp/build/appprint-pwa.zip
+
+  deploy:
+    name: Deploy PWA to GitHub Pages
+    needs: web
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

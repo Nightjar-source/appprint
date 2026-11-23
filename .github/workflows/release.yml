@@ -138,8 +138,9 @@ jobs:
 
             ## التنزيلات المباشرة
             - [Android APK (موقّع)](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/appprint-release.apk)
+            - [Windows EXE](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint.exe)
+            - [Windows MSI](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/AppPrint-${{ github.ref_name }}.msi)
             - [PWA / إصدار الويب](https://nightjar-source.github.io/appprint/)
-            - Windows EXE + MSI مرفقان بهذا الإصدار.
 
             ## ما الجديد
             - إصلاحات توافق Kotlin/Wasm للويب والتخزين المحلي والمشاركة والطباعة.
