@@ -132,7 +132,17 @@ jobs:
             ${{ steps.find_apk.outputs.named_apk }}
           name: AppPrint ${{ github.ref_name }}
           body: |
-            # AppPrint — ${{ github.ref_name }}
+            # طبعتي — AppPrint ${{ github.ref_name }}
 
-            Clean rewrite — app shell rebuilt from the new design (HTML → Compose Multiplatform).
+            استوديو الطباعة الذكي 1:1 — Compose Multiplatform مع Material 3 1.5 وCompose 1.13.
+
+            ## التنزيلات المباشرة
+            - [Android APK (موقّع)](https://github.com/Nightjar-source/appprint/releases/download/${{ github.ref_name }}/appprint-release.apk)
+            - [PWA / إصدار الويب](https://nightjar-source.github.io/appprint/)
+            - Windows EXE + MSI مرفقان بهذا الإصدار.
+
+            ## ما الجديد
+            - إصلاحات توافق Kotlin/Wasm للويب والتخزين المحلي والمشاركة والطباعة.
+            - تحديثات Compose 1.13 / Material 3 1.5 مع الحفاظ على تصميم 1:1.
+            - حزمة Windows ببيانات ASCII متوافقة مع jpackage/MSI.
 
