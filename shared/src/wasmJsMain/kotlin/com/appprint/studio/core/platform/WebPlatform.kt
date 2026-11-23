@@ -359,9 +359,9 @@ private fun autoCropEntry(entry: WebFileEntry, id: Long): WebFileEntry? {
     var samples = 0
     fun addBackground(index: Int) {
         val offset = index * 4
-        sumR += (pixels[offset].toInt() and 0xFF).toDouble()
-        sumG += (pixels[offset + 1].toInt() and 0xFF).toDouble()
-        sumB += (pixels[offset + 2].toInt() and 0xFF).toDouble()
+        sumR += (byteAt(pixels, offset) and 0xFF).toDouble()
+        sumG += (byteAt(pixels, offset + 1) and 0xFF).toDouble()
+        sumB += (byteAt(pixels, offset + 2) and 0xFF).toDouble()
         samples++
     }
     val stepX = max(1, w / 60)
@@ -381,9 +381,9 @@ private fun autoCropEntry(entry: WebFileEntry, id: Long): WebFileEntry? {
 
     fun isBackground(index: Int): Boolean {
         val offset = index * 4
-        val dr = (pixels[offset].toInt() and 0xFF).toDouble() - bgR
-        val dg = (pixels[offset + 1].toInt() and 0xFF).toDouble() - bgG
-        val db = (pixels[offset + 2].toInt() and 0xFF).toDouble() - bgB
+        val dr = (byteAt(pixels, offset) and 0xFF).toDouble() - bgR
+        val dg = (byteAt(pixels, offset + 1) and 0xFF).toDouble() - bgG
+        val db = (byteAt(pixels, offset + 2) and 0xFF).toDouble() - bgB
         return sqrt(dr * dr + dg * dg + db * db) < 44.0
     }
     fun rowRatio(y: Int): Float {
@@ -436,6 +436,9 @@ private fun autoCropEntry(entry: WebFileEntry, id: Long): WebFileEntry? {
     val name = entry.name.substringBeforeLast('.', entry.name) + "-crop-$id.png"
     return WebFileRegistry.registerData(dataUri, name, cropW, cropH)
 }
+
+/** kotlinx-browser's Uint8ClampedArray has no typed get operator in this release. */
+private fun byteAt(pixels: Uint8ClampedArray, index: Int): Int = js("pixels[index]")
 
 private fun colorHexCss(argb: Long): String =
     "#" + (argb and 0xFFFFFFL).toString(16).padStart(6, '0')
