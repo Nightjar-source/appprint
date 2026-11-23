@@ -14,6 +14,12 @@ kotlin {
     sourceSets {
         wasmJsMain.dependencies {
             implementation(project(":shared"))
+            // The host calls ComposeViewport directly, so these must be on its own
+            // compile classpath — `shared` declares them as implementation deps.
+            implementation(compose.runtime)
+            implementation(compose.ui)
+            implementation(compose.foundation)
+            implementation(libs.material3.expressive)
         }
     }
 }
