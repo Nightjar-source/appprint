@@ -1,8 +1,6 @@
 package com.appprint.studio.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -88,7 +86,6 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.components.AppSnackbar
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.ShareSheet
-import com.appprint.studio.ui.components.SplashScreen
 import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
@@ -160,13 +157,7 @@ fun AppRoot(
             com.appprint.studio.core.platform.PlatformUi.syncSystemBars(barDark)
         }
 
-        // Full-window adaptive splash. The native splash covers the very first frame; this
-        // Compose layer then fills every form factor for the remaining ~2.8s and cross-fades.
-        var splashVisible by remember { mutableStateOf(true) }
-        LaunchedEffect(Unit) {
-            delay(2800)
-            splashVisible = false
-        }
+        // The platform splash is kept until content is laid out — no artificial wait or blank.
 
         // one-shot toast → global snackbar, auto-expires; the snackbar itself animates in/out
         // fluidly (`.m3-float-enter` — scale/lift spring) via its `visible` state, like the
@@ -313,14 +304,6 @@ fun AppRoot(
             )
         }
 
-        // ---------------------------------------------------- full adaptive splash
-        AnimatedVisibility(
-            visible = splashVisible,
-            exit = fadeOut(androidx.compose.animation.core.tween(420)),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            SplashScreen()
-        }
     }
 }
 

@@ -2,8 +2,6 @@ package com.appprint.studio
 
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,9 +19,8 @@ class MainActivity : ComponentActivity() {
         // adaptive Compose splash in AppRoot (together ≈3s). Keeping this at 3s would hide it.
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
-        var keepSplash = true
-        splash.setKeepOnScreenCondition { keepSplash }
-        Handler(Looper.getMainLooper()).postDelayed({ keepSplash = false }, 350L)
+        // Native splash shows until the app content is laid out — no artificial delay/blank.
+        splash.setKeepOnScreenCondition { true }
         AndroidPlatform.set(applicationContext)
         AndroidPlatform.setWindow(window)
         // AdMob — Google Mobile Ads SDK init (TEST App ID until the real AdMob publisher unit
