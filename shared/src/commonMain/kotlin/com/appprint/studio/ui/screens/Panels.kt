@@ -130,7 +130,9 @@ private fun PanelScaffold(
             // large screens: the floating top bar spans the whole width, so push the
             // panel header below it exactly like the design's expanded-drawer padding
             .padding(top = if (Chrome.railVisible()) Chrome.topReserve() + 6.dp else 0.dp)
-            .background(scheme.surfaceContainerLow),
+            .clip(RoundedCornerShape(28.dp))
+            .background(scheme.surfaceContainerLow)
+            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(28.dp)),
     ) {
         val topHairline = androidx.compose.animation.core.animateDpAsState(
             targetValue = 1.dp,
@@ -197,6 +199,7 @@ private fun PanelScaffold(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
                 .verticalScroll(panelScroll)
                 .overlayVerticalScrollbar(panelScroll)
                 .padding(contentPadding),
