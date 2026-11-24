@@ -1,6 +1,10 @@
-const CACHE = 'tabati-v2.1.36';
-// Emit only relative, existing root assets. Compose/Wasm hashed chunks (16d025....wasm) are
-// fetched at runtime; there is no stable webApp.wasm.
+const CACHE = 'tabati-v2.1.37';
+// Legacy unversioned workers cached an obsolete webApp.js (and a missing .wasm hash).
+// When this file is fetched at the old URL, retire it; the new index registers sw.js?v=… .
+if (!self.location.search.includes('v=')) {
+  self.registration.unregister().catch(() => {});
+}
+// Emit only relative, existing root assets. Compose/Wasm hashed chunks are fetched at runtime.
 const ASSETS = ['./', '/appprint', '/appprint/', './index.html', './webApp.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
