@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -56,6 +57,8 @@ fun HtmlDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // Dialogue content must clear cutouts, status bar and system buttons.
+            .safeDrawingPadding()
             .background(Color.Black.copy(alpha = 0.45f * progress.value))
             .clickable(interactionSource = scrim, indication = null, onClick = onDismiss)
             .padding(horizontal = 16.dp),
