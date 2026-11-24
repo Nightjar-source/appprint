@@ -18,11 +18,14 @@
 <body>
   <div id="loading">طبعتي…</div>
   <script type="module">
-    window.addEventListener('load', () => { document.getElementById('loading')?.remove(); });
+    const removeLoading = () => document.getElementById('loading')?.remove();
+    window.addEventListener('load', removeLoading);
+    window.addEventListener('error', removeLoading);
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
   </script>
+  <noscript><p>الرجاء تمكين JavaScript لتشغيل تطبيق طبعتي.</p></noscript>
   <script src="webApp.js"></script>
 </body>
 </html>
