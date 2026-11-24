@@ -33,7 +33,8 @@
     window.addEventListener('load', removeLoading);
     window.addEventListener('error', removeLoading);
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+      // Versioned URL forces a fresh worker even when GitHub Pages caches sw.js for 10 minutes.
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=2.1.36').catch(() => {}));
     }
   </script>
   <noscript><p>الرجاء تمكين JavaScript لتشغيل تطبيق طبعتي.</p></noscript>

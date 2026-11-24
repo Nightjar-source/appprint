@@ -1,4 +1,4 @@
-const CACHE = 'tabati-v2.1.35';
+const CACHE = 'tabati-v2.1.36';
 // Emit only relative, existing root assets. Compose/Wasm hashed chunks (16d025....wasm) are
 // fetched at runtime; there is no stable webApp.wasm.
 const ASSETS = ['./', '/appprint', '/appprint/', './index.html', './webApp.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
