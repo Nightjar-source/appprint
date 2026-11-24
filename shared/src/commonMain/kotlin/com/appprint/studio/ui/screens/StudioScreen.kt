@@ -168,7 +168,9 @@ fun StudioScreen(
                 Box(
                     modifier = Modifier
                         .width((if (isExpanded) 410 else 370).dp)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        // Keep panel content clear of the status bar / system buttons.
+                        .padding(top = Chrome.topReserve(), bottom = 16.dp),
                 ) {
                     SectionPanel(
                         state = state,

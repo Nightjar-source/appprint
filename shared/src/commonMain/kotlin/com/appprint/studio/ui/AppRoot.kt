@@ -1,6 +1,8 @@
 package com.appprint.studio.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -86,6 +88,7 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.components.AppSnackbar
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.ShareSheet
+import com.appprint.studio.ui.components.SplashScreen
 import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
@@ -155,6 +158,14 @@ fun AppRoot(
         }
         LaunchedEffect(barDark) {
             com.appprint.studio.core.platform.PlatformUi.syncSystemBars(barDark)
+        }
+
+        // Full-window adaptive splash. The native splash covers the very first frame; this
+        // Compose layer then fills every form factor for the remaining ~2.8s and cross-fades.
+        var splashVisible by remember { mutableStateOf(true) }
+        LaunchedEffect(Unit) {
+            delay(2800)
+            splashVisible = false
         }
 
         // one-shot toast → global snackbar, auto-expires; the snackbar itself animates in/out
@@ -300,6 +311,15 @@ fun AppRoot(
                 onSharePreview = { notificationPermissionRequester(); viewModel.sharePreview() },
                 onDismiss = { shareSheetOpen = false },
             )
+        }
+
+        // ---------------------------------------------------- full adaptive splash
+        AnimatedVisibility(
+            visible = splashVisible,
+            exit = fadeOut(androidx.compose.animation.core.tween(420)),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            SplashScreen()
         }
     }
 }
@@ -645,9 +665,7 @@ private fun FloatingNavPill(
                 .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(percent = 50)),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 4.dp),
+                modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterHorizontally),
             ) {
@@ -685,7 +703,7 @@ private fun NavPillItem(
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
-            .padding(horizontal = 2.dp, vertical = 1.dp),
+            .padding(vertical = 1.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
@@ -770,7 +788,7 @@ private fun FloatingRail(
             val railScroll = rememberScrollState()
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 2.dp, vertical = 8.dp)
+                    .padding(vertical = 8.dp)
                     .verticalScroll(railScroll)
                     .overlayVerticalScrollbar(railScroll),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -843,7 +861,7 @@ private fun RailItem(
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
-            .padding(horizontal = 6.dp, vertical = 6.dp)
+            .padding(vertical = 6.dp)
             .widthIn(min = 56.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),

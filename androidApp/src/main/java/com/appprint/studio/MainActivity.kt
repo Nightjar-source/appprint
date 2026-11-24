@@ -17,13 +17,13 @@ import java.io.File
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Original native splash screen — keep the Android 12+ SplashScreen visible for a
-        // full 3 seconds as requested (brand glyph on ink, then cross-fade into the app).
+        // Native splash covers the first frame instantly, then hands over to the full-window
+        // adaptive Compose splash in AppRoot (together ≈3s). Keeping this at 3s would hide it.
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
         var keepSplash = true
         splash.setKeepOnScreenCondition { keepSplash }
-        Handler(Looper.getMainLooper()).postDelayed({ keepSplash = false }, 3000L)
+        Handler(Looper.getMainLooper()).postDelayed({ keepSplash = false }, 350L)
         AndroidPlatform.set(applicationContext)
         AndroidPlatform.setWindow(window)
         // AdMob — Google Mobile Ads SDK init (TEST App ID until the real AdMob publisher unit
