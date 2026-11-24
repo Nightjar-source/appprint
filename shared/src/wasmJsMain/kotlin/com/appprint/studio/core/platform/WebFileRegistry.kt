@@ -211,6 +211,7 @@ internal object WebFileRegistry {
         name.endsWith(".png", ignoreCase = true) -> "image/png"
         name.endsWith(".webp", ignoreCase = true) -> "image/webp"
         name.endsWith(".jpg", ignoreCase = true) || name.endsWith(".jpeg", ignoreCase = true) -> "image/jpeg"
+        name.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
         name.endsWith(".html", ignoreCase = true) || name.endsWith(".htm", ignoreCase = true) -> "text/html"
         name.endsWith(".txt", ignoreCase = true) -> "text/plain"
         else -> "application/octet-stream"

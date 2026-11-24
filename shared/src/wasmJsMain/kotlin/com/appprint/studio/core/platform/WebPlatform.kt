@@ -2,6 +2,7 @@ package com.appprint.studio.core.platform
 
 import com.appprint.studio.core.export.HtmlExport
 import com.appprint.studio.core.model.AppTheme
+import com.appprint.studio.core.pdf.PdfBuilder
 import com.appprint.studio.core.model.CardItem
 import com.appprint.studio.core.model.SheetBackground
 import com.appprint.studio.core.model.SheetSettings
@@ -26,17 +27,17 @@ import kotlin.math.sqrt
  * Browser bridge for the PWA.
  *
  * There is no filesystem: picker/drop results and generated exports live in [WebFileRegistry] and
- * are addressed by logical `web://…` handles. `exportPdf()` intentionally returns printable HTML
- * bytes (with `downloadToDownloads()` fixing the extension to `.html`) — the web target has no PDF
- * generator, and pretending otherwise would ship a corrupt `.pdf`. `printPdf()` renders that HTML
- * in an iframe and opens the browser print dialog, which supports real 1:1 paper sizing via @page.
+ * are addressed by logical `web://…` handles. `exportPdf()` now builds a REAL PDF with the shared
+ * dependency-free [PdfBuilder]: each sheet is rasterised to a JPEG on a canvas, then wrapped into a
+ * DCTDecode PDF with an A4/A5/Letter MediaBox. `printPdf()` still uses printable HTML via @page for
+ * the browser print dialog, because browsers cannot reliably print an embedded PDF blob.
  */
 actual object PlatformActions {
 
     private const val K_THEME = "tabati.theme"
     private const val K_SNAPSHOT = "tabati.ui_state"
 
-    /** Last printable document produced by exportPdf; printPdf ignores its fake PDF byte argument. */
+    /** Last printable HTML used by the browser print dialog (separate from the real PDF bytes). */
     private var printableHtml: String? = null
 
     // ------------------------------------------------------------- theme / session
@@ -89,19 +90,34 @@ actual object PlatformActions {
 
     // ------------------------------------------------------------- export
 
-    /** Returns printable HTML bytes — there is no PDF encoder on Kotlin/Wasm (see KDoc above). */
+    /** Real PDF bytes (DCTDecode/JPEG pages) — same generator contract as Android. */
     actual fun exportPdf(cards: List<CardItem>, settings: SheetSettings, pageCount: Int): ByteArray? = runCatching {
-        val pages = (0 until pageCount).map { page -> cards.filter { it.page == page } }
-        val bytes = HtmlExport.build(
-            pages = pages,
-            paperWidthMm = settings.sheetWidthMm,
-            paperHeightMm = settings.sheetHeightMm,
-            marginMm = settings.marginMm,
-            frame = settings.frame,
-            imageSource = { card -> card.imageUri?.let { imageAsDataUri(it) } ?: "" },
-        )
-        printableHtml = bytes.decodeToString()
-        bytes
+        // Keep printable HTML available for the browser print button only.
+        runCatching {
+            printableHtml = HtmlExport.build(
+                pages = (0 until pageCount).map { page -> cards.filter { it.page == page } },
+                paperWidthMm = settings.sheetWidthMm,
+                paperHeightMm = settings.sheetHeightMm,
+                marginMm = settings.marginMm,
+                frame = settings.frame,
+                imageSource = { card -> card.imageUri?.let { imageAsDataUri(it) } ?: "" },
+            ).decodeToString()
+        }
+
+        val dpi = 150
+        val pxPerMm = dpi.toDouble() / 25.4
+        val widthPx = max(1, (settings.sheetWidthMm.toDouble() * pxPerMm).toInt())
+        val heightPx = max(1, (settings.sheetHeightMm.toDouble() * pxPerMm).toInt())
+        val pdfPages = (0 until pageCount).map { page ->
+            PdfBuilder.Page(
+                jpegBytes = renderSheet(page, cards, settings, mime = "image/jpeg", quality = 0.92),
+                pixelWidth = widthPx,
+                pixelHeight = heightPx,
+                widthPt = settings.sheetWidthMm * PdfBuilder.MM_TO_PT,
+                heightPt = settings.sheetHeightMm * PdfBuilder.MM_TO_PT,
+            )
+        }
+        PdfBuilder.build(pdfPages, title = "tabati-print")
     }.getOrNull()
 
     actual fun exportPng(page: Int, cards: List<CardItem>, settings: SheetSettings): ByteArray? =
@@ -265,7 +281,13 @@ private fun printHtml(html: String?): Boolean {
 
 // ----------------------------------------------------------------- canvas export / crop
 
-private fun renderSheet(page: Int, cards: List<CardItem>, settings: SheetSettings): ByteArray {
+private fun renderSheet(
+    page: Int,
+    cards: List<CardItem>,
+    settings: SheetSettings,
+    mime: String = "image/png",
+    quality: Double? = null,
+): ByteArray {
     val dpi = 150
     val pxPerMm = dpi.toDouble() / 25.4
     val width = max(1, (settings.sheetWidthMm.toDouble() * pxPerMm).toInt())
@@ -335,8 +357,8 @@ private fun renderSheet(page: Int, cards: List<CardItem>, settings: SheetSetting
         ctx.restore()
     }
 
-    val dataUri = canvas.toDataURL("image/png", null)
-    return WebFileRegistry.bytesFromDataUri(dataUri) ?: error("PNG encoding failed")
+    val dataUri = canvas.toDataURL(mime, quality)
+    return WebFileRegistry.bytesFromDataUri(dataUri) ?: error("Canvas encoding failed ($mime)")
 }
 
 /** Port of the scanner-border trim used on Android; returns a new registered crop or null. */
