@@ -17,6 +17,17 @@
 </head>
 <body>
   <div id="loading">طبعتي…</div>
+  <script>
+    // Surface any boot failure visibly and in `window.__bootError` for diagnostics.
+    window.__bootError = null;
+    function reportBootError(prefix, reason) {
+      window.__bootError = prefix + ': ' + (reason && (reason.message || reason.reason || reason) || 'unknown');
+      document.title = 'BOOT ERROR — ' + window.__bootError;
+      console.error(window.__bootError);
+    }
+    window.addEventListener('error', function (e) { reportBootError('error', e); });
+    window.addEventListener('unhandledrejection', function (e) { reportBootError('promise', e); });
+  </script>
   <script type="module">
     const removeLoading = () => document.getElementById('loading')?.remove();
     window.addEventListener('load', removeLoading);

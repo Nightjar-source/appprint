@@ -3,7 +3,7 @@
     <!-- A3. Launch theme: core-splashscreen draws the brand glyph on ink before first frame. -->
     <style name="Theme.AppPrint.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/brand_ink</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_animated</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="windowSplashScreenIconBackgroundColor">@color/brand_splash_icon_bg</item>
         <item name="windowSplashScreenAnimationDuration">3000</item>
         <item name="postSplashScreenTheme">@style/Theme.AppPrint</item>
