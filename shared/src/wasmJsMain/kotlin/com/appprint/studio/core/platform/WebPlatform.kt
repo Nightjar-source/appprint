@@ -110,7 +110,7 @@ actual object PlatformActions {
         val heightPx = max(1, (settings.sheetHeightMm.toDouble() * pxPerMm).toInt())
         val pdfPages = (0 until pageCount).map { page ->
             PdfBuilder.Page(
-                jpegBytes = renderSheet(page, cards, settings, mime = "image/jpeg", quality = 0.92),
+                jpegBytes = renderSheet(page, cards, settings, mime = "image/jpeg"),
                 pixelWidth = widthPx,
                 pixelHeight = heightPx,
                 widthPt = settings.sheetWidthMm * PdfBuilder.MM_TO_PT,
@@ -286,7 +286,6 @@ private fun renderSheet(
     cards: List<CardItem>,
     settings: SheetSettings,
     mime: String = "image/png",
-    quality: Double? = null,
 ): ByteArray {
     val dpi = 150
     val pxPerMm = dpi.toDouble() / 25.4
@@ -357,7 +356,7 @@ private fun renderSheet(
         ctx.restore()
     }
 
-    val dataUri = canvas.toDataURL(mime, quality)
+    val dataUri = canvas.toDataURL(mime, null)
     return WebFileRegistry.bytesFromDataUri(dataUri) ?: error("Canvas encoding failed ($mime)")
 }
 
