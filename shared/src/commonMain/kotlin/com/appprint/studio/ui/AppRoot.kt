@@ -772,8 +772,9 @@ private fun FloatingRail(
     } - Chrome.topReserve() - 16.dp
     Box(
         modifier = modifier
+            // Fixed, never full-width: on tablets/split/popup the rail must stay a rail.
             .padding(start = startInset)
-            .widthIn(min = Chrome.railWidth())
+            .widthIn(min = Chrome.railWidth(), max = Chrome.railWidth())
             .heightInRail(safeMaxH.coerceAtLeast(240.dp)),
     ) {
         Surface(

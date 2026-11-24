@@ -132,6 +132,17 @@ private fun PanelScaffold(
             .padding(top = if (Chrome.railVisible()) Chrome.topReserve() + 6.dp else 0.dp)
             .background(scheme.surfaceContainerLow),
     ) {
+        val topHairline = androidx.compose.animation.core.animateDpAsState(
+            targetValue = 1.dp,
+            animationSpec = com.appprint.studio.ui.theme.Motion.fastDp(),
+            label = "panelTopHairline",
+        )
+        val bottomHairline = androidx.compose.animation.core.animateDpAsState(
+            targetValue = 1.dp,
+            animationSpec = com.appprint.studio.ui.theme.Motion.fastDp(),
+            label = "panelBottomHairline",
+        )
+        Box(Modifier.fillMaxWidth().height(topHairline.value).background(scheme.outlineVariant.copy(alpha = 0.6f)))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -181,6 +192,7 @@ private fun PanelScaffold(
                 .height(1.dp)
                 .background(scheme.outlineVariant.copy(alpha = 0.6f)),
         )
+        Box(Modifier.fillMaxWidth().height(bottomHairline.value).background(scheme.outlineVariant.copy(alpha = 0.6f)))
         val panelScroll = rememberScrollState()
         Column(
             modifier = Modifier

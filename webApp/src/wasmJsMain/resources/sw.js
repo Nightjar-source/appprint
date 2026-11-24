@@ -1,7 +1,8 @@
 const CACHE = 'tabati-v2.1.27';
-// Compose/Wasm emits hashed .wasm chunks (e.g. 16d025....wasm), NOT webApp.wasm.
-// Precaching a non-existent file used to abort SW installation entirely.
+// Compose/Wasm emits hashed .wasm chunks (e.g. 16d025....wasm); there is no stable
+// webApp.wasm, so precache only existing root assets and fetch hashes at runtime.
 const ASSETS = ['./', './index.html', './webApp.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const BASE = '/appprint/';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE)
@@ -15,34 +16,32 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim()));
 });
 
+const normalize = p => (p === '' || p === '/' ? BASE : p.replace(/\/+$/, '/'));
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  const path = normalize(url.pathname);
+  // Only serve same-origin GETs; the file URL scheme is not used by this PWA.
   if (url.origin !== self.location.origin) return;
 
-  // Navigations are network-first so a new deployment is picked up immediately;
-  // the cached shell is only an offline fallback.
+  const respondWithCachedOrNetwork = () => fetch(req).then(res => {
+    if (res.ok && res.type !== 'opaqueredirect') {
+      const copy = res.clone();
+      caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+    }
+    return res;
+  }).catch(() => caches.match('./index.html'));
+
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
-        return res;
-      }).catch(() => caches.match('./index.html'))
+      respondWithCachedOrNetwork()
     );
     return;
   }
 
-  // Assets (including hashed .wasm chunks) are cached on first successful fetch.
-  // Never fall back to index.html for an asset — that used to corrupt JS/WASM responses.
   e.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(res => {
-      if (res.ok) {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
-      }
-      return res;
-    }))
+    caches.match(req).then(hit => hit || respondWithCachedOrNetwork())
   );
 });
