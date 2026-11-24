@@ -1,4 +1,4 @@
-const CACHE = 'tabati-v2.1.26';
+const CACHE = 'tabati-v2.1.27';
 // Compose/Wasm emits hashed .wasm chunks (e.g. 16d025....wasm), NOT webApp.wasm.
 // Precaching a non-existent file used to abort SW installation entirely.
 const ASSETS = ['./', './index.html', './webApp.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
