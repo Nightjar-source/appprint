@@ -83,6 +83,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -105,6 +106,7 @@ import com.appprint.studio.ui.components.PanelChoiceChip
 import com.appprint.studio.ui.components.PanelSectionHeader
 import com.appprint.studio.ui.components.PanelSliderRow
 import com.appprint.studio.ui.components.PanelToggleRow
+import com.appprint.studio.ui.components.fogEdges
 import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.strings.Str
@@ -131,8 +133,16 @@ private fun PanelScaffold(
             // panel header below it exactly like the design's expanded-drawer padding
             .padding(top = if (Chrome.railVisible()) Chrome.topReserve() + 6.dp else 0.dp)
             .clip(RoundedCornerShape(28.dp))
-            .background(scheme.surfaceContainerLow)
-            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(28.dp)),
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        scheme.surfaceContainerLow.copy(alpha = 0.26f),
+                        scheme.surfaceContainerLow.copy(alpha = 0.14f),
+                        scheme.surfaceContainerLow.copy(alpha = 0.24f),
+                    ),
+                ),
+            )
+            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.22f), RoundedCornerShape(28.dp)),
     ) {
         val topHairline = androidx.compose.animation.core.animateDpAsState(
             targetValue = 1.dp,
@@ -202,6 +212,7 @@ private fun PanelScaffold(
                 .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
                 .verticalScroll(panelScroll)
                 .overlayVerticalScrollbar(panelScroll)
+                .fogEdges(scheme.surfaceContainerLow)
                 .padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,

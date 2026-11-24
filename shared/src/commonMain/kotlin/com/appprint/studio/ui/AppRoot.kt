@@ -85,6 +85,7 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.components.AppSnackbar
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.ShareSheet
+import com.appprint.studio.ui.components.fogEdges
 import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
@@ -499,9 +500,9 @@ private fun StatusBarProtection(color: androidx.compose.ui.graphics.Color) {
  */
 private fun glassBrush(base: androidx.compose.ui.graphics.Color): Brush = Brush.verticalGradient(
     colors = listOf(
-        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.50f),
-        base.copy(alpha = 0.42f),
-        base.copy(alpha = 0.55f),
+        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.14f),
+        base.copy(alpha = 0.18f),
+        base.copy(alpha = 0.24f),
     ),
 )
 
@@ -764,7 +765,8 @@ private fun FloatingRail(
             color = androidx.compose.ui.graphics.Color.Transparent,
             shadowElevation = 14.dp,
             modifier = Modifier
-                .fillMaxSize()
+                // Only the width is fixed; height wraps the icon list (no full-screen rail).
+                .fillMaxWidth()
                 .background(glassBrush(scheme.surfaceContainerLow), RoundedCornerShape(32.dp))
                 .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
         ) {
@@ -773,7 +775,8 @@ private fun FloatingRail(
                 modifier = Modifier
                     .padding(vertical = 8.dp)
                     .verticalScroll(railScroll)
-                    .overlayVerticalScrollbar(railScroll),
+                    .overlayVerticalScrollbar(railScroll)
+                    .fogEdges(scheme.surfaceContainerLow, 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {

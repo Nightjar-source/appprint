@@ -5,9 +5,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -37,4 +40,24 @@ fun Modifier.overlayVerticalScrollbar(
             cornerRadius = CornerRadius(barW / 2f),
         )
     }
+}
+
+/** Soft fog at the top/bottom of scroll areas — content fades instead of being cut. */
+fun Modifier.fogEdges(
+    color: Color,
+    height: Dp = 18.dp,
+): Modifier = drawWithContent {
+    drawContent()
+    val h = height.toPx().coerceAtMost(size.height / 2f)
+    if (h <= 0f) return@drawWithContent
+    drawRect(
+        brush = Brush.verticalGradient(listOf(color, Color.Transparent)),
+        topLeft = Offset.Zero,
+        size = Size(size.width, h),
+    )
+    drawRect(
+        brush = Brush.verticalGradient(listOf(Color.Transparent, color)),
+        topLeft = Offset(0f, size.height - h),
+        size = Size(size.width, h),
+    )
 }
