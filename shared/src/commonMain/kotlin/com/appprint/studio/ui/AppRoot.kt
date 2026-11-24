@@ -81,7 +81,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.components.AppSnackbar
 import com.appprint.studio.ui.components.Chrome
@@ -103,7 +102,7 @@ import kotlinx.coroutines.delay
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun AppRoot(
-    viewModel: TabatiViewModel = viewModel(),
+    viewModel: TabatiViewModel = remember { TabatiViewModel() },
     // AdMob banner slot (Android-only implementation supplied by the launcher activity).
     adBanner: @Composable (Modifier) -> Unit = {},
     // Shows a full-screen interstitial, then runs the action when the ad is closed.
