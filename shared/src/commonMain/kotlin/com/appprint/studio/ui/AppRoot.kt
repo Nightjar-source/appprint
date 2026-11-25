@@ -85,7 +85,6 @@ import com.appprint.studio.core.model.AppTheme
 import com.appprint.studio.ui.components.AppSnackbar
 import com.appprint.studio.ui.components.Chrome
 import com.appprint.studio.ui.components.ShareSheet
-import com.appprint.studio.ui.components.fogEdges
 import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
@@ -784,12 +783,11 @@ private fun FloatingRail(
             val railScroll = rememberScrollState()
             Column(
                 modifier = Modifier
-                    .padding(vertical = 8.dp)
                     .verticalScroll(railScroll)
-                    .overlayVerticalScrollbar(railScroll)
-                    .fogEdges(scheme.surfaceContainerLow, 14.dp),
+                    .overlayVerticalScrollbar(railScroll),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                // Icons run edge-to-edge inside the capsule — no decorative empty bands.
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 DESTINATIONS.forEach { destination ->
                     RailItem(
@@ -832,7 +830,7 @@ private fun RailItem(
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
-            .padding(vertical = 6.dp)
+            .padding(vertical = 1.dp)
             .widthIn(min = 56.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),
