@@ -246,17 +246,34 @@ fun AppRoot(
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 } else {
-                    FloatingRail(
-                        current = state.section,
-                        onSelect = viewModel::setSection,
-                        onAdd = { importMenuOpen = true },
-                        cardsCount = state.cards.size,
+                    // The add action is a standalone floating circle, isolated from the rail
+                    // capsule on phones, tablets, foldables and split-screen alike.
+                    Column(
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            // keep the whole rail inside the safe area so it can never sit
-                            // over (or under) the floating top bar on tablets/landscape
-                            .padding(top = Chrome.topReserve(), bottom = 16.dp),
-                    )
+                            .padding(
+                                start = Chrome.EdgeInset + cutoutStartPadding(),
+                                top = Chrome.topReserve(),
+                                bottom = 16.dp,
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        CircleActionButton(
+                            onClick = { importMenuOpen = true },
+                            contentDescription = Str.add_images,
+                            size = 48.dp,
+                            container = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(24.dp))
+                        }
+                        FloatingRail(
+                            current = state.section,
+                            onSelect = viewModel::setSection,
+                            cardsCount = state.cards.size,
+                        )
+                    }
                 }
                 // toast at the top, under the floating bar (design: fixed top-16 = 64dp + safe-top)
                 if (toastMsg != null && toastVisible) {
@@ -741,22 +758,16 @@ private fun NavPillItem(
 private fun FloatingRail(
     current: StudioSection,
     onSelect: (StudioSection) -> Unit,
-    onAdd: () -> Unit,
     cardsCount: Int,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
-    // Padding must be OUTSIDE the size: width(72).padding(start = cutout) used to leave a
-    // 2dp "thread" on rotated devices where the display cutout inset is ~58dp.
-    val startInset = Chrome.EdgeInset + cutoutStartPadding()
     val safeMaxH = with(androidx.compose.ui.platform.LocalDensity.current) {
         windowInfo.containerSize.height.toDp()
     } - Chrome.topReserve() - 16.dp
     Box(
         modifier = modifier
-            // Fixed, never full-width: on tablets/split/popup the rail must stay a rail.
-            .padding(start = startInset)
             .widthIn(min = Chrome.railWidth(), max = Chrome.railWidth())
             .heightInRail(safeMaxH.coerceAtLeast(240.dp)),
     ) {
@@ -780,22 +791,6 @@ private fun FloatingRail(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // add card/image — the one accented action
-                val interaction = remember { MutableInteractionSource() }
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .shadow(6.dp, RoundedCornerShape(percent = 50), clip = false)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.primary)
-                        .pressScale(interaction)
-            .clickable(interactionSource = interaction, indication = null, onClick = onAdd)
-                        .semantics { role = Role.Button },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = Str.add_images, tint = scheme.onPrimary, modifier = Modifier.size(24.dp))
-                }
-                DividerHair()
                 DESTINATIONS.forEach { destination ->
                     RailItem(
                         destination = destination,
@@ -816,16 +811,6 @@ private fun Modifier.heightInRail(max: androidx.compose.ui.unit.Dp): Modifier =
 private fun cutoutStartPadding(): androidx.compose.ui.unit.Dp =
     androidx.compose.foundation.layout.WindowInsets.displayCutout.asPaddingValues()
         .calculateStartPadding(LocalLayoutDirection.current)
-
-@Composable
-private fun DividerHair() {
-    Box(
-        modifier = Modifier
-            .height(1.dp)
-            .width(28.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant),
-    )
-}
 
 @Composable
 private fun RailItem(
