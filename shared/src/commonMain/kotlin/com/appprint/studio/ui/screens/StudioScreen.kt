@@ -34,7 +34,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,7 +80,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appprint.studio.ui.StudioSection
 import com.appprint.studio.ui.TabatiViewModel
 import com.appprint.studio.ui.components.Chrome
-import com.appprint.studio.ui.components.overscrollRubberBand
 import com.appprint.studio.ui.components.overlayVerticalScrollbar
 import com.appprint.studio.ui.components.pressScale
 import com.appprint.studio.ui.platform.PlatformBackHandler
@@ -377,12 +375,9 @@ private fun SheetPageBar(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val pageListState = rememberLazyListState()
     LazyRow(
-        state = pageListState,
         modifier = modifier
-            .fillMaxWidth()
-            .overscrollRubberBand(pageListState),
+            .fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
