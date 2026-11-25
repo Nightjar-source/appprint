@@ -143,7 +143,12 @@ fun StudioScreen(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .fillMaxWidth()
-                                .padding(top = Chrome.topReserve() + 12.dp),
+                                // On large screens the floating side rail occupies the start;
+                                // the page strip must begin after it, never underneath.
+                                .padding(
+                                    start = if (showRail) Chrome.railWidth() + Chrome.EdgeInset * 2 + 12.dp else 0.dp,
+                                    top = Chrome.topReserve() + 12.dp,
+                                ),
                         ) {
                             SheetPageBar(
                                 state = state,
@@ -168,9 +173,7 @@ fun StudioScreen(
                 Box(
                     modifier = Modifier
                         .width((if (isExpanded) 410 else 370).dp)
-                        .fillMaxHeight()
-                        // Keep panel content clear of the status bar / system buttons.
-                        .padding(top = Chrome.topReserve(), bottom = 16.dp),
+                        .fillMaxHeight(),
                 ) {
                     SectionPanel(
                         state = state,

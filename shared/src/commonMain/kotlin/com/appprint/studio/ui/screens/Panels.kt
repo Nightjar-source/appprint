@@ -131,7 +131,10 @@ private fun PanelScaffold(
             .fillMaxWidth()
             // large screens: the floating top bar spans the whole width, so push the
             // panel header below it exactly like the design's expanded-drawer padding
-            .padding(top = if (Chrome.railVisible()) Chrome.topReserve() + 6.dp else 0.dp)
+            .padding(
+                top = if (Chrome.railVisible()) Chrome.topReserve() + 6.dp else 0.dp,
+                bottom = 16.dp,
+            )
             .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.verticalGradient(
