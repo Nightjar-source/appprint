@@ -872,9 +872,13 @@ private fun RailItem(
         }
         Text(
             text = destination.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.ExtraBold),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.ExtraBold),
             color = contentColor,
-            maxLines = 1,
+            textAlign = TextAlign.Center,
+            // Arabic rail labels are longer than Latin ones — allow two wrapped lines
+            // instead of clipping them at the fixed capsule width.
+            maxLines = 2,
+            modifier = Modifier.width(68.dp),
         )
     }
 }

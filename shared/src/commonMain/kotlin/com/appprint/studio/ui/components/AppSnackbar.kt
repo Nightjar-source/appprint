@@ -90,7 +90,8 @@ fun AppSnackbar(
                 scaleY = 0.78f + 0.22f * floatProgress
                 translationY = (1f - floatProgress) * -10f
             }
-            .widthIn(max = 360.dp)
+            // Compact phones keep a short pill; large screens get a wide island-style bar.
+            .widthIn(max = if (Chrome.railVisible()) 640.dp else 360.dp)
             .height(36.dp)
             .shadow(10.dp, RoundedCornerShape(percent = 50), clip = false)
             .clip(RoundedCornerShape(percent = 50))
