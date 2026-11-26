@@ -86,6 +86,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -144,7 +145,8 @@ private fun PanelScaffold(
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
             .padding(top = panelTopInset)
-            .clip(RoundedCornerShape(32.dp))
+            .shadow(20.dp, RoundedCornerShape(36.dp), clip = false)
+            .clip(RoundedCornerShape(36.dp))
             .background(
                 Brush.verticalGradient(
                     listOf(
@@ -154,7 +156,7 @@ private fun PanelScaffold(
                     ),
                 ),
             )
-            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(32.dp)),
+            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(36.dp)),
     ) {
         // Pinned header — the title stays put while settings scroll underneath.
         Row(
@@ -211,7 +213,7 @@ private fun PanelScaffold(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
                 .verticalScroll(panelScroll)
                 .overlayVerticalScrollbar(panelScroll)
                 .fogEdges(scheme.surfaceContainerLow.copy(alpha = 0.10f))

@@ -97,32 +97,19 @@ fun StudioScreen(
     onReplaceImage: (Long) -> Unit,
     onPickGallery: () -> Unit = onImportMenu,
     onCaptureCamera: () -> Unit = onImportMenu,
+    // Dialog/sheet state is owned by AppRoot so a single Back handler can dismiss in order.
+    deletePageIdx: Int?,
+    onDeletePageIdxChange: (Int?) -> Unit,
+    swapFromId: Long?,
+    onSwapFromIdChange: (Long?) -> Unit,
+    clearAllOpen: Boolean,
+    onClearAllOpenChange: (Boolean) -> Unit,
     // AdMob banner slot — rendered above the canvas but below every dialog/sheet.
     adBanner: @Composable (Modifier) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val showRail = Chrome.railVisible()
     val isExpanded = Chrome.isExpanded()
-
-    var deletePageIdx by remember { mutableStateOf<Int?>(null) }
-    var swapFromId by remember { mutableStateOf<Long?>(null) }
-    var clearAllOpen by remember { mutableStateOf(false) }
-
-    // Back: close overlays → editing section → deselect. Never exits directly.
-    val overlayOpen = state.longPressSheetCardId != null || swapFromId != null || deletePageIdx != null || clearAllOpen
-    PlatformBackHandler(
-        enabled = overlayOpen || state.section != StudioSection.SHEET || state.selectedCardId != null,
-    ) {
-        // Sequential dismissal: topmost overlay first, then the section, then selection.
-        when {
-            deletePageIdx != null -> deletePageIdx = null
-            swapFromId != null -> swapFromId = null
-            clearAllOpen -> clearAllOpen = false
-            state.longPressSheetCardId != null -> viewModel.dismissLongPressSheet()
-            state.section != StudioSection.SHEET -> viewModel.setSection(StudioSection.SHEET)
-            state.selectedCardId != null -> viewModel.selectCard(null)
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // True edge-to-edge: the paper canvas fills the entire screen (no reserved band).
@@ -155,9 +142,9 @@ fun StudioScreen(
                     state = state,
                     onSelectPage = viewModel::currentPage,
                     onAddSheet = viewModel::addSheet,
-                    onRequestDelete = { page -> deletePageIdx = page },
+                    onRequestDelete = { page -> onDeletePageIdxChange(page) },
                     onArrange = viewModel::arrangeSmart,
-                    onResetAll = { clearAllOpen = true },
+                    onResetAll = { onClearAllOpenChange(true) },
                 )
             }
         }
@@ -180,8 +167,8 @@ fun StudioScreen(
                     state = state,
                     viewModel = viewModel,
                     onReplaceImage = onReplaceImage,
-                    onClearAllRequest = { clearAllOpen = true },
-                    onRequestSwap = { id -> swapFromId = id },
+                    onClearAllRequest = { onClearAllOpenChange(true) },
+                    onRequestSwap = { id -> onSwapFromIdChange(id) },
                 )
             }
         }
@@ -197,8 +184,8 @@ fun StudioScreen(
                 state = state,
                 viewModel = viewModel,
                 onReplaceImage = onReplaceImage,
-                onClearAllRequest = { clearAllOpen = true },
-                onRequestSwap = { id -> swapFromId = id },
+                onClearAllRequest = { onClearAllOpenChange(true) },
+                onRequestSwap = { id -> onSwapFromIdChange(id) },
             )
         }
 
@@ -222,7 +209,7 @@ fun StudioScreen(
                     state = state,
                     viewModel = viewModel,
                     onReplaceImage = onReplaceImage,
-                    onRequestSwap = { swapFromId = longPressedId },
+                    onRequestSwap = { onSwapFromIdChange(longPressedId) },
                     onDismiss = viewModel::dismissLongPressSheet,
                 )
             }
@@ -236,17 +223,17 @@ fun StudioScreen(
                 state = state,
                 onSwap = { targetId ->
                     viewModel.swapCardsPositions(swapId, targetId)
-                    swapFromId = null
+                    onSwapFromIdChange(null)
                 },
-                onDismiss = { swapFromId = null },
+                onDismiss = { onSwapFromIdChange(null) },
             )
         }
 
         // ------------------------------------------ delete page dialog
         deletePageIdx?.let { idx ->
             val count = state.cards.count { it.page == idx }
-            com.appprint.studio.ui.components.HtmlDialog(maxWidth = 384.dp, onDismiss = { deletePageIdx = null }) {
-                com.appprint.studio.ui.components.HtmlDialogHeader(Str.delete_page_title.fmt(idx + 1), { deletePageIdx = null })
+            com.appprint.studio.ui.components.HtmlDialog(maxWidth = 384.dp, onDismiss = { onDeletePageIdxChange(null) }) {
+                com.appprint.studio.ui.components.HtmlDialogHeader(Str.delete_page_title.fmt(idx + 1), { onDeletePageIdxChange(null) })
                 Text(
                     text = Str.delete_page_body.fmt(count),
                     fontSize = 12.sp,
@@ -257,21 +244,21 @@ fun StudioScreen(
                     container = MaterialTheme.colorScheme.primary,
                     content = MaterialTheme.colorScheme.onPrimary,
                     label = Str.delete_page_keep,
-                    onClick = { viewModel.deletePageKeepCards(idx); deletePageIdx = null },
+                    onClick = { viewModel.deletePageKeepCards(idx); onDeletePageIdxChange(null) },
                 )
                 HtmlDialogButton(
                     container = MaterialTheme.colorScheme.tertiary,
                     content = MaterialTheme.colorScheme.onTertiary,
                     label = Str.delete_page_cards,
-                    onClick = { viewModel.deletePageWithCards(idx); deletePageIdx = null },
+                    onClick = { viewModel.deletePageWithCards(idx); onDeletePageIdxChange(null) },
                 )
             }
         }
 
         // ------------------------------------------ clear all dialog
         if (clearAllOpen) {
-            com.appprint.studio.ui.components.HtmlDialog(maxWidth = 320.dp, onDismiss = { clearAllOpen = false }) {
-                com.appprint.studio.ui.components.HtmlDialogHeader(Str.clear_all_title, { clearAllOpen = false })
+            com.appprint.studio.ui.components.HtmlDialog(maxWidth = 320.dp, onDismiss = { onClearAllOpenChange(false) }) {
+                com.appprint.studio.ui.components.HtmlDialogHeader(Str.clear_all_title, { onClearAllOpenChange(false) })
                 Text(
                     text = Str.clear_all_body,
                     fontSize = 12.sp,
@@ -283,7 +270,7 @@ fun StudioScreen(
                         container = MaterialTheme.colorScheme.surfaceContainerHighest,
                         content = MaterialTheme.colorScheme.onSurface,
                         label = Str.clear_all_cancel,
-                        onClick = { clearAllOpen = false },
+                        onClick = { onClearAllOpenChange(false) },
                         modifier = Modifier.weight(1f),
                         fontWeight = FontWeight.ExtraBold,
                     )
@@ -291,7 +278,7 @@ fun StudioScreen(
                         container = MaterialTheme.colorScheme.tertiary,
                         content = MaterialTheme.colorScheme.onTertiary,
                         label = Str.clear_all_confirm,
-                        onClick = { viewModel.clearAll(); clearAllOpen = false },
+                        onClick = { viewModel.clearAll(); onClearAllOpenChange(false) },
                         modifier = Modifier.weight(1f),
                     )
                 }

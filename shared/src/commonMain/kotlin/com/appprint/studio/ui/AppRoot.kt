@@ -144,6 +144,10 @@ fun AppRoot(
 
         var shareSheetOpen by remember { mutableStateOf(false) }
         var importMenuOpen by remember { mutableStateOf(false) }
+        // Dialog/sheet state lives here so one Back handler can close them in strict order.
+        var deletePageIdx by remember { mutableStateOf<Int?>(null) }
+        var swapFromId by remember { mutableStateOf<Long?>(null) }
+        var clearAllOpen by remember { mutableStateOf(false) }
 
         // edge-to-edge: status + navigation bar icons always contrast the current surface
         val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
@@ -176,18 +180,6 @@ fun AppRoot(
             viewModel.consumeToast()
         }
 
-        PlatformBackHandler(enabled = state.section != StudioSection.SHEET) {
-            viewModel.setSection(StudioSection.SHEET)
-        }
-        // Sheets opened for adding cards/documents must close on system Back before any
-        // section-level back handler runs (registered last => highest priority).
-        PlatformBackHandler(enabled = importMenuOpen || shareSheetOpen) {
-            when {
-                importMenuOpen -> importMenuOpen = false
-                shareSheetOpen -> shareSheetOpen = false
-            }
-        }
-
         Surface(
             color = androidx.compose.ui.graphics.Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -212,6 +204,12 @@ fun AppRoot(
                     onReplaceImage = onReplaceImage,
                     onPickGallery = pickImages,
                     onCaptureCamera = onCamera,
+                    deletePageIdx = deletePageIdx,
+                    onDeletePageIdxChange = { deletePageIdx = it },
+                    swapFromId = swapFromId,
+                    onSwapFromIdChange = { swapFromId = it },
+                    clearAllOpen = clearAllOpen,
+                    onClearAllOpenChange = { clearAllOpen = it },
                     adBanner = adBanner,
                 )
                 // No status-bar scrim: the system bars are transparent and show the same
@@ -323,6 +321,25 @@ fun AppRoot(
                 onSharePreview = { notificationPermissionRequester(); viewModel.sharePreview() },
                 onDismiss = { shareSheetOpen = false },
             )
+        }
+
+        // Single, LAST-registered Back handler: it wins over the sheets' own handlers and
+        // dismisses strictly topmost-first. Without this, ModalBottomSheet could close
+        // visually while our flag stayed true, so the next Back exited the app.
+        val anyOverlayOpen = importMenuOpen || shareSheetOpen || deletePageIdx != null ||
+            swapFromId != null || clearAllOpen || state.longPressSheetCardId != null ||
+            state.section != StudioSection.SHEET || state.selectedCardId != null
+        PlatformBackHandler(enabled = anyOverlayOpen) {
+            when {
+                importMenuOpen -> importMenuOpen = false
+                shareSheetOpen -> shareSheetOpen = false
+                deletePageIdx != null -> deletePageIdx = null
+                swapFromId != null -> swapFromId = null
+                clearAllOpen -> clearAllOpen = false
+                state.longPressSheetCardId != null -> viewModel.dismissLongPressSheet()
+                state.section != StudioSection.SHEET -> viewModel.setSection(StudioSection.SHEET)
+                state.selectedCardId != null -> viewModel.selectCard(null)
+            }
         }
 
     }
