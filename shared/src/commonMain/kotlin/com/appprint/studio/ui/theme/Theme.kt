@@ -166,8 +166,11 @@ private val TabatiShapes = Shapes(
 )
 
 fun colorSchemeFor(theme: AppTheme, systemDark: Boolean, platform: Pair<ColorScheme, ColorScheme>? = null): ColorScheme = when (theme) {
-    // The design pins its own brand tokens — no dynamic color override, ever.
-    AppTheme.SYSTEM -> if (systemDark) DarkColors else LightColors
+    // Auto mode follows Material 3 Expressive / Material You: adaptive wallpaper-derived
+    // schemes on Android 12+, with the brand palette as the fallback on other platforms.
+    AppTheme.SYSTEM -> platform?.let { if (systemDark) it.second else it.first }
+        ?: if (systemDark) DarkColors else LightColors
+    // Explicit Light/Dark keep the print-shop brand palette.
     AppTheme.DARK -> DarkColors
     AppTheme.LIGHT -> LightColors
 }
@@ -183,7 +186,7 @@ fun TabatiTheme(
         AppTheme.LIGHT -> false
         AppTheme.SYSTEM -> isSystemInDarkTheme()
     }
-    val scheme = colorSchemeFor(theme, dark)
+    val scheme = colorSchemeFor(theme, dark, rememberPlatformColorSchemes())
     // RTL is forced for the whole app — the design is Arabic-first.
     CompositionLocalProvider(
         androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl,

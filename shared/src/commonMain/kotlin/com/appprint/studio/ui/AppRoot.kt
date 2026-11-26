@@ -188,10 +188,8 @@ fun AppRoot(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        if (barDark) com.appprint.studio.ui.theme.TabatiCanvasDark
-                        else com.appprint.studio.ui.theme.TabatiCanvasLight,
-                    ),
+                    // Adaptive backdrop from the active Material 3 scheme.
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
             ) {
                 // interstitial helper — the action always runs exactly once: after the ad closes
                 // (or immediately when no interstitial is wired, e.g. desktop/iOS/tests).
@@ -210,7 +208,7 @@ fun AppRoot(
                 )
                 // Legibility protection for the status bar / camera cutout: a soft surface
                 // gradient over the edge-to-edge canvas, drawn under the floating chrome.
-                StatusBarProtection(color = if (barDark) com.appprint.studio.ui.theme.TabatiCanvasDark else com.appprint.studio.ui.theme.TabatiCanvasLight)
+                StatusBarProtection(color = MaterialTheme.colorScheme.surfaceContainerLowest)
                 FloatingTopBar(
                     state = state,
                     onBackToSheet = { viewModel.setSection(StudioSection.SHEET) },

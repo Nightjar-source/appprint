@@ -34,7 +34,7 @@
     window.addEventListener('error', removeLoading);
     if ('serviceWorker' in navigator) {
       // Versioned URL forces a fresh worker even when GitHub Pages caches sw.js for 10 minutes.
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=2.1.47').catch(() => {}));
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=2.1.48').catch(() => {}));
     }
   </script>
   <noscript><p>الرجاء تمكين JavaScript لتشغيل تطبيق طبعتي.</p></noscript>

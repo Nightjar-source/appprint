@@ -105,16 +105,9 @@ fun SheetCanvas(
     val contentTopPad = Chrome.topReserve() + 46.dp
     val contentBottomPad = if (compactChrome) Chrome.bottomReserve() else 16.dp
 
-    val darkCanvas = when (state.theme) {
-        AppTheme.DARK -> true
-        AppTheme.LIGHT -> false
-        AppTheme.SYSTEM -> isSystemInDarkTheme()
-    }
-    val canvasColor = if (darkCanvas) {
-        com.appprint.studio.ui.theme.TabatiCanvasDark
-    } else {
-        com.appprint.studio.ui.theme.TabatiCanvasLight
-    }
+    // Adaptive canvas: follows the active Material 3 scheme (dynamic color in Auto mode),
+    // so the background harmonises with the wallpaper instead of a fixed brand slab.
+    val canvasColor = MaterialTheme.colorScheme.surfaceContainerLowest
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         BoxWithConstraints(
