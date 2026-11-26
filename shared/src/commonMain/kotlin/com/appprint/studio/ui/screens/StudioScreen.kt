@@ -349,7 +349,9 @@ private fun SurfaceDrawer(
                 .height(1.dp)
                 .background(scheme.outlineVariant),
         )
-        Box(Modifier.fillMaxWidth().fillMaxHeight().padding(bottom = Chrome.bottomReserve())) {
+        // No fixed bottom inset block — PanelScaffold adds a scrolling spacer so content
+        // can move through the nav/pill area transparently.
+        Box(Modifier.fillMaxWidth().fillMaxHeight()) {
             SectionPanel(
                 state = state,
                 viewModel = viewModel,
@@ -376,8 +378,12 @@ private fun SheetPageBar(
     LazyRow(
         modifier = modifier
             .fillMaxWidth(),
-        // No content padding at all: the strip is fully transparent and scrolls from
-        // the real screen edge to the other edge, with no color/empty block at either end.
+        // Start inset clears the floating side rail on large screens, but it is pure
+        // transparent scroll space — no color block. Content still scrolls edge-to-edge.
+        contentPadding = PaddingValues(
+            start = if (Chrome.railVisible()) Chrome.railWidth() + Chrome.EdgeInset * 2 + 12.dp else 12.dp,
+            end = 12.dp,
+        ),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
