@@ -143,12 +143,10 @@ fun StudioScreen(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .fillMaxWidth()
-                                // On large screens the floating side rail occupies the start;
-                                // the page strip must begin after it, never underneath.
-                                .padding(
-                                    start = if (showRail) Chrome.railWidth() + Chrome.EdgeInset * 2 + 12.dp else 0.dp,
-                                    top = Chrome.topReserve() + 12.dp,
-                                ),
+                                // Only vertical offset here. Horizontal inset lives in the
+                                // LazyRow contentPadding so the strip can still scroll
+                                // edge-to-edge without a black cut at the rail side.
+                                .padding(top = Chrome.topReserve() + 12.dp),
                         ) {
                             SheetPageBar(
                                 state = state,
@@ -378,6 +376,12 @@ private fun SheetPageBar(
     LazyRow(
         modifier = modifier
             .fillMaxWidth(),
+        // Chips start clear of the floating side rail, but the row itself spans the full
+        // width and scrolls edge-to-edge — no empty black cut at either end.
+        contentPadding = PaddingValues(
+            start = if (Chrome.railVisible()) Chrome.railWidth() + Chrome.EdgeInset * 2 + 12.dp else 0.dp,
+            end = 0.dp,
+        ),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
