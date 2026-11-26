@@ -90,7 +90,7 @@ fun AppSnackbar(
                 scaleY = 0.78f + 0.22f * floatProgress
                 translationY = (1f - floatProgress) * -10f
             }
-            .widthIn(max = 420.dp)
+            .widthIn(max = 360.dp)
             .height(36.dp)
             .shadow(10.dp, RoundedCornerShape(percent = 50), clip = false)
             .clip(RoundedCornerShape(percent = 50))

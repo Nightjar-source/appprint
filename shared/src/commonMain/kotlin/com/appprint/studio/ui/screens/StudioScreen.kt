@@ -376,12 +376,8 @@ private fun SheetPageBar(
     LazyRow(
         modifier = modifier
             .fillMaxWidth(),
-        // Chips start clear of the floating side rail, but the row itself spans the full
-        // width and scrolls edge-to-edge — no empty black cut at either end.
-        contentPadding = PaddingValues(
-            start = if (Chrome.railVisible()) Chrome.railWidth() + Chrome.EdgeInset * 2 + 12.dp else 0.dp,
-            end = 0.dp,
-        ),
+        // No content padding at all: the strip is fully transparent and scrolls from
+        // the real screen edge to the other edge, with no color/empty block at either end.
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
