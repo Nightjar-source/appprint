@@ -179,6 +179,14 @@ fun AppRoot(
         PlatformBackHandler(enabled = state.section != StudioSection.SHEET) {
             viewModel.setSection(StudioSection.SHEET)
         }
+        // Sheets opened for adding cards/documents must close on system Back before any
+        // section-level back handler runs (registered last => highest priority).
+        PlatformBackHandler(enabled = importMenuOpen || shareSheetOpen) {
+            when {
+                importMenuOpen -> importMenuOpen = false
+                shareSheetOpen -> shareSheetOpen = false
+            }
+        }
 
         Surface(
             color = androidx.compose.ui.graphics.Color.Transparent,

@@ -132,91 +132,94 @@ private fun PanelScaffold(
 ) {
     val scheme = MaterialTheme.colorScheme
     val showRail = Chrome.railVisible()
-    // Top inset scrolls with content (no fixed black block). On large screens the panel
-    // must clear the floating top bar; on compact the drawer handles bottom reserve.
-    val topScrollInset = if (showRail) Chrome.topReserve() + 6.dp else 0.dp
-    val bottomScrollInset = 16.dp
+    // Medium+/expanded: the panel starts below the floating top bar. This gap is an
+    // offset, not an opaque band — the adaptive canvas stays visible behind it.
+    val panelTopInset = if (showRail) Chrome.topReserve() + 6.dp else 0.dp
+    // Compact phones: offset the SCROLLING content above the floating nav pill instead of
+    // reserving a fixed dark block. Background remains continuous.
+    val bottomScrollInset = if (showRail) 16.dp else Chrome.bottomReserve() + 12.dp
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+            .padding(top = panelTopInset)
             .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        scheme.surfaceContainerLow.copy(alpha = 0.26f),
-                        scheme.surfaceContainerLow.copy(alpha = 0.14f),
-                        scheme.surfaceContainerLow.copy(alpha = 0.24f),
+                        scheme.surfaceContainerLow.copy(alpha = 0.97f),
+                        scheme.surfaceContainerLow.copy(alpha = 0.99f),
+                        scheme.surfaceContainerLow.copy(alpha = 0.97f),
                     ),
                 ),
             )
-            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.22f), RoundedCornerShape(28.dp)),
+            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(28.dp)),
     ) {
+        // Pinned header — the title stays put while settings scroll underneath.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.weight(1f),
+            )
+            if (state.cards.isNotEmpty()) {
+                androidx.compose.material3.FilledTonalButton(
+                    onClick = viewModel::arrangeSmart,
+                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                        containerColor = scheme.secondaryContainer,
+                        contentColor = scheme.onSecondaryContainer,
+                    ),
+                    shape = RoundedCornerShape(percent = 50),
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                ) {
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer6()
+                    Text(Str.arrange_smart, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                }
+            }
+            trailing?.invoke()
+            Spacer6()
+            androidx.compose.material3.Button(
+                onClick = { viewModel.setSection(com.appprint.studio.ui.StudioSection.SHEET) },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = scheme.primary,
+                    contentColor = scheme.onPrimary,
+                ),
+                shape = RoundedCornerShape(percent = 50),
+                modifier = Modifier.height(36.dp),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 0.dp),
+            ) {
+                Text(Str.done, fontWeight = FontWeight.Bold)
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .height(1.dp)
+                .background(scheme.outlineVariant.copy(alpha = 0.35f)),
+        )
         val panelScroll = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
                 .verticalScroll(panelScroll)
                 .overlayVerticalScrollbar(panelScroll)
-                // Soft fog, very subtle — no opaque black edge blocks.
-                .fogEdges(scheme.surfaceContainerLow.copy(alpha = 0.12f))
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                .fogEdges(scheme.surfaceContainerLow.copy(alpha = 0.10f))
                 .padding(horizontal = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Top inset scrolls with content — transparent, no fixed color block.
-            Spacer(Modifier.height(topScrollInset + 10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Black,
-                    modifier = Modifier.weight(1f),
-                )
-                if (state.cards.isNotEmpty()) {
-                    androidx.compose.material3.FilledTonalButton(
-                        onClick = viewModel::arrangeSmart,
-                        colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                            containerColor = scheme.secondaryContainer,
-                            contentColor = scheme.onSecondaryContainer,
-                        ),
-                        shape = RoundedCornerShape(percent = 50),
-                        modifier = Modifier.height(36.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                    ) {
-                        Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer6()
-                        Text(Str.arrange_smart, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                    }
-                }
-                trailing?.invoke()
-                Spacer6()
-                androidx.compose.material3.Button(
-                    onClick = { viewModel.setSection(com.appprint.studio.ui.StudioSection.SHEET) },
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = scheme.primary,
-                        contentColor = scheme.onPrimary,
-                    ),
-                    shape = RoundedCornerShape(percent = 50),
-                    modifier = Modifier.height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 0.dp),
-                ) {
-                    Text(Str.done, fontWeight = FontWeight.Bold)
-                }
-            }
-            // Single soft divider — no stacked hard lines under the title bar.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(scheme.outlineVariant.copy(alpha = 0.35f)),
-            )
+            Spacer(Modifier.height(10.dp))
             content()
-            // Bottom inset scrolls with content — transparent, no fixed color block.
             Spacer(Modifier.height(bottomScrollInset))
         }
     }

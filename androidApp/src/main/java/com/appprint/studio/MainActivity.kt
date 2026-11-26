@@ -2,6 +2,8 @@ package com.appprint.studio
 
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,11 +19,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Native splash covers the first frame instantly, then hands over to the full-window
         // adaptive Compose splash in AppRoot (together ≈3s). Keeping this at 3s would hide it.
-        installSplashScreen()
+        val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
-        // The platform splash is dismissed automatically as soon as the first content frame
-        // is drawn. Never pin it with setKeepOnScreenCondition { true } — that leaves the
-        // app stuck on a permanent blank screen.
+        // Show the original platform splash for 3s, then hand over to Compose.
+        // Never keep it with a constant `true` — that leaves a permanent blank screen.
+        var keepSplash = true
+        splash.setKeepOnScreenCondition { keepSplash }
+        Handler(Looper.getMainLooper()).postDelayed({ keepSplash = false }, 3000L)
         AndroidPlatform.set(applicationContext)
         AndroidPlatform.setWindow(window)
         // AdMob — Google Mobile Ads SDK init (TEST App ID until the real AdMob publisher unit

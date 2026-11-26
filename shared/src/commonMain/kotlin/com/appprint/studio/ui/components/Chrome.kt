@@ -69,17 +69,14 @@ object Chrome {
     @Composable
     fun isCompact(): Boolean = !railVisible()
 
-    /** Whether the rail layout is active. Requires both width and height so landscape
-     *  phones keep the compact bottom pill instead of a cramped side rail. */
+    /** Compose-first adaptive breakpoints: compact < 600dp, medium >= 600dp,
+     *  expanded >= 840dp. A 600dp landscape phone therefore gets the side rail,
+     *  exactly like tablets — no height condition. */
     @Composable
     fun railVisible(): Boolean {
         val info = androidx.compose.ui.platform.LocalWindowInfo.current
         val density = androidx.compose.ui.platform.LocalDensity.current
-        return with(density) {
-            val w = info.containerSize.width.toDp()
-            val h = info.containerSize.height.toDp()
-            w >= 768.dp && h >= 480.dp
-        }
+        return with(density) { info.containerSize.width.toDp() >= 600.dp }
     }
 
     /** Whether the expanded (rail) layout is active. */
@@ -87,11 +84,7 @@ object Chrome {
     fun isExpanded(): Boolean {
         val info = androidx.compose.ui.platform.LocalWindowInfo.current
         val density = androidx.compose.ui.platform.LocalDensity.current
-        return with(density) {
-            val w = info.containerSize.width.toDp()
-            val h = info.containerSize.height.toDp()
-            w >= 840.dp && h >= 480.dp
-        }
+        return with(density) { info.containerSize.width.toDp() >= 840.dp }
     }
 
     /** Rail (design: 768.dp) unchanged; width wraps content like the design's aside. */
