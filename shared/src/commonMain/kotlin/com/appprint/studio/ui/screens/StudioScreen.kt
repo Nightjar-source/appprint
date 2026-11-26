@@ -113,8 +113,12 @@ fun StudioScreen(
     PlatformBackHandler(
         enabled = overlayOpen || state.section != StudioSection.SHEET || state.selectedCardId != null,
     ) {
+        // Sequential dismissal: topmost overlay first, then the section, then selection.
         when {
-            overlayOpen -> { /* sheets dismiss via their own buttons */ }
+            deletePageIdx != null -> deletePageIdx = null
+            swapFromId != null -> swapFromId = null
+            clearAllOpen -> clearAllOpen = false
+            state.longPressSheetCardId != null -> viewModel.dismissLongPressSheet()
             state.section != StudioSection.SHEET -> viewModel.setSection(StudioSection.SHEET)
             state.selectedCardId != null -> viewModel.selectCard(null)
         }
@@ -124,63 +128,61 @@ fun StudioScreen(
         // True edge-to-edge: the paper canvas fills the entire screen (no reserved band).
         // The floating bars are 100% transparent glass with no color blocks, so the sheet
         // legitimately extends to every screen edge underneath them — exactly like the HTML.
-        Row(modifier = Modifier.fillMaxSize()) {
-            // -------------------------------------------------- workspace
-            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    SheetCanvas(
-                        state = state,
-                        viewModel = viewModel,
-                        modifier = Modifier.fillMaxSize(),
-                        onPickGallery = onPickGallery,
-                        onCaptureCamera = onCaptureCamera,
-                        onAddDemoCards = viewModel::addSamples,
-                    )
-                    if (state.cards.isNotEmpty()) {
-                        // floating page bar — sits BELOW the floating top bar + buttons
-                        // (status-bar inset + top-bar height + gap), like the design.
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .fillMaxWidth()
-                                // Only vertical offset here. Horizontal inset lives in the
-                                // LazyRow contentPadding so the strip can still scroll
-                                // edge-to-edge without a black cut at the rail side.
-                                .padding(top = Chrome.topReserve() + 12.dp),
-                        ) {
-                            SheetPageBar(
-                                state = state,
-                                onSelectPage = viewModel::currentPage,
-                                onAddSheet = viewModel::addSheet,
-                                onRequestDelete = { page -> deletePageIdx = page },
-                                onArrange = viewModel::arrangeSmart,
-                                onResetAll = { clearAllOpen = true },
-                            )
-                        }
-                    }
-                }
-            }
-
-            // ----------------------------------------- side panel (medium+)
-            AnimatedVisibility(
-                visible = showRail && state.section != StudioSection.SHEET,
-                enter = fadeIn(Motion.effects()) + expandHorizontally(expandFrom = Alignment.End, animationSpec = spring(dampingRatio = 0.72f, stiffness = 460f)),
-                exit = fadeOut(Motion.fast()) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = spring(dampingRatio = 0.78f, stiffness = 460f)),
-                modifier = Modifier.fillMaxHeight(),
+        // True edge-to-edge: the adaptive canvas fills the whole screen. On medium+ and
+        // foldables the editing panel FLOATS above it instead of shrinking the workspace.
+        SheetCanvas(
+            state = state,
+            viewModel = viewModel,
+            modifier = Modifier.fillMaxSize(),
+            onPickGallery = onPickGallery,
+            onCaptureCamera = onCaptureCamera,
+            onAddDemoCards = viewModel::addSamples,
+        )
+        val floatingPanelWidth = if (isExpanded) 410.dp else 370.dp
+        if (state.cards.isNotEmpty()) {
+            // Floating page strip — clears the rail on the start side and the floating
+            // panel on the end side, while remaining fully transparent itself.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .padding(
+                        top = Chrome.topReserve() + 12.dp,
+                        end = if (showRail && state.section != StudioSection.SHEET) floatingPanelWidth else 0.dp,
+                    ),
             ) {
-                Box(
-                    modifier = Modifier
-                        .width((if (isExpanded) 410 else 370).dp)
-                        .fillMaxHeight(),
-                ) {
-                    SectionPanel(
-                        state = state,
-                        viewModel = viewModel,
-                        onReplaceImage = onReplaceImage,
-                        onClearAllRequest = { clearAllOpen = true },
-                        onRequestSwap = { id -> swapFromId = id },
-                    )
-                }
+                SheetPageBar(
+                    state = state,
+                    onSelectPage = viewModel::currentPage,
+                    onAddSheet = viewModel::addSheet,
+                    onRequestDelete = { page -> deletePageIdx = page },
+                    onArrange = viewModel::arrangeSmart,
+                    onResetAll = { clearAllOpen = true },
+                )
+            }
+        }
+
+        // ----------------------------------------- floating side panel (medium+ / foldable)
+        AnimatedVisibility(
+            visible = showRail && state.section != StudioSection.SHEET,
+            enter = fadeIn(Motion.effects()) + expandHorizontally(expandFrom = Alignment.End, animationSpec = spring(dampingRatio = 0.72f, stiffness = 460f)),
+            exit = fadeOut(Motion.fast()) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = spring(dampingRatio = 0.78f, stiffness = 460f)),
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(floatingPanelWidth)
+                    .fillMaxHeight(),
+            ) {
+                SectionPanel(
+                    state = state,
+                    viewModel = viewModel,
+                    onReplaceImage = onReplaceImage,
+                    onClearAllRequest = { clearAllOpen = true },
+                    onRequestSwap = { id -> swapFromId = id },
+                )
             }
         }
 

@@ -144,7 +144,7 @@ private fun PanelScaffold(
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
             .padding(top = panelTopInset)
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(32.dp))
             .background(
                 Brush.verticalGradient(
                     listOf(
@@ -154,7 +154,7 @@ private fun PanelScaffold(
                     ),
                 ),
             )
-            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(28.dp)),
+            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.28f), RoundedCornerShape(32.dp)),
     ) {
         // Pinned header — the title stays put while settings scroll underneath.
         Row(
@@ -211,7 +211,7 @@ private fun PanelScaffold(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
                 .verticalScroll(panelScroll)
                 .overlayVerticalScrollbar(panelScroll)
                 .fogEdges(scheme.surfaceContainerLow.copy(alpha = 0.10f))

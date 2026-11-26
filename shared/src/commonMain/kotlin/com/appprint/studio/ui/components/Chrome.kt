@@ -12,8 +12,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.appprint.studio.ui.theme.Motion
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 
 /**
  * «طبعتي» floating-chrome geometry — single source of truth.
@@ -69,23 +70,32 @@ object Chrome {
     @Composable
     fun isCompact(): Boolean = !railVisible()
 
-    /** Compose-first adaptive breakpoints: compact < 600dp, medium >= 600dp,
-     *  expanded >= 840dp. A 600dp landscape phone therefore gets the side rail,
-     *  exactly like tablets — no height condition. */
+    /** Compose-first adaptive device classes (Kotlin Multiplatform): compact / medium /
+     *  expanded plus foldable posture. A 600dp landscape phone is medium and gets the rail;
+     *  a foldable in tabletop posture is treated as medium+ even while folded narrow. */
+    @Composable
+    fun adaptiveInfo() = currentWindowAdaptiveInfo()
+
+    /** Whether the side rail is active — medium+, expanded, or a foldable in tabletop posture. */
     @Composable
     fun railVisible(): Boolean {
-        val info = androidx.compose.ui.platform.LocalWindowInfo.current
-        val density = androidx.compose.ui.platform.LocalDensity.current
-        return with(density) { info.containerSize.width.toDp() >= 600.dp }
+        val info = currentWindowAdaptiveInfo()
+        val width = info.windowSizeClass.windowWidthSizeClass
+        return width == WindowWidthSizeClass.MEDIUM ||
+            width == WindowWidthSizeClass.EXPANDED ||
+            info.windowPosture.isTabletop
     }
 
-    /** Whether the expanded (rail) layout is active. */
+    /** Whether the expanded (widest rail / panel) layout is active. */
     @Composable
     fun isExpanded(): Boolean {
-        val info = androidx.compose.ui.platform.LocalWindowInfo.current
-        val density = androidx.compose.ui.platform.LocalDensity.current
-        return with(density) { info.containerSize.width.toDp() >= 840.dp }
+        val info = currentWindowAdaptiveInfo()
+        return info.windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
     }
+
+    /** Foldables opened flat (tabletop posture) — used to keep the dual-pane layout. */
+    @Composable
+    fun isFoldableTabletop(): Boolean = currentWindowAdaptiveInfo().windowPosture.isTabletop
 
     /** Rail (design: 768.dp) unchanged; width wraps content like the design's aside. */
     fun railWidth(): Dp = 72.dp

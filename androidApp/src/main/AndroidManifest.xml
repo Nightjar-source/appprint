@@ -35,6 +35,11 @@
         android:enableOnBackInvokedCallback="true"
         android:largeHeap="false">
 
+        <!-- Large screens / foldables: allow tall aspect ratios and continuous resizing. -->
+        <meta-data
+            android:name="android.max_aspect"
+            android:value="2.4" />
+
         <!-- AdMob test App ID (Google's official Android test app) — replace with the real
              publisher App ID when the AdMob account is set up for this application. -->
         <meta-data
