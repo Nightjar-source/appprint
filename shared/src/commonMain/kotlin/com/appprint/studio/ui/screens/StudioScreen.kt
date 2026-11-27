@@ -11,6 +11,11 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -152,8 +157,15 @@ fun StudioScreen(
         // ----------------------------------------- floating side panel (medium+ / foldable)
         AnimatedVisibility(
             visible = showRail && state.section != StudioSection.SHEET,
-            enter = fadeIn(Motion.effects()) + expandHorizontally(expandFrom = Alignment.End, animationSpec = spring(dampingRatio = 0.72f, stiffness = 460f)),
-            exit = fadeOut(Motion.fast()) + shrinkHorizontally(shrinkTowards = Alignment.End, animationSpec = spring(dampingRatio = 0.78f, stiffness = 460f)),
+            // Water-like M3 Expressive: low-damping spring slide + fade, no size jump.
+            enter = fadeIn(Motion.effects()) + slideInHorizontally(
+                animationSpec = spring(dampingRatio = 0.86f, stiffness = 280f),
+                initialOffsetX = { it / 5 },
+            ),
+            exit = fadeOut(Motion.fast()) + slideOutHorizontally(
+                animationSpec = spring(dampingRatio = 0.9f, stiffness = 340f),
+                targetOffsetX = { it / 5 },
+            ),
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight(),
@@ -176,8 +188,14 @@ fun StudioScreen(
         // --------------------------------------- bottom drawer (compact)
         AnimatedVisibility(
             visible = !showRail && state.section != StudioSection.SHEET,
-            enter = fadeIn(Motion.fast()) + expandVertically(expandFrom = Alignment.Bottom, animationSpec = spring(dampingRatio = 0.84f, stiffness = 240f)),
-            exit = fadeOut(Motion.fast()) + shrinkVertically(shrinkTowards = Alignment.Bottom, animationSpec = spring(dampingRatio = 0.78f, stiffness = 460f)),
+            enter = fadeIn(Motion.effects()) + slideInVertically(
+                animationSpec = spring(dampingRatio = 0.86f, stiffness = 280f),
+                initialOffsetY = { it / 4 },
+            ),
+            exit = fadeOut(Motion.fast()) + slideOutVertically(
+                animationSpec = spring(dampingRatio = 0.9f, stiffness = 340f),
+                targetOffsetY = { it / 4 },
+            ),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             SurfaceDrawer(

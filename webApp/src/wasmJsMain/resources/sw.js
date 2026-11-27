@@ -1,4 +1,4 @@
-const CACHE = 'tabati-v2.1.55';
+const CACHE = 'tabati-v2.1.56';
 // Legacy unversioned workers cached an obsolete webApp.js (and a missing .wasm hash).
 // When this file is fetched at the old URL, retire it; the new index registers sw.js?v=… .
 if (!self.location.search.includes('v=')) {

@@ -247,16 +247,17 @@ private fun <T> ResponsiveGrid(
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val available = maxWidth
         val columns = (available / (minCellWidth + horizontalGap)).toInt().coerceIn(1, 4)
-        val cellWidth = (available - horizontalGap * (columns - 1)) / columns
-        FlexBox(
-            config = {
-                wrap(FlexWrap.Wrap)
-                rowGap(horizontalGap)
-                columnGap(verticalGap)
-            },
-        ) {
-            items.forEach { item ->
-                Box(Modifier.width(cellWidth)) { itemContent(item) }
+        // Rows of weighted cells fill the entire width — no dead empty gutter on the left.
+        Column(verticalArrangement = Arrangement.spacedBy(verticalGap)) {
+            items.chunked(columns).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(horizontalGap),
+                ) {
+                    row.forEach { item ->
+                        Box(Modifier.weight(1f)) { itemContent(item) }
+                    }
+                }
             }
         }
     }
