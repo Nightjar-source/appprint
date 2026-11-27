@@ -12,7 +12,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.appprint.studio.core.platform.AndroidPlatform
 import com.appprint.studio.ui.AppRoot
 import com.appprint.studio.ui.strings.Str
-import com.google.android.gms.ads.MobileAds
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -30,7 +29,8 @@ class MainActivity : ComponentActivity() {
         AndroidPlatform.setWindow(window)
         // AdMob — Google Mobile Ads SDK init (TEST App ID until the real AdMob publisher unit
         // is issued; real ad unit ids live in com.appprint.studio.Admob).
-        MobileAds.initialize(this) { _ -> }
+        // Uses Google's official TEST app/unit IDs + emulator test-device registration.
+        AdMob.initialize(this)
         // Compose-First: initialize Jetpack DataStore (with legacy SharedPreferences migration)
         // before any UI reads settings — the in-memory mirror then serves 0-cost sync reads.
         com.appprint.studio.core.platform.AppDataStore.init(applicationContext)

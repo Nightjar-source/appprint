@@ -41,13 +41,22 @@ object AdMob {
     const val BANNER_HEIGHT_DP = 48
 
     fun initialize(context: Context) {
-        MobileAds.initialize(context) { _ -> }
+        // Force test ads on emulators in addition to the official test unit IDs below.
+        MobileAds.setRequestConfiguration(
+            com.google.android.gms.ads.RequestConfiguration.Builder()
+                .setTestDeviceIds(listOf(AdRequest.DEVICE_ID_EMULATOR))
+                .build(),
+        )
+        MobileAds.initialize(context) { status ->
+            android.util.Log.d("AdMob", "SDK init status: ${status.adapterStatusesByClassName}")
+        }
     }
 
     /** Creates a test adaptive/inline banner AdView — wrap in an AndroidView to host it. */
     fun createTestBanner(context: Context): AdView = AdView(context).apply {
         adUnitId = TEST_BANNER_AD_UNIT_ID
-        setAdSize(AdSize.getInlineAdaptiveBannerAdSize(320, BANNER_HEIGHT_DP))
+        // Standard test banner is the most reliable size for the official test unit.
+        setAdSize(AdSize.BANNER)
         setBackgroundColor(android.graphics.Color.TRANSPARENT)
         adListener = object : AdListener() {
             override fun onAdLoaded() {

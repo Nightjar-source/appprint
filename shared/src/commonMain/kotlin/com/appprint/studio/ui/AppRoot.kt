@@ -867,7 +867,8 @@ private fun FloatingRail(
                         .offset {
                             IntOffset(indicatorX.value.roundToInt(), indicatorY.value.roundToInt())
                         }
-                        .clip(RoundedCornerShape(20.dp))
+                        // Capsule/droplet shape adapts to any measured width/height.
+                        .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.secondaryContainer),
                 )
                 val railScroll = rememberScrollState()
