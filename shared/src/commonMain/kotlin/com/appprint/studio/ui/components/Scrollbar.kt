@@ -46,7 +46,7 @@ fun Modifier.overlayVerticalScrollbar(
 fun Modifier.fogEdges(
     color: Color,
     height: Dp = 18.dp,
-    edge: Color = Color.Black.copy(alpha = 0.16f),
+    edge: Color = Color.Black.copy(alpha = 0.10f),
 ): Modifier = drawWithContent {
     drawContent()
     val h = height.toPx().coerceAtMost(size.height / 2f)

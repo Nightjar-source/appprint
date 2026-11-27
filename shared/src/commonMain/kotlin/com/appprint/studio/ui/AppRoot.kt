@@ -77,6 +77,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.graphics.Brush
@@ -556,11 +557,10 @@ private fun Modifier.frostedGlass(shape: RoundedCornerShape): Modifier {
     return this
         .shadow(14.dp, shape, clip = false)
         .background(
+            // Opaque frosted surface: two adjacent tonal steps give the glass depth
+            // without letting a white sheet shine through as a straight line.
             Brush.verticalGradient(
-                listOf(
-                    scheme.surfaceContainerLow.copy(alpha = 0.95f),
-                    scheme.surfaceContainerLow.copy(alpha = 0.90f),
-                ),
+                listOf(scheme.surfaceContainerLow, scheme.surfaceContainer),
             ),
             shape,
         )
@@ -678,11 +678,12 @@ private fun FloatingNavPill(
     val indicatorW = remember { Animatable(0f) }
     val indicatorH = remember { Animatable(0f) }
     var indicatorBounds by remember { mutableStateOf<FloatArray?>(null) }
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    LaunchedEffect(indicatorBounds, rtl) {
+    // Measured in the ROOT coordinate system (always physical, left/top origin) so RTL
+    // never mirrors the capsule. The reference liquid-pointer guide confirms this rule.
+    var containerOrigin by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+    LaunchedEffect(indicatorBounds) {
         indicatorBounds?.let { b ->
-            val x = if (rtl) -b[0] else b[0]
-            launch { indicatorX.animateTo(x, Motion.default()) }
+            launch { indicatorX.animateTo(b[0], Motion.default()) }
             launch { indicatorY.animateTo(b[1], Motion.default()) }
             launch { indicatorW.animateTo(b[2], Motion.default()) }
             launch { indicatorH.animateTo(b[3], Motion.default()) }
@@ -724,12 +725,15 @@ private fun FloatingNavPill(
                 .widthIn(max = 512.dp)
                 .frostedGlass(RoundedCornerShape(percent = 50)),
         ) {
-            Box {
+            Box(modifier = Modifier.onGloballyPositioned { containerOrigin = it.positionInRoot() }) {
                 Box(
                     modifier = Modifier
                         .width(with(density) { indicatorW.value.toDp() })
                         .height(with(density) { indicatorH.value.toDp() })
-                        .offset { IntOffset(indicatorX.value.roundToInt(), indicatorY.value.roundToInt()) }
+                        .graphicsLayer {
+                            translationX = indicatorX.value
+                            translationY = indicatorY.value
+                        }
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.secondaryContainer),
                 )
@@ -748,10 +752,11 @@ private fun FloatingNavPill(
                             modifier = Modifier
                                 .weight(1f)
                                 .onGloballyPositioned { coords ->
-                                    if (destination.section == current) {
-                                        val p = coords.positionInParent()
+                                    val origin = containerOrigin
+                                    if (destination.section == current && origin != null) {
+                                        val p = coords.positionInRoot()
                                         indicatorBounds = floatArrayOf(
-                                            p.x, p.y,
+                                            p.x - origin.x, p.y - origin.y,
                                             coords.size.width.toFloat(), coords.size.height.toFloat(),
                                         )
                                     }
@@ -853,13 +858,10 @@ private fun FloatingRail(
     val indicatorW = remember { Animatable(0f) }
     val indicatorH = remember { Animatable(0f) }
     var indicatorBounds by remember { mutableStateOf<FloatArray?>(null) }
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    LaunchedEffect(indicatorBounds, rtl) {
+    var containerOrigin by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+    LaunchedEffect(indicatorBounds) {
         indicatorBounds?.let { b ->
-            // Modifier.offset { IntOffset } is RTL-aware: negate x in Arabic so the
-            // capsule travels toward the destination the user actually taps.
-            val x = if (rtl) -b[0] else b[0]
-            launch { indicatorX.animateTo(x, Motion.default()) }
+            launch { indicatorX.animateTo(b[0], Motion.default()) }
             launch { indicatorY.animateTo(b[1], Motion.default()) }
             launch { indicatorW.animateTo(b[2], Motion.default()) }
             launch { indicatorH.animateTo(b[3], Motion.default()) }
@@ -878,14 +880,15 @@ private fun FloatingRail(
                 .fillMaxWidth()
                 .frostedGlass(RoundedCornerShape(32.dp)),
         ) {
-            Box {
+            Box(modifier = Modifier.onGloballyPositioned { containerOrigin = it.positionInRoot() }) {
                 // Liquid M3 Expressive selection: a single spring-animated capsule.
                 Box(
                     modifier = Modifier
                         .width(with(density) { indicatorW.value.toDp() })
                         .height(with(density) { indicatorH.value.toDp() })
-                        .offset {
-                            IntOffset(indicatorX.value.roundToInt(), indicatorY.value.roundToInt())
+                        .graphicsLayer {
+                            translationX = indicatorX.value
+                            translationY = indicatorY.value
                         }
                         // Capsule/droplet shape adapts to any measured width/height.
                         .clip(RoundedCornerShape(percent = 50))
@@ -906,10 +909,11 @@ private fun FloatingRail(
                             onSelect = { onSelect(destination.section) },
                             showSelectedPill = false,
                             modifier = Modifier.onGloballyPositioned { coords ->
-                                if (destination.section == current) {
-                                    val p = coords.positionInParent()
+                                val origin = containerOrigin
+                                if (destination.section == current && origin != null) {
+                                    val p = coords.positionInRoot()
                                     indicatorBounds = floatArrayOf(
-                                        p.x, p.y,
+                                        p.x - origin.x, p.y - origin.y,
                                         coords.size.width.toFloat(), coords.size.height.toFloat(),
                                     )
                                 }

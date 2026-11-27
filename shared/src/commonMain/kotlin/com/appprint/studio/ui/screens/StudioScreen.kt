@@ -159,11 +159,11 @@ fun StudioScreen(
             visible = showRail && state.section != StudioSection.SHEET,
             // Water-like M3 Expressive: low-damping spring slide + fade, no size jump.
             enter = fadeIn(Motion.effects()) + slideInHorizontally(
-                animationSpec = spring(dampingRatio = 0.86f, stiffness = 280f),
+                animationSpec = spring(dampingRatio = 0.8f, stiffness = 220f),
                 initialOffsetX = { it / 5 },
             ),
             exit = fadeOut(Motion.fast()) + slideOutHorizontally(
-                animationSpec = spring(dampingRatio = 0.9f, stiffness = 340f),
+                animationSpec = spring(dampingRatio = 0.84f, stiffness = 260f),
                 targetOffsetX = { it / 5 },
             ),
             modifier = Modifier
@@ -189,11 +189,11 @@ fun StudioScreen(
         AnimatedVisibility(
             visible = !showRail && state.section != StudioSection.SHEET,
             enter = fadeIn(Motion.effects()) + slideInVertically(
-                animationSpec = spring(dampingRatio = 0.86f, stiffness = 280f),
+                animationSpec = spring(dampingRatio = 0.8f, stiffness = 220f),
                 initialOffsetY = { it / 4 },
             ),
             exit = fadeOut(Motion.fast()) + slideOutVertically(
-                animationSpec = spring(dampingRatio = 0.9f, stiffness = 340f),
+                animationSpec = spring(dampingRatio = 0.84f, stiffness = 260f),
                 targetOffsetY = { it / 4 },
             ),
             modifier = Modifier.align(Alignment.BottomCenter),

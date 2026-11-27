@@ -22,8 +22,8 @@ android {
         applicationId = "com.appprint.studio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 89
-        versionName = "2.1.62"
+        versionCode = 90
+        versionName = "2.1.63"
         resourceConfigurations += listOf("ar", "en")
     }
 
