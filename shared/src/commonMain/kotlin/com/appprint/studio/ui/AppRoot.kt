@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ZoomIn
@@ -462,8 +463,12 @@ private fun FloatingTopBar(
 
         Spacer(Modifier.weight(1f))
 
-        // design: fit↔130% zoom toggle — glass circle, FIRST in the left action group (sheet tab only)
-        if (!isEditing) {
+        // Fit↔130% zoom toggle — fluid M3 Expressive appear/disappear alongside the wordmark.
+        AnimatedVisibility(
+            visible = !isEditing,
+            enter = fadeIn(Motion.effects()) + scaleIn(initialScale = 0.7f, animationSpec = Motion.default()),
+            exit = fadeOut(Motion.fast()) + scaleOut(targetScale = 0.7f, animationSpec = Motion.fast()),
+        ) {
             CircleActionButton(
                 onClick = onZoomToggle,
                 contentDescription = if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) Str.zoom_in else Str.zoom_fit,
@@ -480,7 +485,7 @@ private fun FloatingTopBar(
         }
         // theme cycle — تلقائي / فاتح / داكن (dedicated M3 Expressive «Auto» icon per state)
         val themeIcon = when (state.theme) {
-            AppTheme.SYSTEM -> Icons.Filled.AutoMode
+            AppTheme.SYSTEM -> Icons.Filled.Palette
             AppTheme.DARK -> Icons.Filled.LightMode
             AppTheme.LIGHT -> Icons.Filled.DarkMode
         }
@@ -542,6 +547,24 @@ private fun glassBrush(base: androidx.compose.ui.graphics.Color): Brush = Brush.
         base.copy(alpha = 0.24f),
     ),
 )
+
+/** One frosted-glass treatment shared by the bottom pill and the side rail. */
+@Composable
+private fun Modifier.frostedGlass(shape: RoundedCornerShape): Modifier {
+    val scheme = MaterialTheme.colorScheme
+    return this
+        .shadow(14.dp, shape, clip = false)
+        .background(
+            Brush.verticalGradient(
+                listOf(
+                    scheme.surfaceContainerLow.copy(alpha = 0.95f),
+                    scheme.surfaceContainerLow.copy(alpha = 0.90f),
+                ),
+            ),
+            shape,
+        )
+        .border(1.dp, scheme.outlineVariant.copy(alpha = 0.4f), shape)
+}
 
 private fun themeDescription(theme: AppTheme): String = when (theme) {
     AppTheme.SYSTEM -> "المظهر: ${Str.theme_auto}"
@@ -698,8 +721,7 @@ private fun FloatingNavPill(
                 .weight(1f)
                 .height(Chrome.NavBarDp)
                 .widthIn(max = 512.dp)
-                .background(androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50))
-                .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(percent = 50)),
+                .frostedGlass(RoundedCornerShape(percent = 50)),
         ) {
             Box {
                 Box(
@@ -784,8 +806,7 @@ private fun NavPillItem(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 2.dp, y = (-1).dp)
-                        .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
+                        .defaultMinSize(minWidth = 20.dp, minHeight = 18.dp)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.tertiary)
                         .padding(horizontal = 4.dp, vertical = 1.dp),
@@ -854,9 +875,7 @@ private fun FloatingRail(
             shadowElevation = 14.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                // Solid surface: no white paper can shine through as a straight line.
-                .background(scheme.surfaceContainerLow, RoundedCornerShape(32.dp))
-                .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
+                .frostedGlass(RoundedCornerShape(32.dp)),
         ) {
             Box {
                 // Liquid M3 Expressive selection: a single spring-animated capsule.
@@ -928,7 +947,6 @@ private fun RailItem(
     )
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
             .semantics { role = Role.Tab }
@@ -955,8 +973,7 @@ private fun RailItem(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 1.dp, y = (-2).dp)
-                        .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
+                        .defaultMinSize(minWidth = 20.dp, minHeight = 18.dp)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(scheme.tertiary)
                         .padding(horizontal = 4.dp, vertical = 1.dp),

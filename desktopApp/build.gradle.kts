@@ -24,7 +24,7 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
             )
             packageName = "AppPrint"
-            packageVersion = "2.1.60"
+            packageVersion = "2.1.61"
             // jpackage/MSI metadata must stay ASCII: non-ASCII values break
             // jpackage's args-file decoding on GitHub-hosted Windows runners.
             description = "AppPrint Studio"
