@@ -42,7 +42,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.AutoMode
 import androidx.compose.material.icons.filled.BorderOuter
@@ -393,7 +393,7 @@ private fun FloatingTopBar(
                 container = scheme.secondaryContainer,
                 tint = scheme.onSecondaryContainer,
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(19.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(19.dp))
             }
         }
 
@@ -785,14 +785,19 @@ private fun FloatingRail(
     val density = androidx.compose.ui.platform.LocalDensity.current
     val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
     val safeMaxH = with(density) { windowInfo.containerSize.height.toDp() } - Chrome.topReserve() - 16.dp
-    // One shared, physics-driven indicator slides between destinations — no per-item pill.
+    // One shared, physics-driven indicator. Its bounds are MEASURED from the destination,
+    // so it fits the whole icon+label in both vertical and horizontal rail orientations.
+    val indicatorX = remember { Animatable(0f) }
     val indicatorY = remember { Animatable(0f) }
+    val indicatorW = remember { Animatable(0f) }
     val indicatorH = remember { Animatable(0f) }
-    var indicatorBounds by remember { mutableStateOf<Pair<Float, Float>?>(null) }
+    var indicatorBounds by remember { mutableStateOf<FloatArray?>(null) }
     LaunchedEffect(indicatorBounds) {
-        indicatorBounds?.let { (y, h) ->
-            launch { indicatorY.animateTo(y, Motion.default()) }
-            launch { indicatorH.animateTo(h, Motion.default()) }
+        indicatorBounds?.let { b ->
+            launch { indicatorX.animateTo(b[0], Motion.default()) }
+            launch { indicatorY.animateTo(b[1], Motion.default()) }
+            launch { indicatorW.animateTo(b[2], Motion.default()) }
+            launch { indicatorH.animateTo(b[3], Motion.default()) }
         }
     }
     Box(
@@ -806,16 +811,27 @@ private fun FloatingRail(
             shadowElevation = 14.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(glassBrush(scheme.surfaceContainerLow), RoundedCornerShape(32.dp))
+                // Nearly opaque so the white paper behind cannot shine through as a patch.
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(
+                            scheme.surfaceContainerLow.copy(alpha = 0.95f),
+                            scheme.surfaceContainerLow.copy(alpha = 0.98f),
+                        ),
+                    ),
+                    RoundedCornerShape(32.dp),
+                )
                 .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
         ) {
             Box {
                 // Liquid M3 Expressive selection: a single spring-animated capsule.
                 Box(
                     modifier = Modifier
-                        .width(56.dp)
+                        .width(with(density) { indicatorW.value.toDp() })
                         .height(with(density) { indicatorH.value.toDp() })
-                        .offset { IntOffset(0, indicatorY.value.roundToInt()) }
+                        .offset {
+                            IntOffset(indicatorX.value.roundToInt(), indicatorY.value.roundToInt())
+                        }
                         .clip(RoundedCornerShape(20.dp))
                         .background(scheme.secondaryContainer),
                 )
@@ -835,7 +851,11 @@ private fun FloatingRail(
                             showSelectedPill = false,
                             modifier = Modifier.onGloballyPositioned { coords ->
                                 if (destination.section == current) {
-                                    indicatorBounds = coords.positionInParent().y to coords.size.height.toFloat()
+                                    val p = coords.positionInParent()
+                                    indicatorBounds = floatArrayOf(
+                                        p.x, p.y,
+                                        coords.size.width.toFloat(), coords.size.height.toFloat(),
+                                    )
                                 }
                             },
                         )
