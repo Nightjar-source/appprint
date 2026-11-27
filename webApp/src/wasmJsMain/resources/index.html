@@ -24,6 +24,14 @@
       window.__bootError = prefix + ': ' + (reason && (reason.message || reason.reason || reason) || 'unknown');
       document.title = 'BOOT ERROR — ' + window.__bootError;
       console.error(window.__bootError);
+      // Self-heal clients stuck on a stale cached webApp.js/.wasm pair (one retry only).
+      if (/WebAssembly|wasm/i.test(window.__bootError) && !sessionStorage.getItem('tabati-wasm-retried')) {
+        sessionStorage.setItem('tabati-wasm-retried', '1');
+        Promise.all([
+          'serviceWorker' in navigator ? navigator.serviceWorker.getRegistrations().then(rs => Promise.all(rs.map(r => r.unregister()))) : Promise.resolve(),
+          'caches' in window ? caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))) : Promise.resolve(),
+        ]).then(() => location.replace(location.pathname + '?reload=' + Date.now()));
+      }
     }
     window.addEventListener('error', function (e) { reportBootError('error', e); });
     window.addEventListener('unhandledrejection', function (e) { reportBootError('promise', e); });
@@ -34,7 +42,7 @@
     window.addEventListener('error', removeLoading);
     if ('serviceWorker' in navigator) {
       // Versioned URL forces a fresh worker even when GitHub Pages caches sw.js for 10 minutes.
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=2.1.59').catch(() => {}));
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=2.1.60').catch(() => {}));
     }
   </script>
   <noscript><p>الرجاء تمكين JavaScript لتشغيل تطبيق طبعتي.</p></noscript>
