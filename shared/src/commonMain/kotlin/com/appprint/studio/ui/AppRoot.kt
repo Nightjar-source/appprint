@@ -1,6 +1,12 @@
 package com.appprint.studio.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -68,6 +74,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -77,6 +84,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -93,6 +101,8 @@ import com.appprint.studio.ui.strings.Str
 import com.appprint.studio.ui.theme.Motion
 import com.appprint.studio.ui.theme.TabatiTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /**
  * «طبعتي — استوديو الطباعة الذكي 1:1» root:
@@ -385,58 +395,65 @@ private fun FloatingTopBar(
             }
         }
 
-        // wordmark capsule / zoom controls — crossfade per section
-        if (!isEditing) {
-            Row(
-                modifier = Modifier
-                    .height(40.dp)
-                    // design: 0 12px 30px -6px rgba(0,0,0,.22) + 0 3px 10px -2px rgba(0,0,0,.11)
-                    .shadow(18.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x38000000), spotColor = androidx.compose.ui.graphics.Color(0x38000000))
-                    .shadow(5.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x1C000000), spotColor = androidx.compose.ui.graphics.Color(0x1C000000))
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(androidx.compose.ui.graphics.Color.Transparent)
-                    .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(percent = 50))
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                com.appprint.studio.ui.components.TabatiLogoMark(size = 22.dp)
-                Text(
-                    text = "طبعتي",
-                    fontFamily = com.appprint.studio.ui.theme.rememberReemKufiFamily(),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = androidx.compose.ui.unit.TextUnit(17f, androidx.compose.ui.unit.TextUnitType.Sp),
-                    letterSpacing = androidx.compose.ui.unit.TextUnit(0.4f, androidx.compose.ui.unit.TextUnitType.Sp),
-                    color = scheme.onSurface,
-                    maxLines = 1,
-                )
-                SurfaceChip(
-                    text = "${state.settings.presetKey} (${state.cards.size})",
-                )
-            }
-        } else {
-            Row(
-                modifier = Modifier
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .padding(horizontal = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                CircleActionButton(onClick = onZoomOut, contentDescription = Str.zoom_out, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
-                    Icon(Icons.Filled.ZoomOut, contentDescription = null, modifier = Modifier.size(18.dp))
-                }
-                CircleActionButton(
-                    onClick = onZoomFit,
-                    contentDescription = Str.zoom_fit,
-                    size = 40.dp,
-                    container = if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) scheme.primary else scheme.surfaceContainerLow,
-                    tint = if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) scheme.onPrimary else scheme.onSurface,
+        // M3 Expressive: the wordmark morphs fluidly into the zoom cluster and back,
+        // spring-based shared transition instead of a hard swap.
+        AnimatedContent(
+            targetState = isEditing,
+            transitionSpec = {
+                (fadeIn(animationSpec = Motion.effects()) + scaleIn(initialScale = 0.86f, animationSpec = Motion.default())) togetherWith
+                    (fadeOut(animationSpec = Motion.fast()) + scaleOut(targetScale = 0.86f, animationSpec = Motion.fast()))
+            },
+            label = "wordmark-zoom-morph",
+        ) { editing ->
+            if (!editing) {
+                Row(
+                    modifier = Modifier
+                        .height(40.dp)
+                        .shadow(18.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x38000000), spotColor = androidx.compose.ui.graphics.Color(0x38000000))
+                        .shadow(5.dp, RoundedCornerShape(percent = 50), clip = false, ambientColor = androidx.compose.ui.graphics.Color(0x1C000000), spotColor = androidx.compose.ui.graphics.Color(0x1C000000))
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(androidx.compose.ui.graphics.Color.Transparent)
+                        .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(percent = 50))
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(Icons.Filled.FitScreen, contentDescription = null, modifier = Modifier.size(18.dp))
+                    com.appprint.studio.ui.components.TabatiLogoMark(size = 22.dp)
+                    Text(
+                        text = "طبعتي",
+                        fontFamily = com.appprint.studio.ui.theme.rememberReemKufiFamily(),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = androidx.compose.ui.unit.TextUnit(17f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        letterSpacing = androidx.compose.ui.unit.TextUnit(0.4f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        color = scheme.onSurface,
+                        maxLines = 1,
+                    )
+                    SurfaceChip(text = "${state.settings.presetKey} (${state.cards.size})")
                 }
-                CircleActionButton(onClick = onZoomIn, contentDescription = Str.zoom_in, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
-                    Icon(Icons.Filled.ZoomIn, contentDescription = null, modifier = Modifier.size(18.dp))
+            } else {
+                Row(
+                    modifier = Modifier
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .padding(horizontal = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    CircleActionButton(onClick = onZoomOut, contentDescription = Str.zoom_out, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
+                        Icon(Icons.Filled.ZoomOut, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                    CircleActionButton(
+                        onClick = onZoomFit,
+                        contentDescription = Str.zoom_fit,
+                        size = 40.dp,
+                        container = if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) scheme.primary else scheme.surfaceContainerLow,
+                        tint = if (state.zoomMode == com.appprint.studio.ui.ZoomMode.FIT) scheme.onPrimary else scheme.onSurface,
+                    ) {
+                        Icon(Icons.Filled.FitScreen, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                    CircleActionButton(onClick = onZoomIn, contentDescription = Str.zoom_in, size = 40.dp, container = scheme.surfaceContainerLow, tint = scheme.onSurface) {
+                        Icon(Icons.Filled.ZoomIn, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
                 }
             }
         }
@@ -518,8 +535,8 @@ private fun statusTopSafe(): androidx.compose.ui.unit.Dp =
  */
 private fun glassBrush(base: androidx.compose.ui.graphics.Color): Brush = Brush.verticalGradient(
     colors = listOf(
-        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.14f),
-        base.copy(alpha = 0.18f),
+        base.copy(alpha = 0.16f),
+        base.copy(alpha = 0.20f),
         base.copy(alpha = 0.24f),
     ),
 )
@@ -763,10 +780,19 @@ private fun FloatingRail(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val density = androidx.compose.ui.platform.LocalDensity.current
     val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
-    val safeMaxH = with(androidx.compose.ui.platform.LocalDensity.current) {
-        windowInfo.containerSize.height.toDp()
-    } - Chrome.topReserve() - 16.dp
+    val safeMaxH = with(density) { windowInfo.containerSize.height.toDp() } - Chrome.topReserve() - 16.dp
+    // One shared, physics-driven indicator slides between destinations — no per-item pill.
+    val indicatorY = remember { Animatable(0f) }
+    val indicatorH = remember { Animatable(0f) }
+    var indicatorBounds by remember { mutableStateOf<Pair<Float, Float>?>(null) }
+    LaunchedEffect(indicatorBounds) {
+        indicatorBounds?.let { (y, h) ->
+            launch { indicatorY.animateTo(y, Motion.default()) }
+            launch { indicatorH.animateTo(h, Motion.default()) }
+        }
+    }
     Box(
         modifier = modifier
             .widthIn(min = Chrome.railWidth(), max = Chrome.railWidth())
@@ -777,27 +803,41 @@ private fun FloatingRail(
             color = androidx.compose.ui.graphics.Color.Transparent,
             shadowElevation = 14.dp,
             modifier = Modifier
-                // Only the width is fixed; height wraps the icon list (no full-screen rail).
                 .fillMaxWidth()
                 .background(glassBrush(scheme.surfaceContainerLow), RoundedCornerShape(32.dp))
                 .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
         ) {
-            val railScroll = rememberScrollState()
-            Column(
-                modifier = Modifier
-                    .verticalScroll(railScroll)
-                    .overlayVerticalScrollbar(railScroll),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                // Icons run edge-to-edge inside the capsule — no decorative empty bands.
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                DESTINATIONS.forEach { destination ->
-                    RailItem(
-                        destination = destination,
-                        selected = destination.section == current,
-                        badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
-                        onSelect = { onSelect(destination.section) },
-                    )
+            Box {
+                // Liquid M3 Expressive selection: a single spring-animated capsule.
+                Box(
+                    modifier = Modifier
+                        .width(56.dp)
+                        .height(with(density) { indicatorH.value.toDp() })
+                        .offset { IntOffset(0, indicatorY.value.roundToInt()) }
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(scheme.secondaryContainer),
+                )
+                val railScroll = rememberScrollState()
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(railScroll),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    DESTINATIONS.forEach { destination ->
+                        RailItem(
+                            destination = destination,
+                            selected = destination.section == current,
+                            badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
+                            onSelect = { onSelect(destination.section) },
+                            showSelectedPill = false,
+                            modifier = Modifier.onGloballyPositioned { coords ->
+                                if (destination.section == current) {
+                                    indicatorBounds = coords.positionInParent().y to coords.size.height.toFloat()
+                                }
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -818,6 +858,8 @@ private fun RailItem(
     selected: Boolean,
     badge: String?,
     onSelect: () -> Unit,
+    showSelectedPill: Boolean = true,
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
@@ -827,7 +869,7 @@ private fun RailItem(
         label = "railColor",
     )
     Column(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .pressScale(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onSelect)
@@ -842,7 +884,7 @@ private fun RailItem(
                 .width(48.dp)
                 .height(28.dp)
                 .clip(RoundedCornerShape(percent = 50))
-                .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent),
+                .background(if (selected && showSelectedPill) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
