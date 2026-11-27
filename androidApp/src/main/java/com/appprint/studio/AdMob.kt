@@ -47,8 +47,8 @@ object AdMob {
                 .setTestDeviceIds(listOf(AdRequest.DEVICE_ID_EMULATOR))
                 .build(),
         )
-        MobileAds.initialize(context) { status ->
-            android.util.Log.d("AdMob", "SDK init status: ${status.adapterStatusesByClassName}")
+        MobileAds.initialize(context) {
+            android.util.Log.d("AdMob", "SDK initialized — test unit IDs active")
         }
     }
 
