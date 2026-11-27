@@ -643,10 +643,25 @@ private fun FloatingNavPill(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val density = androidx.compose.ui.platform.LocalDensity.current
     val navBottom = WindowInsets.navigationBars
         .union(WindowInsets.displayCutout)
         .asPaddingValues()
         .calculateBottomPadding() + Chrome.EdgeInset
+    // Same fluid, measured spring indicator as the side rail — unified M3 Expressive motion.
+    val indicatorX = remember { Animatable(0f) }
+    val indicatorY = remember { Animatable(0f) }
+    val indicatorW = remember { Animatable(0f) }
+    val indicatorH = remember { Animatable(0f) }
+    var indicatorBounds by remember { mutableStateOf<FloatArray?>(null) }
+    LaunchedEffect(indicatorBounds) {
+        indicatorBounds?.let { b ->
+            launch { indicatorX.animateTo(b[0], Motion.default()) }
+            launch { indicatorY.animateTo(b[1], Motion.default()) }
+            launch { indicatorW.animateTo(b[2], Motion.default()) }
+            launch { indicatorH.animateTo(b[3], Motion.default()) }
+        }
+    }
     Row(
         modifier = modifier.fillMaxWidth().padding(
             start = Chrome.EdgeInset + cutoutStartPadding(),
@@ -684,19 +699,40 @@ private fun FloatingNavPill(
                 .background(androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50))
                 .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(percent = 50)),
         ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterHorizontally),
-            ) {
-                DESTINATIONS.forEach { destination ->
-                    NavPillItem(
-                        destination = destination,
-                        selected = destination.section == current,
-                        badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
-                        onSelect = { onSelect(destination.section) },
-                        modifier = Modifier.weight(1f),
-                    )
+            Box {
+                Box(
+                    modifier = Modifier
+                        .width(with(density) { indicatorW.value.toDp() })
+                        .height(with(density) { indicatorH.value.toDp() })
+                        .offset { IntOffset(indicatorX.value.roundToInt(), indicatorY.value.roundToInt()) }
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.secondaryContainer),
+                )
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterHorizontally),
+                ) {
+                    DESTINATIONS.forEach { destination ->
+                        NavPillItem(
+                            destination = destination,
+                            selected = destination.section == current,
+                            badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
+                            onSelect = { onSelect(destination.section) },
+                            showSelectedPill = false,
+                            modifier = Modifier
+                                .weight(1f)
+                                .onGloballyPositioned { coords ->
+                                    if (destination.section == current) {
+                                        val p = coords.positionInParent()
+                                        indicatorBounds = floatArrayOf(
+                                            p.x, p.y,
+                                            coords.size.width.toFloat(), coords.size.height.toFloat(),
+                                        )
+                                    }
+                                },
+                        )
+                    }
                 }
             }
         }
@@ -709,6 +745,7 @@ private fun NavPillItem(
     selected: Boolean,
     badge: String?,
     onSelect: () -> Unit,
+    showSelectedPill: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -731,7 +768,7 @@ private fun NavPillItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(22.dp)
-                .background(if (selected) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50)),
+                .background(if (selected && showSelectedPill) scheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(percent = 50)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -811,16 +848,8 @@ private fun FloatingRail(
             shadowElevation = 14.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                // Nearly opaque so the white paper behind cannot shine through as a patch.
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        listOf(
-                            scheme.surfaceContainerLow.copy(alpha = 0.95f),
-                            scheme.surfaceContainerLow.copy(alpha = 0.98f),
-                        ),
-                    ),
-                    RoundedCornerShape(32.dp),
-                )
+                // Solid surface: no white paper can shine through as a straight line.
+                .background(scheme.surfaceContainerLow, RoundedCornerShape(32.dp))
                 .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
         ) {
             Box {

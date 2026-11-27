@@ -138,7 +138,7 @@ private fun PanelScaffold(
     val panelTopInset = if (showRail) Chrome.topReserve() + 6.dp else 0.dp
     // Compact phones: offset the SCROLLING content above the floating nav pill instead of
     // reserving a fixed dark block. Background remains continuous.
-    val bottomScrollInset = if (showRail) 16.dp else Chrome.bottomReserve() + 12.dp
+    val bottomScrollInset = 16.dp
     Column(
         modifier = Modifier
             .fillMaxHeight()

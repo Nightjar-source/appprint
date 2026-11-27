@@ -316,39 +316,25 @@ private fun SurfaceDrawer(
     onRequestSwap: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scheme = MaterialTheme.colorScheme
-    // Translucent glass drawer (no solid "dry block") — uses the same bright-top tint as the
-    // floating pills so the sheet shows through softly instead of being covered by a slab.
-    val drawerBrush = androidx.compose.ui.graphics.Brush.verticalGradient(
-        colors = listOf(
-            scheme.surfaceContainerLow.copy(alpha = 0.78f),
-            scheme.surfaceContainerLow.copy(alpha = 0.88f),
-        ),
-    )
-    Column(
+    // On a phone the panel is a FLOATING card too: rounded on every side, with a visible
+    // gap above and below it so the canvas shows through — never a slab with a hard line.
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.48f)
-            .background(drawerBrush),
+            .fillMaxHeight(0.56f)
+            .padding(
+                start = Chrome.EdgeInset,
+                end = Chrome.EdgeInset,
+                bottom = Chrome.bottomReserve(),
+            ),
     ) {
-        // hairline top border only — the design's drawer has borderTop: 1px outline-variant
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(scheme.outlineVariant),
+        SectionPanel(
+            state = state,
+            viewModel = viewModel,
+            onReplaceImage = onReplaceImage,
+            onClearAllRequest = onClearAllRequest,
+            onRequestSwap = onRequestSwap,
         )
-        // No fixed bottom inset block — PanelScaffold adds a scrolling spacer so content
-        // can move through the nav/pill area transparently.
-        Box(Modifier.fillMaxWidth().fillMaxHeight()) {
-            SectionPanel(
-                state = state,
-                viewModel = viewModel,
-                onReplaceImage = onReplaceImage,
-                onClearAllRequest = onClearAllRequest,
-                onRequestSwap = onRequestSwap,
-            )
-        }
     }
 }
 
