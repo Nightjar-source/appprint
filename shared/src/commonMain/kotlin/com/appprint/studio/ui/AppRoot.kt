@@ -654,9 +654,10 @@ private fun FloatingNavPill(
     val indicatorW = remember { Animatable(0f) }
     val indicatorH = remember { Animatable(0f) }
     var indicatorBounds by remember { mutableStateOf<FloatArray?>(null) }
-    LaunchedEffect(indicatorBounds) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    LaunchedEffect(indicatorBounds, rtl) {
         indicatorBounds?.let { b ->
-            val x = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -b[0] else b[0]
+            val x = if (rtl) -b[0] else b[0]
             launch { indicatorX.animateTo(x, Motion.default()) }
             launch { indicatorY.animateTo(b[1], Motion.default()) }
             launch { indicatorW.animateTo(b[2], Motion.default()) }
@@ -830,11 +831,12 @@ private fun FloatingRail(
     val indicatorW = remember { Animatable(0f) }
     val indicatorH = remember { Animatable(0f) }
     var indicatorBounds by remember { mutableStateOf<FloatArray?>(null) }
-    LaunchedEffect(indicatorBounds) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    LaunchedEffect(indicatorBounds, rtl) {
         indicatorBounds?.let { b ->
             // Modifier.offset { IntOffset } is RTL-aware: negate x in Arabic so the
             // capsule travels toward the destination the user actually taps.
-            val x = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -b[0] else b[0]
+            val x = if (rtl) -b[0] else b[0]
             launch { indicatorX.animateTo(x, Motion.default()) }
             launch { indicatorY.animateTo(b[1], Motion.default()) }
             launch { indicatorW.animateTo(b[2], Motion.default()) }
