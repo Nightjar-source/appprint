@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.animateDpAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -673,23 +674,15 @@ private fun FloatingNavPill(
         .union(WindowInsets.displayCutout)
         .asPaddingValues()
         .calculateBottomPadding() + Chrome.EdgeInset
-    // Same fluid, measured spring indicator as the side rail — unified M3 Expressive motion.
-    val indicatorX = remember { Animatable(0f) }
-    val indicatorY = remember { Animatable(0f) }
-    val indicatorW = remember { Animatable(0f) }
-    val indicatorH = remember { Animatable(0f) }
-    var indicatorBounds by remember { mutableStateOf<FloatArray?>(null) }
-    // Measured in the ROOT coordinate system (always physical, left/top origin) so RTL
-    // never mirrors the capsule. The reference liquid-pointer guide confirms this rule.
-    var containerOrigin by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-    LaunchedEffect(indicatorBounds) {
-        indicatorBounds?.let { b ->
-            launch { indicatorX.animateTo(b[0], Motion.default()) }
-            launch { indicatorY.animateTo(b[1], Motion.default()) }
-            launch { indicatorW.animateTo(b[2], Motion.default()) }
-            launch { indicatorH.animateTo(b[3], Motion.default()) }
-        }
-    }
+    // Liquid indicator: logical index × item width with an RTL-aware offset (reference guide).
+    var barWidth by remember { mutableStateOf(0.dp) }
+    val itemWidth = if (DESTINATIONS.isEmpty()) 0.dp else barWidth / DESTINATIONS.size
+    val selectedIndex = DESTINATIONS.indexOfFirst { it.section == current }.coerceAtLeast(0)
+    val indicatorOffset by animateDpAsState(
+        targetValue = itemWidth * selectedIndex,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 320f),
+        label = "pillLiquidIndicator",
+    )
     Row(
         modifier = modifier.fillMaxWidth().padding(
             start = Chrome.EdgeInset + cutoutStartPadding(),
@@ -724,19 +717,17 @@ private fun FloatingNavPill(
                 .weight(1f)
                 .height(Chrome.NavBarDp)
                 .widthIn(max = 512.dp)
+                .onGloballyPositioned { barWidth = with(density) { it.size.width.toDp() } }
                 .frostedGlass(RoundedCornerShape(percent = 50)),
         ) {
-            Box(modifier = Modifier.onGloballyPositioned { containerOrigin = it.positionInRoot() }) {
+            Box {
                 Box(
                     modifier = Modifier
-                        .width(with(density) { indicatorW.value.toDp() })
-                        .height(with(density) { indicatorH.value.toDp() })
-                        .graphicsLayer {
-                            translationX = indicatorX.value
-                            translationY = indicatorY.value
-                        }
+                        .offset(x = indicatorOffset, y = 0.dp)
+                        .width(itemWidth)
+                        .height(Chrome.NavBarDp - 8.dp)
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.secondaryContainer),
+                        .background(scheme.primaryContainer),
                 )
                 Row(
                     modifier = Modifier.fillMaxSize(),
@@ -750,18 +741,7 @@ private fun FloatingNavPill(
                             badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
                             onSelect = { onSelect(destination.section) },
                             showSelectedPill = false,
-                            modifier = Modifier
-                                .weight(1f)
-                                .onGloballyPositioned { coords ->
-                                    val origin = containerOrigin
-                                    if (destination.section == current && origin != null) {
-                                        val p = coords.positionInRoot()
-                                        indicatorBounds = floatArrayOf(
-                                            p.x - origin.x, p.y - origin.y,
-                                            coords.size.width.toFloat(), coords.size.height.toFloat(),
-                                        )
-                                    }
-                                },
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -852,22 +832,15 @@ private fun FloatingRail(
     val density = androidx.compose.ui.platform.LocalDensity.current
     val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
     val safeMaxH = with(density) { windowInfo.containerSize.height.toDp() } - Chrome.topReserve() - 16.dp
-    // One shared, physics-driven indicator. Its bounds are MEASURED from the destination,
-    // so it fits the whole icon+label in both vertical and horizontal rail orientations.
-    val indicatorX = remember { Animatable(0f) }
-    val indicatorY = remember { Animatable(0f) }
-    val indicatorW = remember { Animatable(0f) }
-    val indicatorH = remember { Animatable(0f) }
-    var indicatorBounds by remember { mutableStateOf<FloatArray?>(null) }
-    var containerOrigin by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-    LaunchedEffect(indicatorBounds) {
-        indicatorBounds?.let { b ->
-            launch { indicatorX.animateTo(b[0], Motion.default()) }
-            launch { indicatorY.animateTo(b[1], Motion.default()) }
-            launch { indicatorW.animateTo(b[2], Motion.default()) }
-            launch { indicatorH.animateTo(b[3], Motion.default()) }
-        }
-    }
+    // Same liquid indicator, vertical variant: index × measured item height with a spring.
+    var railHeight by remember { mutableStateOf(0.dp) }
+    val itemHeight = if (DESTINATIONS.isEmpty()) 0.dp else railHeight / DESTINATIONS.size
+    val selectedIndex = DESTINATIONS.indexOfFirst { it.section == current }.coerceAtLeast(0)
+    val indicatorOffset by animateDpAsState(
+        targetValue = itemHeight * selectedIndex,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 320f),
+        label = "railLiquidIndicator",
+    )
     Box(
         modifier = modifier
             .widthIn(min = Chrome.railWidth(), max = Chrome.railWidth())
@@ -881,19 +854,15 @@ private fun FloatingRail(
                 .fillMaxWidth()
                 .frostedGlass(RoundedCornerShape(32.dp)),
         ) {
-            Box(modifier = Modifier.onGloballyPositioned { containerOrigin = it.positionInRoot() }) {
+            Box(modifier = Modifier.onGloballyPositioned { railHeight = with(density) { it.size.height.toDp() } }) {
                 // Liquid M3 Expressive selection: a single spring-animated capsule.
                 Box(
                     modifier = Modifier
-                        .width(with(density) { indicatorW.value.toDp() })
-                        .height(with(density) { indicatorH.value.toDp() })
-                        .graphicsLayer {
-                            translationX = indicatorX.value
-                            translationY = indicatorY.value
-                        }
-                        // Capsule/droplet shape adapts to any measured width/height.
+                        .offset(y = indicatorOffset)
+                        .width(Chrome.railWidth() - 12.dp)
+                        .height(itemHeight)
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.secondaryContainer),
+                        .background(scheme.primaryContainer),
                 )
                 val railScroll = rememberScrollState()
                 Column(
@@ -909,16 +878,7 @@ private fun FloatingRail(
                             badge = if (destination.section == StudioSection.CARDS && cardsCount > 0) cardsCount.toString() else null,
                             onSelect = { onSelect(destination.section) },
                             showSelectedPill = false,
-                            modifier = Modifier.onGloballyPositioned { coords ->
-                                val origin = containerOrigin
-                                if (destination.section == current && origin != null) {
-                                    val p = coords.positionInRoot()
-                                    indicatorBounds = floatArrayOf(
-                                        p.x - origin.x, p.y - origin.y,
-                                        coords.size.width.toFloat(), coords.size.height.toFloat(),
-                                    )
-                                }
-                            },
+
                         )
                     }
                 }
