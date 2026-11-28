@@ -680,7 +680,8 @@ private fun FloatingNavPill(
     val selectedIndex = DESTINATIONS.indexOfFirst { it.section == current }.coerceAtLeast(0)
     val indicatorOffset by animateDpAsState(
         targetValue = itemWidth * selectedIndex,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 320f),
+        // Official M3 Expressive spatial spring: position/size overshoots then settles.
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "pillLiquidIndicator",
     )
     Row(
@@ -838,7 +839,7 @@ private fun FloatingRail(
     val selectedIndex = DESTINATIONS.indexOfFirst { it.section == current }.coerceAtLeast(0)
     val indicatorOffset by animateDpAsState(
         targetValue = itemHeight * selectedIndex,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 320f),
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "railLiquidIndicator",
     )
     Box(

@@ -159,13 +159,14 @@ fun StudioScreen(
         // ----------------------------------------- floating side panel (medium+ / foldable)
         AnimatedVisibility(
             visible = showRail && state.section != StudioSection.SHEET,
-            // Water-like M3 Expressive: low-damping spring slide + fade, no size jump.
-            enter = fadeIn(Motion.effects()) +
-                slideInHorizontally(animationSpec = spring(dampingRatio = 0.8f, stiffness = 220f), initialOffsetX = { it / 5 }) +
-                scaleIn(initialScale = 0.94f, animationSpec = spring(dampingRatio = 0.8f, stiffness = 220f)),
-            exit = fadeOut(Motion.fast()) +
-                slideOutHorizontally(animationSpec = spring(dampingRatio = 0.84f, stiffness = 260f), targetOffsetX = { it / 5 }) +
-                scaleOut(targetScale = 0.94f, animationSpec = spring(dampingRatio = 0.84f, stiffness = 260f)),
+            // Official M3 Expressive tokens: spatial springs for slide/scale,
+            // effects springs for fade — centered on the system motion scheme.
+            enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                slideInHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(), initialOffsetX = { it / 5 }) +
+                scaleIn(initialScale = 0.94f, animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
+            exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()) +
+                slideOutHorizontally(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(), targetOffsetX = { it / 5 }) +
+                scaleOut(targetScale = 0.94f, animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight(),
@@ -188,12 +189,12 @@ fun StudioScreen(
         // --------------------------------------- bottom drawer (compact)
         AnimatedVisibility(
             visible = !showRail && state.section != StudioSection.SHEET,
-            enter = fadeIn(Motion.effects()) +
-                slideInVertically(animationSpec = spring(dampingRatio = 0.8f, stiffness = 220f), initialOffsetY = { it / 4 }) +
-                scaleIn(initialScale = 0.92f, animationSpec = spring(dampingRatio = 0.8f, stiffness = 220f)),
-            exit = fadeOut(Motion.fast()) +
-                slideOutVertically(animationSpec = spring(dampingRatio = 0.84f, stiffness = 260f), targetOffsetY = { it / 4 }) +
-                scaleOut(targetScale = 0.92f, animationSpec = spring(dampingRatio = 0.84f, stiffness = 260f)),
+            enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(), initialOffsetY = { it / 4 }) +
+                scaleIn(initialScale = 0.92f, animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
+            exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()) +
+                slideOutVertically(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(), targetOffsetY = { it / 4 }) +
+                scaleOut(targetScale = 0.92f, animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             SurfaceDrawer(
