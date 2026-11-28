@@ -1,4 +1,4 @@
-const CACHE = 'tabati-v2.1.64';
+const CACHE = 'tabati-v2.1.65';
 
 // Retire legacy unversioned workers that cached a stale webApp.js with a missing .wasm hash.
 if (!self.location.search.includes('v=')) {
