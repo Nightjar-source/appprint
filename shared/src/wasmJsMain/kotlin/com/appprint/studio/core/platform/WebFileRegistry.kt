@@ -38,6 +38,34 @@ internal object WebFileRegistry {
     private var nextId = 1
     private val entries = LinkedHashMap<String, WebFileEntry>()
 
+    private fun storageKey(handle: String) = "tabati:img:" + handle
+    private fun metaKey(handle: String) = "tabati:imgmeta:" + handle
+
+    /** Restores an imported browser file after a page reload from localStorage. */
+    private fun restore(handle: String): WebFileEntry? {
+        val uri = try { window.localStorage.getItem(storageKey(handle)) } catch (_: Throwable) { null }
+            ?.takeIf { it.startsWith("data:") } ?: return null
+        val meta = try { window.localStorage.getItem(metaKey(handle)) } catch (_: Throwable) { null }
+        val parts = meta?.split("x")
+        val entry = WebFileEntry(
+            handle = handle,
+            file = null,
+            name = handle.substringAfterLast('/', "image"),
+            mime = mimeFromDataUri(uri),
+            objectUrl = uri,
+            bytes = bytesFromDataUri(uri),
+            dataUri = uri,
+            widthPx = parts?.getOrNull(0)?.toIntOrNull() ?: 0,
+            heightPx = parts?.getOrNull(1)?.toIntOrNull() ?: 0,
+        )
+        val img = document.createElement("img") as HTMLImageElement
+        img.onload = { entry.widthPx = img.naturalWidth; entry.heightPx = img.naturalHeight }
+        img.src = uri
+        entry.image = img
+        entries[handle] = entry
+        return entry
+    }
+
     /** Registers a real browser [File] and calls [onReady] once bytes + data URI + decoded image are cached. */
     fun register(file: File, onReady: (WebFileEntry) -> Unit): WebFileEntry {
         val handle = "web://file/${nextId++}/${file.name}"
@@ -70,7 +98,10 @@ internal object WebFileRegistry {
         val uriReader = FileReader()
         uriReader.onload = {
             val value = uriReader.result?.toString()
-            if (value != null && value.startsWith("data:")) entry.dataUri = value
+            if (value != null && value.startsWith("data:")) {
+                entry.dataUri = value
+                try { window.localStorage.setItem(storageKey(handle), value) } catch (_: Throwable) {}
+            }
             done()
         }
         uriReader.onerror = { done() }
@@ -81,6 +112,7 @@ internal object WebFileRegistry {
             entry.widthPx = element.naturalWidth
             entry.heightPx = element.naturalHeight
             entry.image = element
+            try { window.localStorage.setItem(metaKey(handle), "${entry.widthPx}x${entry.heightPx}") } catch (_: Throwable) {}
             done()
         }
         element.addEventListener("error", { done() })
@@ -145,7 +177,7 @@ internal object WebFileRegistry {
         return entry
     }
 
-    fun find(handle: String): WebFileEntry? = entries[handle]
+    fun find(handle: String): WebFileEntry? = entries[handle] ?: restore(handle)
 
     /** Resolves a handle, or lazily registers a raw browser URL. */
     fun resolve(source: String, mime: String): WebFileEntry? {

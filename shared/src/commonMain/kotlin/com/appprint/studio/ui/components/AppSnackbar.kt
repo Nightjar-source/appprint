@@ -86,12 +86,10 @@ fun AppSnackbar(
             // fixes the reversed swipe direction in Arabic.
             .graphicsLayer {
                 translationX = dragX
-                scaleX = 0.62f + 0.38f * floatProgress
-                scaleY = 0.78f + 0.22f * floatProgress
                 translationY = (1f - floatProgress) * -10f
             }
-            // Compact phones keep a short pill; large screens get a wide island-style bar.
-            .widthIn(max = if (Chrome.railVisible()) 640.dp else 360.dp)
+            // Content-sized pill: only a safety cap, no forced width and no empty gutter.
+            .widthIn(max = if (Chrome.railVisible()) 560.dp else 340.dp)
             .height(36.dp)
             .shadow(10.dp, RoundedCornerShape(percent = 50), clip = false)
             .clip(RoundedCornerShape(percent = 50))

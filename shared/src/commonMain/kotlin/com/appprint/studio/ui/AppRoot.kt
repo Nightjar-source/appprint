@@ -303,12 +303,8 @@ fun AppRoot(
                         onDismiss = viewModel::consumeToast,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .padding(
-                                start = 16.dp,
-                                top = statusTopSafe() + 64.dp,
-                                end = if (showRail) Chrome.railWidth() + 24.dp else 0.dp,
-                            ),
+                            // No fillMaxWidth: the pill wraps its text and shrinks with it.
+                            .padding(top = statusTopSafe() + 64.dp),
                     )
                 }
             }
@@ -681,7 +677,7 @@ private fun FloatingNavPill(
     val indicatorOffset by animateDpAsState(
         targetValue = itemWidth * selectedIndex,
         // Official M3 Expressive spatial spring: position/size overshoots then settles.
-        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "pillLiquidIndicator",
     )
     Row(
@@ -728,7 +724,7 @@ private fun FloatingNavPill(
                         .width(itemWidth)
                         .height(Chrome.NavBarDp - 8.dp)
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.primaryContainer),
+                        .background(scheme.primary.copy(alpha = 0.22f)),
                 )
                 Row(
                     modifier = Modifier.fillMaxSize(),
@@ -839,7 +835,7 @@ private fun FloatingRail(
     val selectedIndex = DESTINATIONS.indexOfFirst { it.section == current }.coerceAtLeast(0)
     val indicatorOffset by animateDpAsState(
         targetValue = itemHeight * selectedIndex,
-        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "railLiquidIndicator",
     )
     Box(
@@ -863,7 +859,7 @@ private fun FloatingRail(
                         .width(Chrome.railWidth() - 12.dp)
                         .height(itemHeight)
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(scheme.primaryContainer),
+                        .background(scheme.primary.copy(alpha = 0.22f)),
                 )
                 val railScroll = rememberScrollState()
                 Column(
